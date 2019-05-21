@@ -1,0 +1,6 @@
+ParaView-v5.6.0/build/*
+.DS_Store
+.DS_Store
+ttk-0.9.7/.DS_Store
+ttk-0.9.7/build/*
+ttk-0.9.7/ttk_install/*
