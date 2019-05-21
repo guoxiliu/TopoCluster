@@ -1,0 +1,5 @@
+ttk_add_vtk_library(ttkFTMTree
+	SOURCES ttkFTMTree.cpp
+  HEADERS ttkFTMTree.h ttkFTMStructures.h
+	LINK ftmTree geometry ttkTriangulation)
+
