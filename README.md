@@ -14,6 +14,10 @@ The first step requires you to clone the group repository from GitHub. If you ar
 
 Now, follow the instructions [here](https://topology-tool-kit.github.io/installation.html) for installing Paraview and ttk. Remember to select the instructions for your operating system, and for version 0.9.7 of TTK along with the version 5.6.0 of ParaView. Use the Paraview and TTK folders found in the GitHub repository instead of downloading them from scratch.
 
+#### Additional packages required
+- the module `MultifieldComparisonMeasure` requires [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page)
+  - for intalling Eigen on Unix - `sudo apt install libeigen3-dev`
+  - for intalling Eigen MacOS - `brew install eigen`
 
 ### Rules for GitHub
 
