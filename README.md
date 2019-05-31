@@ -26,8 +26,16 @@ One last thing to learn is how to correctly use the GitHub repository. The repos
 - once you are done with developing the module and everything is fully functioning you can use `merge` to merge your work back into the main repository.
 
 
-### Creating a new module in TTK-Clemson and using GitHub for keeping track of your work
+### Quick start
 
-- create a new branch in GitKraken with the name `develop-nameModule`
-- using the terminal get into the ttk-0.9.7 folder and create a new module with the command `scripts/createTTKmodule.sh nameModule`
-- look at GitKraken now. You will notice that it is keeping track of all the new files that have been generated. This is the main reason for using git. Git provides a service for keeping track of your work and all the features in your code. Every time you finish to update a functionality of your module you should upload your updates committing them to the repository. For a quick overview of the main idea behind git you can look at [this guide](https://support.gitkraken.com/start-here/guide/) are at many other resources on the web
+Before creating a new module you want to learn the key ideas behind the ttk architecture.
+
+Resources:
+ - [ttk tutorials](https://topology-tool-kit.github.io/tutorials.html) provide many examples on how to use ttk. In particular you want to look at "Extending TTK with a new module"
+ - since the example provided in the tutorial is a bit outdated with respect to the current architecture you can also look at the guide we have created by implementing a dummy module. The instructions can be found [here](https://github.com/IuricichF/ttk-clemson/blob/develop-HelloWorldExample/README.md). If you want to align your local files to this example you can use GitKraken and change the branch to `develop-HelloWorldExample`.
+
+General key steps:
+ - the very first before creating a module should be that of creating a new branch on github as mentioned before.
+ - then, using the terminal get into the ttk-0.9.7 folder and create a new module with the command `scripts/createTTKmodule.sh nameModule`.
+ - Look at GitKraken now. You will notice that it is keeping track of all the new files that have been generated. This is the main reason for using git. Git provides a service for keeping track of your work and all the features in your code. Every time you finish to update a functionality of your module you should upload your updates committing them to the repository. For a quick overview of the main idea behind git you can look at [this guide](https://support.gitkraken.com/start-here/guide/) are at many other resources on the web
+ - once you have implemented and debugged your code and you are sure it is stable you can integrate your update to the master branch by means of a `pull request`.
