@@ -39,12 +39,21 @@ namespace ttk{
 
       inline int setupTriangulation(Triangulation *triangulation){
         triangulation_ = triangulation;
-       
-        if(triangulation_){
-          
-          triangulation_->preprocessVertexNeighbors();
+        dimensionality_ = triangulation_->getCellVertexNumber(0) - 1;
 
-          
+        if(triangulation_){
+            // triangulation_->preprocessVertexStars();
+            triangulation_->preprocessEdges();
+
+            if (dimensionality_ >= 2) {
+              // triangulation_->preprocessTriangles();
+              triangulation_->preprocessTriangleEdges();
+            }
+
+            if (dimensionality_ == 3) {
+              triangulation_->preprocessCellTriangles();
+            }
+
         }
         
         return 0;
@@ -54,6 +63,7 @@ namespace ttk{
     
       void                  *inputData_;
       Triangulation         *triangulation_;
+      int                   dimensionality_;
   };
 }
 
@@ -73,23 +83,7 @@ template <class dataType> int ttk::PersistentHomology::execute() const{
 
   dataType *inputData = (dataType *) inputData_;
   
-  SimplexId vertexNumber = triangulation_->getNumberOfVertices();
-
-  // // init the output -- to adapt
-  // for(SimplexId i = 0; i < vertexNumber; i++){
-  //   outputData[i] = inputData[i];
-  // }
   
-  // the following open-mp processing is only relevant for embarrassingly 
-  // parallel algorithms (such as smoothing) -- to adapt
-#ifdef TTK_ENABLE_OPENMP
-#pragma omp parallel for num_threads(threadNumber_) 
-#endif
-  for(SimplexId i = 0; i < vertexNumber; i++){
-    // TODO-2
-    // processing here!
-    // end of TODO-2
-  }
    
 
   
