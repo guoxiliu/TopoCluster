@@ -22,7 +22,7 @@
 
 using namespace std;
 
-
+typedef pair<int,int> Simplex;
 
 namespace ttk{
   
