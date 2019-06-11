@@ -20,6 +20,7 @@ int ttkmapFunctionTo3D::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> 
   vtkPoints * points = output->GetPoints();
 
   for(int i=0; i<output->GetNumberOfPoints(); i++){
+    std::cout << inputScalarField->GetTuple1(i) << std::endl;
     double* coords = points->GetPoint(i);
     coords[2] = inputScalarField->GetTuple1(i)*Mult;
     points->InsertPoint(i,coords);

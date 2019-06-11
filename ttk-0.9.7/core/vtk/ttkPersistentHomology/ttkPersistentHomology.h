@@ -31,6 +31,7 @@
 #include                  <vtkIntArray.h>
 #include                  <vtkObjectFactory.h>
 #include                  <vtkPointData.h>
+#include                  <vtkCellData.h>
 #include                  <vtkSmartPointer.h>
 
 // ttk code includes
@@ -56,14 +57,13 @@ class ttkPersistentHomology
     
     vtkSetMacro(ScalarField, std::string);
     vtkGetMacro(ScalarField, std::string);
-    
-
+  
   
     int FillInputPortInformation(int port, vtkInformation *info) override {
       
       switch(port){
         case 0:
-          info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkUnstructuredGrid"); 
+          info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkDataset"); 
           break;
         default:
           break;
@@ -78,19 +78,24 @@ class ttkPersistentHomology
         case 0:
           info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkUnstructuredGrid"); 
           break;
+        case 1:
+          info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkUnstructuredGrid"); 
+          break;
         default:
           break;
       }
       
       return 1;
     }
-    
+
+    void outPersistencePairs(vtkDataSet* output);
+    void outHomology(vtkDataSet* output);
     
   protected:
    
     ttkPersistentHomology(){
       SetNumberOfInputPorts(1);
-      SetNumberOfOutputPorts(1);
+      SetNumberOfOutputPorts(2);
     }
     
     ~ttkPersistentHomology(){};

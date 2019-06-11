@@ -18,6 +18,11 @@
 #include                  <Wrapper.h>
 
 #include <boundarymatrix.h>
+#include <utility>
+
+using namespace std;
+
+
 
 namespace ttk{
   
@@ -30,23 +35,36 @@ namespace ttk{
       ~PersistentHomology();
 
       template <class dataType>
-        int execute() const;
+        int execute(bool onVertices);
+
+      void readHomology(vector<float>&, vector<char>&);
+
+      template <class dataType>
+      void readPersistencePairs(vector<float>&, vector<char>&, vector<dataType>&);
+      
+      void computeBarycenter(Simplex& simplex, vector<float>& coords);
+
+      void indexToSimpl(int index, Simplex& simpl);
+      void simplexToVertices(Simplex& simplex, vector<SimplexId>& vertices);
+
+      template <class dataType>
+      dataType getFiltration(Simplex& simplex); //return the value for the original function values
+
+      int getFiltration(Simplex& simplex,const vector<int>& filtration); //return the value for the discrete filtration
     
-      inline int setInputDataPointer(void *data){
-        inputData_ = data;
+      inline int setInputDataPointer(const void *data){
+        inputData_ = (const void*)data;
         return 0;
       }
 
       inline int setupTriangulation(Triangulation *triangulation){
         triangulation_ = triangulation;
         dimensionality_ = triangulation_->getCellVertexNumber(0) - 1;
-
+        
         if(triangulation_){
-            // triangulation_->preprocessVertexStars();
             triangulation_->preprocessEdges();
 
             if (dimensionality_ >= 2) {
-              // triangulation_->preprocessTriangles();
               triangulation_->preprocessTriangleEdges();
             }
 
@@ -55,37 +73,23 @@ namespace ttk{
             }
 
         }
-        
+
         return 0;
       }
+
     
     protected:
     
-      void                  *inputData_;
+      const void                  *inputData_;
       Triangulation         *triangulation_;
       int                   dimensionality_;
+      
+      vector<vector<int> >        matrix;
+      map<int,int>                allpairs;
+      vector<int>                 homology;
   };
 }
 
-// if the package is a pure template class, uncomment the following line
-// #include                  <PersistentHomology.cpp>
+#include                  <persistenthomology_template.h>
 
 // template functions
-template <class dataType> int ttk::PersistentHomology::execute() const{
- 
-  // check the consistency of the variables -- to adapt
-#ifndef TTK_ENABLE_KAMIKAZE
-  if(!triangulation_)
-    return -1;
-  if(!inputData_)
-    return -2;
-#endif
-
-  dataType *inputData = (dataType *) inputData_;
-  
-  
-   
-
-  
-  return 0;
-}

@@ -14,6 +14,7 @@
         short_help="TTK mapFunctionTo3D plugin.">
           TTK mapFunctionTo3D plugin documentation.
      </Documentation>
+     
      <InputProperty
         name="Input"
         command="SetInputConnection">
