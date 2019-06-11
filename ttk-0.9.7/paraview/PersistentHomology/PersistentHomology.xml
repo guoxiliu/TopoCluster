@@ -6,13 +6,13 @@
        that matches your filter and then model your xml on it -->
   <ProxyGroup name="filters">
    <SourceProxy 
-     name="mapFunctionTo3D" 
-     class="ttkmapFunctionTo3D" 
-     label="TTK mapFunctionTo3D">
+     name="PersistentHomology" 
+     class="ttkPersistentHomology" 
+     label="TTK PersistentHomology">
      <Documentation
-        long_help="TTK mapFunctionTo3D plugin."
-        short_help="TTK mapFunctionTo3D plugin.">
-          TTK mapFunctionTo3D plugin documentation.
+        long_help="TTK persistentHomology plugin."
+        short_help="TTK persistentHomology plugin.">
+          TTK persistentHomology plugin documentation.
      </Documentation>
      
      <InputProperty
@@ -23,7 +23,7 @@
           <Group name="filters"/>
         </ProxyGroupDomain>
         <DataTypeDomain name="input_type">
-          <DataType value="vtkPointSet"/>
+          <DataType value="vtkDataSet"/>
         </DataTypeDomain>
         <InputArrayDomain name="input_scalars" number_of_components="1">
           <Property name="Input" function="FieldDataSelection" />
@@ -51,19 +51,9 @@
           Select the scalar field to process.
         </Documentation>
       </StringVectorProperty>
-
-      <DoubleVectorProperty
-         name="Multiplier"
-         label="Multiply by"
-         command="SetMult"
-         number_of_elements="1"
-         default_values="1.0" >
-        <DoubleRangeDomain name="range" min="0.001" max="100" />
-      </DoubleVectorProperty>
       
       <PropertyGroup panel_widget="Line" label="Input options">
         <Property name="ScalarField" />
-        <Property name="Multiplier" />
       </PropertyGroup>
       
       <Hints>
