@@ -146,13 +146,14 @@ public:
         for(int i=0; i<matrix.size(); i++){
             
             if(pivot(i) != -1){
+                
                 while(allpivots[pivot(i)] != -1){
                     addcolumn(i,allpivots[pivot(i)]);
                     if(pivot(i) == -1)
                         break;
                 }
 
-                if(matrix.size() != 0)
+                if(matrix.size() != 0 && pivot(i) != -1)
                     allpivots[pivot(i)]=i;
             } 
         }
