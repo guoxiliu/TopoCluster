@@ -1,0 +1,4 @@
+ttk_add_vtk_library(ttkcrossDissolvePersistenceDiagrams
+	SOURCES ttkcrossDissolvePersistenceDiagrams.cpp
+	HEADERS ttkcrossDissolvePersistenceDiagrams.h
+	LINK crossDissolvePersistenceDiagrams ttkTriangulation persistentHomology)
