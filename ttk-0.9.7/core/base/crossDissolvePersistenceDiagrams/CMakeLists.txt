@@ -1,0 +1,5 @@
+ttk_add_base_library(crossDissolvePersistenceDiagrams
+	SOURCES crossDissolvePersistenceDiagrams.cpp
+	HEADERS crossDissolvePersistenceDiagrams.h
+	LINK triangulation boundarymatrix persistentHomology)
+

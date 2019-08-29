@@ -114,7 +114,7 @@ template <class dataType> int ttk::PersistentHomology::execute(bool onVertices){
   t.reStart();
   bdmatrix.reduce();
   cout << t.getElapsedTime() << endl;
-
+  
   bdmatrix.getMatrix(matrix);
   bdmatrix.getPairs(allpairs);
   bdmatrix.getHomology(homology);

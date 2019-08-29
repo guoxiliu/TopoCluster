@@ -1,0 +1,78 @@
+
+<ServerManagerConfiguration>
+  <!-- This is the server manager configuration XML. It defines the interface to
+       our new filter. As a rule of thumb, try to locate the configuration for
+       a filter already in ParaView (in Servers/ServerManager/Resources/*.xml)
+       that matches your filter and then model your xml on it -->
+  <ProxyGroup name="filters">
+   <SourceProxy 
+     name="crossDissolvePersistenceDiagrams" 
+     class="ttkcrossDissolvePersistenceDiagrams" 
+     label="TTK crossDissolvePersistenceDiagrams">
+     <Documentation
+        long_help="TTK crossDissolvePersistenceDiagrams plugin."
+        short_help="TTK crossDissolvePersistenceDiagrams plugin.">
+          TTK crossDissolvePersistenceDiagrams plugin documentation.
+     </Documentation>
+
+     <InputProperty
+        name="Input"
+        command="SetInputConnection">
+        <ProxyGroupDomain name="groups">
+          <Group name="sources"/>
+          <Group name="filters"/>
+        </ProxyGroupDomain>
+        <DataTypeDomain name="input_type">
+          <DataType value="vtkDataSet"/>
+        </DataTypeDomain>
+        <InputArrayDomain name="input_scalars" number_of_components="1">
+          <Property name="Input" function="FieldDataSelection" />
+        </InputArrayDomain>
+        <Documentation>
+          Data-set to process.
+        </Documentation>
+      </InputProperty>
+
+      <StringVectorProperty name="SelectedFields"
+                               command="SetSelectedFields"
+                               element_types="2 0"
+                               information_property="CellArrayInfo"
+                               label="Fields"
+                               number_of_elements="2"
+                               number_of_elements_per_command="1"
+                               repeat_command="1">
+        <ArrayListDomain name="array_list"
+                        attribute_type="Scalars"
+                        input_domain_name="inputs_array">
+          <RequiredProperties>
+            <Property name="Input" function="Input" />
+          </RequiredProperties>
+        </ArrayListDomain>
+      </StringVectorProperty>
+      
+      <DoubleVectorProperty
+         name="Alpha"
+         label="Alpha"
+         command="SetAlpha"
+         number_of_elements="1"
+         default_values="1" >
+        <DoubleRangeDomain name="range" min="0" max="1" />
+         <Documentation>
+          Double argument for the ndPersistentHomology filter.
+         </Documentation>
+      </DoubleVectorProperty>
+      
+      <PropertyGroup panel_widget="Line" label="Input options">
+        <Property name="SelectedFields" />
+      </PropertyGroup>
+     
+      <PropertyGroup panel_widget="Line" label="Output options">
+        <Property name="Alpha" />
+      </PropertyGroup>
+      
+      <Hints>
+        <ShowInMenu category="TTK - Misc" />
+      </Hints>
+   </SourceProxy>
+ </ProxyGroup>
+</ServerManagerConfiguration>
