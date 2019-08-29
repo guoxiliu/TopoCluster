@@ -135,5 +135,5 @@ namespace ttk{
   };
 
   // if the package is a pure template class, uncomment the following line
-  #include                  <multivariategradient_template.h>
+  #include                  <gradient_template.h>
 }

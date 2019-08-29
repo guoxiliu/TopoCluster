@@ -1,5 +1,5 @@
 //#ifndef MultivariateGradient_TEMPLATE_H
-#define MULTIVARIATEGRADIENT_TEMPLATE_H
+#define GRADIENT_TEMPLATE_H
 
 #include "GradientForPH.h"
 
