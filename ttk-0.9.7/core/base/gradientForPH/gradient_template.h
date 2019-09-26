@@ -43,7 +43,7 @@ int GradientForPH::computeGradient(){
     SimplexId vertexNumber = triangulation_->getNumberOfVertices();
 
     #ifdef TTK_ENABLE_OPENMP
-    #pragma omp parallel for num_threads(threadNumber)
+    #pragma omp parallel for 
     #endif
     for(SimplexId i=0; i<vertexNumber; i++){
         //   cout << "Working on vertex " << i << endl;
