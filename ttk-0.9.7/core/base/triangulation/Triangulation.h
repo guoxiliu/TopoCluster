@@ -38,7 +38,7 @@
 // base code includes
 #include                  <AbstractTriangulation.h>
 #include                  <ImplicitTriangulation.h>
-#include                  <ExplicitTriangulation.h>
+#include                  <StellarTriangulation.h>
 
 namespace ttk{
   
@@ -3165,7 +3165,7 @@ namespace ttk{
       
       AbstractTriangulation
                           *abstractTriangulation_;
-      ExplicitTriangulation 
+      StellarTriangulation
                           explicitTriangulation_;
       ImplicitTriangulation
                           implicitTriangulation_;
