@@ -78,6 +78,7 @@ template <class dataType> int ttk::PreprocessStellar::execute(
   dataType *inputData = (dataType *) inputData_;
   
   SimplexId vertexNumber = triangulation_->getNumberOfVertices();
+  SimplexId cellNumber = triangulation_->getNumberOfCells();
 
   cout << "Number of vertices: " << vertexNumber << endl;
   // init the output -- to adapt
@@ -91,11 +92,15 @@ template <class dataType> int ttk::PreprocessStellar::execute(
 #pragma omp parallel for num_threads(threadNumber_) 
 #endif
 
-  Octree preOctree(triangulation_, 200);
+  Octree preOctree(triangulation_, 1000);
   for(SimplexId i = 0; i < vertexNumber; i++){
     preOctree.insertVertex(i);
   }
-   
+  for(SimplexId i = 0; i < cellNumber; i++){
+    preOctree.insertCell(i);
+  }
+
+
   {
     std::stringstream msg;
     msg << "[PreprocessStellar] Data-set (" << vertexNumber

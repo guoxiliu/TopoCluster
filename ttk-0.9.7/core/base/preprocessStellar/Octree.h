@@ -15,6 +15,7 @@ class OctreeNode
             locCode = location; 
             childExists = 0; 
             vertexIds = new vector<SimplexId>();
+            cellIds = nullptr;
         }
 
         ~OctreeNode(){}
@@ -23,6 +24,7 @@ class OctreeNode
         uint32_t locCode;
         uint8_t childExists;
         vector<SimplexId>* vertexIds;
+        vector<SimplexId>* cellIds;
 
     friend class Octree;
 };
@@ -76,7 +78,7 @@ class Octree
         }
 
         /**
-         * Get the depth of the octree.
+         * Get the depth of the node in the octree.
          */ 
         size_t getNodeTreeDepth(const OctreeNode *node){
             assert(node->locCode);
@@ -108,7 +110,11 @@ class Octree
         /**
          * Insert the vertex into the octree by its id.
          */ 
-        void insertVertex(SimplexId &vertexId){
+        int insertVertex(SimplexId &vertexId){
+            if(vertexId < 0 || vertexId >= triangulation_->getNumberOfVertices()){
+                return -1;
+            }
+            
             OctreeNode *current = lookupNode(1);
             uint32_t location = current->locCode;
             float ncenter[3], nsize[3];
@@ -131,6 +137,51 @@ class Octree
                 current->vertexIds->push_back(vertexId);
                 subdivide(current);
             }
+            return 0;
+        }
+
+        /**
+         * Insert the cell into the octree by its id.
+         * Note: This function can only be called after inserting all vertices!
+         */
+        int insertCell(SimplexId &cellId){
+            if(cellId < 0 || cellId >= triangulation_->getNumberOfCells()){
+                return -1;
+            }
+
+            int i, j;
+            uint32_t location;
+            float ncenter[3], nsize[3];
+            for(i = 0; i < 3; i++){
+                SimplexId vertexId;
+                OctreeNode *current = lookupNode(1);
+
+                for(j = 0; j < 3; j++){
+                    ncenter[j] = center[j];
+                    nsize[j] = size[j];
+                }
+                location = current->locCode;
+                triangulation_->getCellVertex(cellId, i, vertexId);
+
+                if(current != nullptr && current->childExists){
+                    computeCenterSize(location, ncenter, nsize);
+                    location = getChildLocation(location, vertexId, ncenter);
+                    current = lookupNode(location);
+                }
+
+                if(current == nullptr){
+                    cerr << "[Octree] insertCell(): Cannot find the vertex id (" << vertexId << ") in the tree!\n";
+                    return -1;
+                }else{
+                    if(current->cellIds == nullptr){
+                        current->cellIds = new vector<SimplexId>{cellId};
+                    }else if(current->cellIds->back() != cellId){
+                        current->cellIds->push_back(cellId);
+                    }
+                }
+            }
+
+            return 0;
         }
 
 
