@@ -67,69 +67,47 @@ class ttkPreprocessStellar
     // end of default ttk setters
     
         
-    // TODO-4
     // set-getters macros to define from each variable you want to access from 
     // the outside (in particular from paraview) - to adapt.
-    // Note that the XML file for the ParaView plug-in specification needs to be
-    // edited accordingly.
-    vtkSetMacro(SomeIntegerArgument, int);
-    vtkGetMacro(SomeIntegerArgument, int);
+    vtkSetMacro(Threshold, int);
+    vtkGetMacro(Threshold, int);
    
-    vtkSetMacro(SomeDoubleArgument, double);
-    vtkGetMacro(SomeDoubleArgument, double);
-    
-    vtkSetMacro(SomeOption, bool);
-    vtkGetMacro(SomeOption, bool);
-    
     vtkSetMacro(ScalarField, std::string);
     vtkGetMacro(ScalarField, std::string);
-    // end of TODO-4
 
-    // TODO-2
     // Over-ride the input types.
-    // By default, this filter has one input and one output, of the same type.
-    // Here, you can re-define the input types, on a per input basis.
-    // In this example, the first input type is forced to vtkUnstructuredGrid.
-    // The second input type is forced to vtkImageData.
-//     int FillInputPortInformation(int port, vtkInformation *info) override {
-//       
-//       switch(port){
-//         case 0:
-//           info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkUnstructuredGrid"); 
-//           break;
-//         case 1:
-//           info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkImageData"); 
-//           break;
-//         default:
-//           break;
-//       }
-//       
-//       return 1;
-//     }
-    // end of TODO-2
+    // int FillInputPortInformation(int port, vtkInformation *info) override {
+      
+    //   switch(port){
+    //     case 0:
+    //       info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkUnstructuredGrid"); 
+    //       break;
+    //     case 1:
+    //       info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkImageData"); 
+    //       break;
+    //     default:
+    //       break;
+    //   }
+      
+    //   return 1;
+    // }
     
-    // TODO-3
     // Over-ride the output types.
-    // By default, this filter has one input and one output, of the same type.
-    // Here, you can re-define the output types, on a per output basis.
-    // In this example, the first output type is forced to vtkUnstructuredGrid.
-    // The second output type is forced to vtkImageData.
-//     int FillOutputPortInformation(int port, vtkInformation *info) override {
-//       
-//       switch(port){
-//         case 0:
-//           info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkUnstructuredGrid"); 
-//           break;
-//         case 1:
-//           info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkImageData"); 
-//           break;
-//         default:
-//           break;
-//       }
-//       
-//       return 1;
-//     }
-    // end of TODO-3
+    // int FillOutputPortInformation(int port, vtkInformation *info) override {
+      
+    //   switch(port){
+    //     case 0:
+    //       info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkUnstructuredGrid"); 
+    //       break;
+    //     case 1:
+    //       info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkImageData"); 
+    //       break;
+    //     default:
+    //       break;
+    //   }
+      
+    //   return 1;
+    // }
     
     
   protected:
@@ -137,22 +115,13 @@ class ttkPreprocessStellar
     ttkPreprocessStellar(){
       
         // init
-      SomeIntegerArgument = 1;
-      SomeDoubleArgument = 1;
-      SomeOption = true;
+      Threshold = 1000;
       outputScalarField_ = NULL;
       
       UseAllCores = true;
       ThreadNumber = 1;
       debugLevel_ = 3;
       
-      // TODO-1
-      // Specify the number of input and output ports.
-      // By default, this filter has one input and one output.
-      // In this example, we define 2 inputs and 2 outputs.
-//       SetNumberOfInputPorts(2);
-//       SetNumberOfOutputPorts(2);
-      // end of TODO-1
     }
     
     ~ttkPreprocessStellar(){};
@@ -162,11 +131,10 @@ class ttkPreprocessStellar
     
   private:
     
-    int                   SomeIntegerArgument;
-    double                SomeDoubleArgument;
-    bool                  SomeOption;
+    int                   Threshold;
     std::string           ScalarField;
     vtkDataArray          *outputScalarField_;
+    vector<SimplexId>     *vertexArray, *nodeArray, *cellArray;
     ttk::PreprocessStellar            preprocessStellar_;
     
 };

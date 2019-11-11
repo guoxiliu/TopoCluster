@@ -23,7 +23,7 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
  
   // use a pointer-base copy for the input data -- to adapt if your wrapper does
   // not produce an output of the type of the input.
-  output->ShallowCopy(input);
+  // output->ShallowCopy(input);
   
   // in the following, the target scalar field of the input is replaced in the 
   // variable 'output' with the result of the computation.
@@ -83,12 +83,21 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
     output->GetPointData()->RemoveArray(0);
   }
   output->GetPointData()->AddArray(outputScalarField_);
+
+  vector<SimplexId> *vertexArray = new vector<SimplexId>();
+  vector<SimplexId> *nodeArray = new vector<SimplexId>();
+  vector<SimplexId> *cellArray = new vector<SimplexId>();
+
+  preprocessStellar_.setVerticesPointer(vertexArray);
+  preprocessStellar_.setNodesPointer(nodeArray);
+  preprocessStellar_.setCellsPointer(cellArray);
+  
   
   // calling the executing package
-  preprocessStellar_.setInputDataPointer(inputScalarField->GetVoidPointer(0));
-  preprocessStellar_.setOutputDataPointer(outputScalarField_->GetVoidPointer(0));
+  // preprocessStellar_.setInputDataPointer(inputScalarField->GetVoidPointer(0));
+  // preprocessStellar_.setOutputDataPointer(outputScalarField_->GetVoidPointer(0));
   switch(inputScalarField->GetDataType()){
-    ttkTemplateMacro(preprocessStellar_.execute<VTK_TT>(SomeIntegerArgument));
+    ttkTemplateMacro(preprocessStellar_.execute<VTK_TT>(Threshold));
   }
   
   {

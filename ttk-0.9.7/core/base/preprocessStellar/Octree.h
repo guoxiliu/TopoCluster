@@ -1,7 +1,8 @@
 #include <iostream>
 #include <assert.h>
-#include <unordered_map>
+#include <stack>
 #include <vector>
+#include <unordered_map>
 #include <Triangulation.h>
 
 using namespace ttk;
@@ -90,6 +91,7 @@ class Octree
          * Get the parent node of the current node.
          */ 
         OctreeNode* getParentNode(OctreeNode *node){
+            assert(node->locCode);
             const uint32_t locCodeParent = node->locCode >> 3;
             return lookupNode(locCodeParent);
         }
@@ -97,14 +99,36 @@ class Octree
         /**
          * Traverse the octree from a given node.
          */ 
-        void visitAll(OctreeNode *node){
+        void visitAll(const OctreeNode *node){
+            if(node == nullptr) return;
+            cout << node->locCode << endl;
             for(int i = 0; i < 8; i++){
                 if(node->childExists & (1 << i)){
                     const uint32_t locCodeChild = (node->locCode << 3) | i;
-                    const auto child = lookupNode(locCodeChild);
+                    const OctreeNode *child = lookupNode(locCodeChild);
                     visitAll(child);
                 }
             }
+        }
+
+        /**
+         * Get the total number of vertices in the tree.
+         */
+        int verifyTree(SimplexId &vertexNum){
+            int vertexCount = 0;
+            unordered_map<uint32_t, OctreeNode>::iterator it;
+            for(it = allNodes.begin(); it != allNodes.end(); it++){
+                if(it->second.childExists && it->second.vertexIds){
+                    cout << "[Octree] WRONG! The internal node " << it->second.locCode << " should not contain any vertices!";
+                    return -1;
+                }
+                if(it->second.vertexIds){
+                    vertexCount += it->second.vertexIds->size();
+                }
+            }
+            if(vertexCount != vertexNum)
+                return -1;
+            return 0;
         }
 
         /**
@@ -132,6 +156,8 @@ class Octree
             if(current == nullptr){
                 OctreeNode newnode(location);
                 newnode.vertexIds = new vector<SimplexId>{vertexId};
+                OctreeNode *parent = lookupNode(location >> 3);
+                parent->childExists |= (1 << (location & 7));
                 allNodes[location] = newnode;
             }else{
                 current->vertexIds->push_back(vertexId);
@@ -182,6 +208,59 @@ class Octree
             }
 
             return 0;
+        }
+
+        /**
+         * Get reindexed vertices and cells.
+         */
+        void reindex(vector<SimplexId> *vertices, vector<SimplexId> *nodes, vector<SimplexId> *cells){
+            int totalCells = triangulation_->getNumberOfCells();
+            vector<int> cellTable(totalCells);
+            for(int i = 0; i < totalCells; i++){
+                cellTable[i] = -1;
+            }
+
+            OctreeNode *root = lookupNode(1);
+            int leafCount = 0;
+            int cellCount = 0;
+
+            // use the depth-first search to complete reindexing
+            stack<const OctreeNode*> nodeStack;
+            nodeStack.push(root);
+
+            while(!nodeStack.empty()){
+                const OctreeNode* topNode = nodeStack.top();
+                nodeStack.pop();
+
+                if(topNode == nullptr){
+                    cout << "[Octree] reindex(): shouldn't get here!\n";
+                    break;
+                }
+                if(topNode->childExists){
+                    for(int i = 0; i < 8; i++){
+                        if(topNode->childExists & (1 << i)){
+                            const uint32_t locCodeChild = (topNode->locCode << 3) | i;
+                            const OctreeNode *child = lookupNode(locCodeChild);
+                            nodeStack.push(child);
+                        }
+                    }
+                }else{
+                    vertices->insert(vertices->end(), topNode->vertexIds->begin(), topNode->vertexIds->end());
+                    vector<SimplexId> tmp(topNode->vertexIds->size(), leafCount);
+                    nodes->insert(nodes->end(), tmp.begin(), tmp.end());
+                    leafCount++;
+
+                    if(topNode->cellIds){
+                        for(int id : *(topNode->cellIds)){
+                            if(cellTable[id] == -1){
+                                cellTable[id] = cellCount++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            cells->insert(cells->begin(), std::begin(cellTable), std::end(cellTable));
         }
 
 

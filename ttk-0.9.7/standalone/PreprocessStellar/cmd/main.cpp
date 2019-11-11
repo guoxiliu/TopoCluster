@@ -16,19 +16,13 @@ int main(int argc, char **argv) {
   
   // TODO-1: 
   // specify local parameters to the TTK module with default values.
-  bool someOption = false;
-  int someIntegerArgument = -1;
-  double someDoubleArgument = -1.0;
+  int threshold = -1;
   // end of TODO-1
 
   // TODO-2:
   // register these arguments to the command line parser
-  program.parser_.setArgument("D", &someDoubleArgument,
-    "Some optional double argument", true);
-  program.parser_.setArgument("I", &someIntegerArgument,
-    "Some optional integer argument", true);
-  program.parser_.setOption("O", &someOption,
-    "Some option to enable or disable");
+  program.parser_.setArgument("I", &threshold,
+    "Bucket threshold", true);
   // end of TODO-2
   
   int ret = 0;
@@ -40,9 +34,7 @@ int main(int argc, char **argv) {
   // TODO-3:
   // change here the arguments of the vtkWrapper that you want to update prior
   // to execution.
-  program.ttkObject_->SetSomeIntegerArgument(someIntegerArgument);
-  program.ttkObject_->SetSomeDoubleArgument(someDoubleArgument);
-  program.ttkObject_->SetSomeOption(someOption);
+  program.ttkObject_->SetThreshold(threshold);
   // end of TODO-3
   
   // execute data processing

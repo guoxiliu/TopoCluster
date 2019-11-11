@@ -22,19 +22,21 @@ namespace ttk{
       
       ~PreprocessStellar();
 
-      /// Execute the package.
       template <class dataType>
         int execute(const int &argument) const;
     
-      /// Pass a pointer to an input array representing a scalarfield.
-      inline int setInputDataPointer(void *data){
-        inputData_ = data;
+      inline int setVerticesPointer(void *data){
+        vertices = data;
         return 0;
       }
 
-      /// Pass a pointer to an output array representing a scalar field.
-      inline int setOutputDataPointer(void *data){
-        outputData_ = data;
+      inline int setNodesPointer(void *data){
+        nodes = data;
+        return 0;
+      }
+
+      inline int setCellsPointer(void *data){
+        cells = data;
         return 0;
       }
      
@@ -52,7 +54,7 @@ namespace ttk{
     
     protected:
     
-      void                  *inputData_, *outputData_;
+      void                  *vertices, *nodes, *cells;
       Triangulation         *triangulation_;
   };
 }
@@ -62,44 +64,51 @@ namespace ttk{
 template <class dataType> int ttk::PreprocessStellar::execute(
   const int &argument) const{
 
+  cout << "Inside execute function!\n";
+
   Timer t;
   
   // check the consistency of the variables -- to adapt
 #ifndef TTK_ENABLE_KAMIKAZE
   if(!triangulation_)
     return -1;
-  if(!inputData_)
+  if(!vertices)
     return -2;
-  if(!outputData_)
+  if(!nodes)
     return -3;
+  if(!cells)
+    return -4;
 #endif
 
-  dataType *outputData = (dataType *) outputData_;
-  dataType *inputData = (dataType *) inputData_;
-  
   SimplexId vertexNumber = triangulation_->getNumberOfVertices();
   SimplexId cellNumber = triangulation_->getNumberOfCells();
 
-  cout << "Number of vertices: " << vertexNumber << endl;
-  // init the output -- to adapt
-  for(SimplexId i = 0; i < vertexNumber; i++){
-    outputData[i] = inputData[i];
-  }
-  
   // the following open-mp processing is only relevant for embarrassingly 
   // parallel algorithms (such as smoothing) -- to adapt
 #ifdef TTK_ENABLE_OPENMP
 #pragma omp parallel for num_threads(threadNumber_) 
 #endif
 
-  Octree preOctree(triangulation_, 1000);
+  // create the octree
+  Octree preOctree(triangulation_, argument);
   for(SimplexId i = 0; i < vertexNumber; i++){
     preOctree.insertVertex(i);
   }
+
+  preOctree.verifyTree(vertexNumber);
+
+  // SimplexId testCell = 0;
+  // preOctree.insertCell(testCell);
   for(SimplexId i = 0; i < cellNumber; i++){
     preOctree.insertCell(i);
   }
 
+  std::vector<SimplexId> *vertexVec = static_cast<std::vector<SimplexId>*>(vertices);
+  std::vector<SimplexId> *nodeVec = static_cast<std::vector<SimplexId>*>(nodes);
+  std::vector<SimplexId> *cellVec = static_cast<std::vector<SimplexId>*>(cells);
+  preOctree.reindex(vertexVec, nodeVec, cellVec);
+  std::cout << "[PreprocessStellar] Size of vertexVec: " << vertexVec->size();
+  std::cout << "; Size of cellVec: " << cellVec->size() << std::endl;
 
   {
     std::stringstream msg;
