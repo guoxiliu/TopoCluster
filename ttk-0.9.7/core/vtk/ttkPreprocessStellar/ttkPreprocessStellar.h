@@ -20,22 +20,22 @@
 #pragma once
 
 // VTK includes -- to adapt
-#include                  <vtkCharArray.h>
-#include                  <vtkDataArray.h>
-#include                  <vtkDataSet.h>
-#include                  <vtkDataSetAlgorithm.h>
-#include                  <vtkDoubleArray.h>
-#include                  <vtkFiltersCoreModule.h>
-#include                  <vtkFloatArray.h>
-#include                  <vtkInformation.h>
-#include                  <vtkIntArray.h>
-#include                  <vtkObjectFactory.h>
-#include                  <vtkPointData.h>
-#include                  <vtkSmartPointer.h>
+#include <vtkCharArray.h>
+#include <vtkDataArray.h>
+#include <vtkDataSet.h>
+#include <vtkDataSetAlgorithm.h>
+#include <vtkDoubleArray.h>
+#include <vtkFiltersCoreModule.h>
+#include <vtkFloatArray.h>
+#include <vtkInformation.h>
+#include <vtkIntArray.h>
+#include <vtkObjectFactory.h>
+#include <vtkPointData.h>
+#include <vtkSmartPointer.h>
 
 // ttk code includes
-#include                  <PreprocessStellar.h>
-#include                  <ttkWrapper.h>
+#include <PreprocessStellar.h>
+#include <ttkWrapper.h>
 
 // in this example, this wrapper takes a data-set on the input and produces a 
 // data-set on the output - to adapt.
@@ -67,47 +67,33 @@ class ttkPreprocessStellar
     // end of default ttk setters
     
         
-    // set-getters macros to define from each variable you want to access from 
-    // the outside (in particular from paraview) - to adapt.
+    // set-getters macros for threshold parameter.
     vtkSetMacro(Threshold, int);
     vtkGetMacro(Threshold, int);
-   
-    vtkSetMacro(ScalarField, std::string);
-    vtkGetMacro(ScalarField, std::string);
 
     // Over-ride the input types.
-    // int FillInputPortInformation(int port, vtkInformation *info) override {
+    int FillInputPortInformation(int port, vtkInformation *info){
       
-    //   switch(port){
-    //     case 0:
-    //       info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkUnstructuredGrid"); 
-    //       break;
-    //     case 1:
-    //       info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkImageData"); 
-    //       break;
-    //     default:
-    //       break;
-    //   }
+      switch(port){
+        case 0:
+          info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkUnstructuredGrid"); 
+          break;
+      }
       
-    //   return 1;
-    // }
+      return 1;
+    }
     
     // Over-ride the output types.
-    // int FillOutputPortInformation(int port, vtkInformation *info) override {
+    int FillOutputPortInformation(int port, vtkInformation *info){
       
-    //   switch(port){
-    //     case 0:
-    //       info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkUnstructuredGrid"); 
-    //       break;
-    //     case 1:
-    //       info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkImageData"); 
-    //       break;
-    //     default:
-    //       break;
-    //   }
+      switch(port){
+        case 0:
+          info->Set(vtkDataObject::DATA_TYPE_NAME(), "vtkUnstructuredGrid"); 
+          break;
+      }
       
-    //   return 1;
-    // }
+      return 1;
+    }
     
     
   protected:
@@ -116,12 +102,13 @@ class ttkPreprocessStellar
       
         // init
       Threshold = 1000;
-      outputScalarField_ = NULL;
       
       UseAllCores = true;
       ThreadNumber = 1;
       debugLevel_ = 3;
-      
+
+      SetNumberOfInputPorts(1);
+      SetNumberOfOutputPorts(1);
     }
     
     ~ttkPreprocessStellar(){};
@@ -131,10 +118,7 @@ class ttkPreprocessStellar
     
   private:
     
-    int                   Threshold;
-    std::string           ScalarField;
-    vtkDataArray          *outputScalarField_;
-    vector<SimplexId>     *vertexArray, *nodeArray, *cellArray;
-    ttk::PreprocessStellar            preprocessStellar_;
-    
+    int Threshold;
+    ttk::PreprocessStellar preprocessStellar_;
+    vector<SimplexId> *vertexArray, *nodeArray, *cellArray;
 };

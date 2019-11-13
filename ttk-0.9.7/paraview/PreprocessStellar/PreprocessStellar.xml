@@ -24,33 +24,11 @@
         <DataTypeDomain name="input_type">
           <DataType value="vtkDataSet"/>
         </DataTypeDomain>
-        <InputArrayDomain name="input_scalars" number_of_components="1">
-          <Property name="Input" function="FieldDataSelection" />
-        </InputArrayDomain>
         <Documentation>
           Data-set to process.
         </Documentation>
       </InputProperty>
 
-      <StringVectorProperty
-        name="ScalarField"
-        command="SetScalarField"
-        number_of_elements="1"
-        animateable="0"
-        label="Scalar Field"
-        >
-        <ArrayListDomain
-          name="array_list"
-          default_values="0">
-          <RequiredProperties>
-            <Property name="Input" function="Input" />
-          </RequiredProperties>
-        </ArrayListDomain>
-        <Documentation>
-          Select the scalar field to process.
-        </Documentation>
-      </StringVectorProperty>
-      
       <IntVectorProperty
          name="Threshold"
          label="Bucket thresdhold"
@@ -104,10 +82,6 @@
          </Documentation>
       </IntVectorProperty>
       
-      <PropertyGroup panel_widget="Line" label="Input options">
-        <Property name="ScalarField" />
-      </PropertyGroup>
-     
       <PropertyGroup panel_widget="Line" label="Output options">
         <Property name="Threshold" />
       </PropertyGroup>

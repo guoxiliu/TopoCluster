@@ -38,7 +38,7 @@ class Octree
             Octree(t, 1000);
         }
 
-        Octree(Triangulation *t, uint32_t k){
+        Octree(Triangulation *t, int k){
             OctreeNode root(1);
 //            cout << "root location code: " << root.locCode << endl;
             allNodes[1] = root;
@@ -267,7 +267,7 @@ class Octree
     private:
         Triangulation *triangulation_;
         unordered_map<uint32_t, OctreeNode> allNodes;
-        uint32_t capacity;
+        int capacity;
         float center[3];
         float size[3];
 

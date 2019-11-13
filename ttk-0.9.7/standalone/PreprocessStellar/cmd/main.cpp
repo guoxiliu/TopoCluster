@@ -4,8 +4,8 @@
 /// \brief dummy program example.
 
 // include the local headers
-#include                  <ttkPreprocessStellar.h>
-#include                  <ttkProgramBase.h>
+#include <ttkPreprocessStellar.h>
+#include <ttkProgramBase.h>
 
 using namespace std;
 using namespace ttk;
@@ -14,16 +14,9 @@ int main(int argc, char **argv) {
 
   vtkProgram<ttkPreprocessStellar> program;
   
-  // TODO-1: 
-  // specify local parameters to the TTK module with default values.
-  int threshold = -1;
-  // end of TODO-1
+  int capacity = 1000;
 
-  // TODO-2:
-  // register these arguments to the command line parser
-  program.parser_.setArgument("I", &threshold,
-    "Bucket threshold", true);
-  // end of TODO-2
+  program.parser_.setArgument("c", &capacity, "Bucket capacity", true);
   
   int ret = 0;
   ret = program.init(argc, argv);
@@ -31,23 +24,14 @@ int main(int argc, char **argv) {
   if(ret != 0)
     return ret;
 
-  // TODO-3:
-  // change here the arguments of the vtkWrapper that you want to update prior
-  // to execution.
-  program.ttkObject_->SetThreshold(threshold);
-  // end of TODO-3
+  program.ttkObject_->SetThreshold(capacity);
   
-  // execute data processing
   ret = program.run();
   
   if(ret != 0)
     return ret;
  
-  // save the output
-  // optional TODO-4:
-  // if you want a different kind of output, re-implement the function save().
   ret = program.save();
-  /// end of optional TODO-4
   
   return ret;
 }
