@@ -40,7 +40,6 @@ class Octree
 
         Octree(Triangulation *t, int k){
             OctreeNode root(1);
-//            cout << "root location code: " << root.locCode << endl;
             allNodes[1] = root;
             capacity = k;
             triangulation_ = t;
@@ -126,8 +125,11 @@ class Octree
                     vertexCount += it->second.vertexIds->size();
                 }
             }
-            if(vertexCount != vertexNum)
+            if(vertexCount != vertexNum){
+                cerr << "The number of vertices in the tree is " << vertexCount << ", which is not equal to " << vertexNum << endl;
                 return -1;
+            }
+            
             return 0;
         }
 
@@ -141,13 +143,9 @@ class Octree
             
             OctreeNode *current = lookupNode(1);
             uint32_t location = current->locCode;
-            float ncenter[3], nsize[3];
-            for(int i = 0; i < 3; i++){
-                ncenter[i] = center[i];
-                nsize[i] = size[i];
-            }
+            float ncenter[3]={0.0}, nsize[3]={0.0};
             
-            while(current != nullptr && current->childExists){
+            while(current != nullptr && current->childExists != 0){
                 computeCenterSize(location, ncenter, nsize);
                 location = getChildLocation(location, vertexId, ncenter);
                 current = lookupNode(location);
@@ -175,21 +173,17 @@ class Octree
                 return -1;
             }
 
-            int i, j;
+            int dim = triangulation_->getCellVertexNumber(cellId);
             uint32_t location;
-            float ncenter[3], nsize[3];
-            for(i = 0; i < 3; i++){
+            float ncenter[3]={0.0}, nsize[3]={0.0};
+            for(int i = 0; i < dim; i++){
                 SimplexId vertexId;
                 OctreeNode *current = lookupNode(1);
 
-                for(j = 0; j < 3; j++){
-                    ncenter[j] = center[j];
-                    nsize[j] = size[j];
-                }
                 location = current->locCode;
                 triangulation_->getCellVertex(cellId, i, vertexId);
 
-                if(current != nullptr && current->childExists){
+                while(current != nullptr && current->childExists != 0){
                     computeCenterSize(location, ncenter, nsize);
                     location = getChildLocation(location, vertexId, ncenter);
                     current = lookupNode(location);
@@ -215,10 +209,7 @@ class Octree
          */
         void reindex(vector<SimplexId> *vertices, vector<SimplexId> *nodes, vector<SimplexId> *cells){
             int totalCells = triangulation_->getNumberOfCells();
-            vector<int> cellTable(totalCells);
-            for(int i = 0; i < totalCells; i++){
-                cellTable[i] = -1;
-            }
+            vector<int> cellMap(totalCells, -1);
 
             OctreeNode *root = lookupNode(1);
             int leafCount = 0;
@@ -233,7 +224,7 @@ class Octree
                 nodeStack.pop();
 
                 if(topNode == nullptr){
-                    cout << "[Octree] reindex(): shouldn't get here!\n";
+                    cerr << "[Octree] reindex(): shouldn't get here!\n";
                     break;
                 }
                 if(topNode->childExists){
@@ -251,16 +242,23 @@ class Octree
                     leafCount++;
 
                     if(topNode->cellIds){
-                        for(int id : *(topNode->cellIds)){
-                            if(cellTable[id] == -1){
-                                cellTable[id] = cellCount++;
+                        for(auto it = topNode->cellIds->begin(); it != topNode->cellIds->end(); it++){
+                            if(cellMap[*it] == -1){
+                                cellMap[*it] = cellCount++;
                             }
                         }
                     }
                 }
             }
 
-            cells->insert(cells->begin(), std::begin(cellTable), std::end(cellTable));
+            int count = 0;
+            for(int i = 0; i < totalCells; i++){
+                if(cellMap[i] == -1){
+                    count++;
+                }
+                cells->push_back(cellMap[i]);
+            }
+            cout << "[Octree] reindex(): There are " << count << " wrong entries!\n";
         }
 
 
@@ -282,17 +280,24 @@ class Octree
 
 
         /**
-         * Computer the center and size with given location code.
+         * Compute the center and size with given location code.
          * Note: initialize two arrays before calling this function!
          */ 
         void computeCenterSize(uint32_t location, float centerArr[3], float sizeArr[3]){
-            uint32_t tmp = location, leftmost = 0;
+            int leftmost = 0;
+            uint32_t tmp = location;
             while(tmp >>= 1){
                 leftmost++;
             }
             if(leftmost % 3 != 0){
-                cerr << "computerCenterSize(): the location seems not correct!\n";
+                cerr << "computeCenterSize(): the location seems not correct!\n";
                 return;
+            }
+
+            // initialize the center and size arrays
+            for(int i = 0; i < 3; i++){
+                centerArr[i] = center[i];
+                sizeArr[i] = size[i];
             }
 
             uint32_t mask;
@@ -360,15 +365,9 @@ class Octree
             if(node == nullptr)
                 return;
 
-            if(node->vertexIds->size() > capacity){
+            if((int)node->vertexIds->size() > capacity){
                 uint32_t childCode = 0;
-                float ncenter[3], nsize[3];
-
-                // initialize the center and size arrays
-                for(int i = 0; i < 3; i++){
-                    ncenter[i] = center[i];
-                    nsize[i] = size[i];
-                }
+                float ncenter[3]={0.0}, nsize[3]={0.0};
 
                 computeCenterSize(node->locCode, ncenter, nsize);
 
@@ -389,7 +388,7 @@ class Octree
                 delete node->vertexIds;
                 node->vertexIds = nullptr;
 
-                for(int i = 0; i < 8; i++){
+                for(uint32_t i = 0; i < 8; i++){
                     if(node->childExists & (1 << i)){
                         subdivide(lookupNode((node->locCode << 3) | i));
                     }

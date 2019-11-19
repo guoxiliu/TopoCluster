@@ -48,12 +48,13 @@ int ttk::PreprocessStellar::execute(
     preOctree.insertVertex(i);
   }
 
-  preOctree.verifyTree(vertexNumber);
-
-  // SimplexId testCell = 0;
-  // preOctree.insertCell(testCell);
   for(SimplexId i = 0; i < cellNumber; i++){
     preOctree.insertCell(i);
+  }
+
+  if(preOctree.verifyTree(vertexNumber)){
+    cerr << "[PreprocessStellar] The construction of the tree failed!\n";
+    return -1;
   }
 
   std::vector<SimplexId> *vertexVec = static_cast<std::vector<SimplexId>*>(vertices);

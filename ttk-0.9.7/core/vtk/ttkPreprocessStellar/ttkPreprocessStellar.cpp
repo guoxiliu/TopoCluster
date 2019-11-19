@@ -31,10 +31,11 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
   preprocessStellar_.setNodesPointer(nodeArray);
   preprocessStellar_.setCellsPointer(cellArray);
   
-  preprocessStellar_.execute(Threshold);
+  if(preprocessStellar_.execute(Threshold)){
+    return -1;
+  }
 
   vector<SimplexId> vertexMap(vertexArray->size());
-
   vtkUnstructuredGrid* outputMesh = vtkUnstructuredGrid::SafeDownCast(outputs[0]);
 
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -43,38 +44,40 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
   indices->SetNumberOfComponents(1);
   indices->SetName("_index");
 
-  for(int i = 0; i < vertexArray->size(); i++){
-      float x, y, z;
-      triangulation->getVertexPoint(vertexArray->at(i), x, y, z);
-      points->InsertNextPoint(x, y, z);
-      vertexMap[vertexArray->at(i)] = i;
-      indices->InsertNextTuple1(nodeArray->at(i));
+  // insert the vertices in the output mesh
+  for(unsigned int i = 0; i < vertexArray->size(); i++){
+    float x, y, z;
+    triangulation->getVertexPoint(vertexArray->at(i), x, y, z);
+    points->InsertNextPoint(x, y, z);
+    vertexMap[vertexArray->at(i)] = i;
+    indices->InsertNextTuple1(nodeArray->at(i));
   }
   outputMesh->SetPoints(points);
 
   vtkPointData *pointData = outputMesh->GetPointData();
   pointData->AddArray(indices);
 
+  // insert the cells in the output mesh
   outputMesh->Allocate(cellArray->size());
-  int dimension = triangulation->getCellVertexNumber(cellArray->at(0));
-  for(int i = 0; i < cellArray->size(); i++){
-      vtkIdType cell[dimension];
-      for(int j = 0; j < dimension; j++){
-          SimplexId  vertexId;
-          triangulation->getCellVertex(cellArray->at(i), j, vertexId);
-          cell[j] = vertexMap[vertexId];
-      }
-      if(dimension == 2){
-          outputMesh->InsertNextCell(VTK_LINE, 2, cell);
-      }else if(dimension == 3){
-          outputMesh->InsertNextCell(VTK_TRIANGLE, 3, cell);
-      }else if(dimension == 4){
-          outputMesh->InsertNextCell(VTK_TETRA, 4, cell);
-      }else{
-          cerr << "Should not get here!\n";
-      }
-  }
+  int dimension = triangulation->getCellVertexNumber(0);
 
+  for(unsigned int i = 0; i < cellArray->size(); i++){
+    vtkIdType cell[dimension];
+    for(int j = 0; j < dimension; j++){
+        SimplexId  vertexId;
+        triangulation->getCellVertex(cellArray->at(i), j, vertexId);
+        cell[j] = vertexMap[vertexId];
+    }
+    if(dimension == 2){
+        outputMesh->InsertNextCell(VTK_LINE, 2, cell);
+    }else if(dimension == 3){
+        outputMesh->InsertNextCell(VTK_TRIANGLE, 3, cell);
+    }else if(dimension == 4){
+        outputMesh->InsertNextCell(VTK_TETRA, 4, cell);
+    }else{
+        cerr << "[ttkPreprocessStellar] Should not get here!\n";
+    }
+  }
 
 
   {
