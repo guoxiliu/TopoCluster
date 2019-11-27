@@ -71,6 +71,11 @@ class ttkPreprocessStellar
     vtkSetMacro(Threshold, int);
     vtkGetMacro(Threshold, int);
 
+    void SetScalarField(string name){
+        scalarFields.push_back(name);
+        Modified();
+    }
+
     // Over-ride the input types.
     int FillInputPortInformation(int port, vtkInformation *info){
       
@@ -120,5 +125,5 @@ class ttkPreprocessStellar
     
     int Threshold;
     ttk::PreprocessStellar preprocessStellar_;
-    vector<SimplexId> *vertexArray, *nodeArray, *cellArray;
+    vector<string> scalarFields;
 };

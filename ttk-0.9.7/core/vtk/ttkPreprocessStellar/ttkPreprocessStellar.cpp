@@ -8,10 +8,8 @@ vtkStandardNewMacro(ttkPreprocessStellar)
 int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> &outputs){
 
   Memory m;
-  
-  // vtkUnstructuredGrid *input = vtkUnstructuredGrid::SafeDownCast(inputs[0]);
+
   vtkDataSet *input = inputs[0];
-  // vtkUnstructuredGrid *output = vtkUnstructuredGrid::SafeDownCast(outputs[0]);;
   
   Triangulation *triangulation = ttkTriangulation::getTriangulation(input);
  
@@ -57,6 +55,44 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
   vtkPointData *pointData = outputMesh->GetPointData();
   pointData->AddArray(indices);
 
+
+
+  for(auto name : scalarFields){
+    vtkDataArray* inputScalars_ = input->GetPointData()->GetArray(name.data());
+    vtkDataArray* newField;
+
+      switch(inputScalars_->GetDataType()){
+
+          case VTK_CHAR:
+              newField = vtkCharArray::New();
+              break;
+
+          case VTK_DOUBLE:
+              newField = vtkDoubleArray::New();
+              break;
+
+          case VTK_FLOAT:
+              newField = vtkFloatArray::New();
+              break;
+
+          case VTK_INT:
+              newField = vtkIntArray::New();
+              break;
+
+          case VTK_ID_TYPE:
+              newField = vtkIdTypeArray::New();
+              break;
+
+      }
+
+    newField->DeepCopy(inputScalars_);
+    for(int i=0; i<vertexArray->size(); i++){
+        newField->SetTuple1(i, inputScalars_->GetTuple1(vertexArray->at(i)));
+    }
+
+    pointData->AddArray(newField);
+  }
+
   // insert the cells in the output mesh
   outputMesh->Allocate(cellArray->size());
   int dimension = triangulation->getCellVertexNumber(0);
@@ -78,6 +114,8 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
         cerr << "[ttkPreprocessStellar] Should not get here!\n";
     }
   }
+
+  scalarFields.clear();
 
 
   {

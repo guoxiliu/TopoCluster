@@ -24,10 +24,30 @@
         <DataTypeDomain name="input_type">
           <DataType value="vtkDataSet"/>
         </DataTypeDomain>
+         <InputArrayDomain name="input_scalars" number_of_components="1">
+             <Property name="Input" function="FieldDataSelection" />
+         </InputArrayDomain>
         <Documentation>
           Data-set to process.
         </Documentation>
       </InputProperty>
+
+       <StringVectorProperty name="SelectedFields"
+                             command="SetScalarField"
+                             element_types="2 0"
+                             information_property="CellArrayInfo"
+                             label="Fields"
+                             number_of_elements="2"
+                             number_of_elements_per_command="1"
+                             repeat_command="1">
+           <ArrayListDomain name="array_list"
+                            attribute_type="Scalars"
+                            input_domain_name="inputs_array">
+               <RequiredProperties>
+                   <Property name="Input" function="Input" />
+               </RequiredProperties>
+           </ArrayListDomain>
+       </StringVectorProperty>
 
       <IntVectorProperty
          name="Threshold"
