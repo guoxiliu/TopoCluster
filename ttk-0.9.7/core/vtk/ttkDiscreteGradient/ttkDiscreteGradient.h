@@ -137,4 +137,6 @@ class ttkDiscreteGradient
     bool hasUpdatedMesh_;
 };
 
+
+
 #endif // _TTK_DISCRETEGRADIENT_H
