@@ -63,31 +63,31 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
 
       switch(inputScalars_->GetDataType()){
 
-          case VTK_CHAR:
-              newField = vtkCharArray::New();
-              break;
+        case VTK_CHAR:
+          newField = vtkCharArray::New();
+          break;
 
-          case VTK_DOUBLE:
-              newField = vtkDoubleArray::New();
-              break;
+        case VTK_DOUBLE:
+          newField = vtkDoubleArray::New();
+          break;
 
-          case VTK_FLOAT:
-              newField = vtkFloatArray::New();
-              break;
+        case VTK_FLOAT:
+          newField = vtkFloatArray::New();
+          break;
 
-          case VTK_INT:
-              newField = vtkIntArray::New();
-              break;
+        case VTK_INT:
+          newField = vtkIntArray::New();
+          break;
 
-          case VTK_ID_TYPE:
-              newField = vtkIdTypeArray::New();
-              break;
+        case VTK_ID_TYPE:
+          newField = vtkIdTypeArray::New();
+          break;
 
       }
 
     newField->DeepCopy(inputScalars_);
     for(int i=0; i<vertexArray->size(); i++){
-        newField->SetTuple1(i, inputScalars_->GetTuple1(vertexArray->at(i)));
+      newField->SetTuple1(i, inputScalars_->GetTuple1(vertexArray->at(i)));
     }
 
     pointData->AddArray(newField);
@@ -100,18 +100,18 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
   for(unsigned int i = 0; i < cellArray->size(); i++){
     vtkIdType cell[dimension];
     for(int j = 0; j < dimension; j++){
-        SimplexId  vertexId;
-        triangulation->getCellVertex(cellArray->at(i), j, vertexId);
-        cell[j] = vertexMap[vertexId];
+      SimplexId  vertexId;
+      triangulation->getCellVertex(cellArray->at(i), j, vertexId);
+      cell[j] = vertexMap[vertexId];
     }
     if(dimension == 2){
-        outputMesh->InsertNextCell(VTK_LINE, 2, cell);
+      outputMesh->InsertNextCell(VTK_LINE, 2, cell);
     }else if(dimension == 3){
-        outputMesh->InsertNextCell(VTK_TRIANGLE, 3, cell);
+      outputMesh->InsertNextCell(VTK_TRIANGLE, 3, cell);
     }else if(dimension == 4){
-        outputMesh->InsertNextCell(VTK_TETRA, 4, cell);
+      outputMesh->InsertNextCell(VTK_TETRA, 4, cell);
     }else{
-        cerr << "[ttkPreprocessStellar] Should not get here!\n";
+      cerr << "[ttkPreprocessStellar] Should not get here!\n";
     }
   }
 

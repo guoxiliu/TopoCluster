@@ -1,7 +1,7 @@
 /// \ingroup vtk
 /// \class ttkPreprocessStellar
-/// \author Your Name Here <Your Email Address Here>
-/// \date The Date Here.
+/// \author Guoxi Liu <guoxil@g.clemson.edu>
+/// \date Nov. 2019.
 ///
 /// \brief TTK VTK-filter that wraps the preprocessStellar processing package.
 ///
