@@ -60,6 +60,7 @@
 #include                  <vtkInformation.h>
 #include                  <vtkInformationVector.h>
 #include                  <vtkObjectFactory.h>
+#include                  <vtkPointData.h>
 #include                  <vtkPolyData.h>
 #include                  <vtkSmartPointer.h>
 #include                  <vtkUnstructuredGrid.h>

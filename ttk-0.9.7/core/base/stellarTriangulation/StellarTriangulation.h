@@ -15,11 +15,6 @@
 
 // base code includes
 #include                  <AbstractTriangulation.h>
-#include                  <OneSkeleton.h>
-#include                  <ThreeSkeleton.h>
-#include                  <TwoSkeleton.h>
-#include                  <ZeroSkeleton.h>
-
 
 namespace ttk{
   
@@ -44,13 +39,14 @@ namespace ttk{
         return 0;
       }
 
-      inline int setInputPoints(const SimplexId &pointNumber, const void *pointSet, const bool &doublePrecision = false){
+      inline int setInputPoints(const SimplexId &pointNumber, const void *pointSet, const int *indexArray, const bool &doublePrecision = false){
 
         if(vertexNumber_)
             clear();
 
         vertexNumber_ = pointNumber;
         pointSet_ = pointSet;
+        indices = indexArray;
         doublePrecision_ = doublePrecision;
         return 0;
       }
@@ -596,6 +592,7 @@ namespace ttk{
       bool                doublePrecision_;
       SimplexId           cellNumber_, vertexNumber_;
       const void          *pointSet_;
+      const int           *indices;
       const LongSimplexId *cellArray_;
 
   };

@@ -37,6 +37,7 @@
 
 // base code includes
 #include                  <AbstractTriangulation.h>
+#include                  <ExplicitTriangulation.h>
 #include                  <ImplicitTriangulation.h>
 #include                  <StellarTriangulation.h>
 
@@ -3036,6 +3037,7 @@ namespace ttk{
       inline int setDebugLevel(const int &debugLevel){
         explicitTriangulation_.setDebugLevel(debugLevel);
         implicitTriangulation_.setDebugLevel(debugLevel);
+        stellarTriangulation_.setDebugLevel(debugLevel);
         debugLevel_ = debugLevel;
         return 0;
       }
@@ -3067,6 +3069,15 @@ namespace ttk{
         gridDimensions_[0] = gridDimensions_[1] = gridDimensions_[2] = -1;
         
         return explicitTriangulation_.setInputCells(cellNumber, cellArray);
+      }
+
+      inline int setStellarInputCells(const SimplexId &cellNumber,
+        const LongSimplexId *cellArray){
+        
+        abstractTriangulation_ = &stellarTriangulation_;
+        gridDimensions_[0] = gridDimensions_[1] = gridDimensions_[2] = -1;
+        
+        return stellarTriangulation_.setInputCells(cellNumber, cellArray);
       }
       
       /// Set the specifications of the input grid to implicitly represent as a
@@ -3132,10 +3143,20 @@ namespace ttk{
           pointNumber, pointSet, doublePrecision);
       }
 
+      inline int setStellarInputPoints(const SimplexId &pointNumber, const void *pointSet,
+        const int *indexArray, const bool &doublePrecision = false){
+        
+        abstractTriangulation_ = &stellarTriangulation_;
+        gridDimensions_[0] = gridDimensions_[1] = gridDimensions_[2] = -1;
+        return stellarTriangulation_.setInputPoints(
+          pointNumber, pointSet, indexArray, doublePrecision);
+      }
+
       /// Tune the number of active threads (default: number of logical cores)
       inline int setThreadNumber(const ThreadId &threadNumber){
         explicitTriangulation_.setThreadNumber(threadNumber);
         implicitTriangulation_.setThreadNumber(threadNumber);
+        stellarTriangulation_.setThreadNumber(threadNumber);
         threadNumber_ = threadNumber;
         return 0;
       }
@@ -3145,6 +3166,7 @@ namespace ttk{
       inline int setWrapper(const Wrapper *wrapper){
         explicitTriangulation_.setWrapper(wrapper);
         implicitTriangulation_.setWrapper(wrapper);
+        stellarTriangulation_.setWrapper(wrapper);
         return 0;
       }
       
@@ -3165,10 +3187,12 @@ namespace ttk{
       
       AbstractTriangulation
                           *abstractTriangulation_;
-      StellarTriangulation
+      ExplicitTriangulation
                           explicitTriangulation_;
       ImplicitTriangulation
                           implicitTriangulation_;
+      StellarTriangulation
+                          stellarTriangulation_;
   };
 }
 

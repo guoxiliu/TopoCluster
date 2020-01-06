@@ -1,5 +1,5 @@
 ttk_add_base_library(triangulation
 	SOURCES Triangulation.cpp
 	HEADERS Triangulation.h
-	LINK abstractTriangulation stellarTriangulation implicitTriangulation)
+	LINK abstractTriangulation explicitTriangulation implicitTriangulation stellarTriangulation)
 
