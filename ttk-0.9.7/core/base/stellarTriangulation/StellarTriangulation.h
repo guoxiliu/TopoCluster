@@ -16,6 +16,11 @@
 // base code includes
 #include                  <AbstractTriangulation.h>
 
+#define VERTEX_ID 0
+#define EDGE_ID 1
+#define TRIANGLE_ID 2
+
+using namespace std;
 namespace ttk{
   
   class StellarTriangulation : public AbstractTriangulation{
@@ -36,18 +41,30 @@ namespace ttk{
         cellNumber_ = cellNumber;
         cellArray_ = cellArray;
 
+        // TODO: initialize the array of cell intervals
+
         return 0;
       }
 
-      inline int setInputPoints(const SimplexId &pointNumber, const void *pointSet, const int *indexArray, const bool &doublePrecision = false){
+      inline int setInputPoints(const SimplexId &pointNumber, const void *pointSet, 
+        const int *indexArray, const bool &doublePrecision = false){
 
         if(vertexNumber_)
             clear();
 
         vertexNumber_ = pointNumber;
         pointSet_ = pointSet;
-        indices = indexArray;
         doublePrecision_ = doublePrecision;
+
+        // initialize the array of vertex intervals
+        SimplexId vid = 1;
+        for(; vid < pointNumber; vid++){
+          if(indexArray[vid] != indexArray[vid-1]){
+            vertexIntervals_.push_back(vid-1);
+          }
+        }
+        vertexIntervals_.push_back(vid-1);
+
         return 0;
       }
 
@@ -93,17 +110,35 @@ namespace ttk{
         return dummyPointer;
       }
       
-      int getCellVertex(const SimplexId &cellId,
+      inline int getCellVertex(const SimplexId &cellId,
         const int &localVertexId, SimplexId &vertexId) const{
+#ifndef TTK_ENABLE_KAMIKAZE
+        if((cellId < 0)||(cellId >= cellNumber_))
+          return -1;
+        if((localVertexId < 0)
+          ||(localVertexId >= cellArray_[0]))
+          return -2;
+#endif
+        vertexId = cellArray_[(cellArray_[0] + 1)*cellId + localVertexId + 1];
         return 0;
       }
     
-      SimplexId getCellVertexNumber(const SimplexId &cellId) const{
-        return 0;
+      inline SimplexId getCellVertexNumber(const SimplexId &cellId) const{
+#ifndef TTK_ENABLE_KAMIKAZE
+        if((cellId < 0)||(cellId >= cellNumber_))
+          return -1;
+        if((!cellArray_)||(!cellNumber_))
+          return -2;
+#endif
+        return cellArray_[0];
       }
         
-      int getDimensionality() const{
-        return 0;
+      inline int getDimensionality() const{
+        if((cellArray_)&&(cellNumber_)){
+          return cellArray_[0] - 1;
+        }
+        
+        return -1;
       }
       
       const std::vector<std::pair<SimplexId, SimplexId> > *getEdges(){
@@ -158,9 +193,7 @@ namespace ttk{
         return 0;
       }
       
-      SimplexId getNumberOfCells() const{
-        return 0;
-      }
+      inline SimplexId getNumberOfCells() const { return cellNumber_; }
       
       SimplexId getNumberOfEdges() const{
         return 0;
@@ -170,9 +203,7 @@ namespace ttk{
         return 0;
       }
       
-      SimplexId getNumberOfVertices() const{
-        return 0;
-      }
+      SimplexId getNumberOfVertices() const { return vertexNumber_; }
       
       const std::vector<std::vector<SimplexId> > *getTriangles(){
         std::vector<std::vector<SimplexId>> *dummyPointer= new std::vector<std::vector<SimplexId>>();
@@ -270,6 +301,23 @@ namespace ttk{
       
       int getVertexPoint(const SimplexId &vertexId,
         float &x, float &y, float &z) const{
+        
+#ifndef TTK_ENABLE_KAMIKAZE
+        if((vertexId < 0)||(vertexId >= vertexNumber_))
+          return -1;
+#endif
+        
+        if(doublePrecision_){
+          x = ((double *) pointSet_)[3*vertexId];
+          y = ((double *) pointSet_)[3*vertexId + 1];
+          z = ((double *) pointSet_)[3*vertexId + 2];
+        }
+        else{
+          x = ((float *) pointSet_)[3*vertexId];
+          y = ((float *) pointSet_)[3*vertexId + 1];
+          z = ((float *) pointSet_)[3*vertexId + 2];
+        }
+      
         return 0;
       }
         
@@ -502,97 +550,46 @@ namespace ttk{
         return 0;
       }
 
+      
     protected:
-      
-      // empty wrapping to VTK for now
-      bool needsToAbort(){ return false;};
-      
-      template <class itemType>
-        size_t tableFootprint(const std::vector<itemType> &table,
-          const std::string tableName = "", 
-          std::stringstream *msg = NULL) const{
-        
-        if((table.size())&&(tableName.length())&&(msg)){
-          (*msg) << "[AbstractTriangulation] " << tableName << ": "
-            << table.size()*sizeof(itemType) << " bytes" << std::endl;
-        }
-            
-        return table.size()*sizeof(itemType);
-      }
-      
-      template <class itemType>
-        size_t tableTableFootprint(
-          const std::vector<std::vector<itemType> > &table,
-          const std::string tableName = "", 
-          std::stringstream *msg = NULL) const;
-      
-      int updateProgress(const float &progress) {return 0;};
-      
-      bool                hasPreprocessedBoundaryEdges_,
-                          hasPreprocessedBoundaryTriangles_,
-                          hasPreprocessedBoundaryVertices_,
-                          hasPreprocessedCellEdges_,
-                          hasPreprocessedCellNeighbors_,
-                          hasPreprocessedCellTriangles_,
-                          hasPreprocessedEdges_,
-                          hasPreprocessedEdgeLinks_,
-                          hasPreprocessedEdgeStars_,
-                          hasPreprocessedEdgeTriangles_,
-                          hasPreprocessedTriangles_,
-                          hasPreprocessedTriangleEdges_,
-                          hasPreprocessedTriangleLinks_,
-                          hasPreprocessedTriangleStars_,
-                          hasPreprocessedVertexEdges_,
-                          hasPreprocessedVertexLinks_,
-                          hasPreprocessedVertexNeighbors_,
-                          hasPreprocessedVertexStars_,
-                          hasPreprocessedVertexTriangles_;
-      
-      std::vector<bool>   boundaryEdges_,
-                          boundaryTriangles_,
-                          boundaryVertices_;
-      std::vector<std::vector<SimplexId> > 
-                          cellEdgeList_;
-      std::vector<std::vector<SimplexId> >
-                          cellNeighborList_;
-      std::vector<std::vector<SimplexId> > 
-                          cellTriangleList_;
-      std::vector<std::vector<SimplexId> >
-                          edgeLinkList_;
-      std::vector<std::pair<SimplexId, SimplexId> >
-                          edgeList_;
-      std::vector<std::vector<SimplexId> >
-                          edgeStarList_;
-      std::vector<std::vector<SimplexId> >
-                          edgeTriangleList_;
-      std::vector<std::vector<SimplexId> >
-                          triangleList_;
-      std::vector<std::vector<SimplexId> > 
-                          triangleEdgeList_;
-      std::vector<std::vector<SimplexId> >
-                          triangleLinkList_;
-      std::vector<std::vector<SimplexId> >
-                          triangleStarList_;
-      std::vector<std::vector<SimplexId> > 
-                          vertexEdgeList_;
-      std::vector<std::vector<SimplexId> >
-                          vertexLinkList_;
-      std::vector<std::vector<SimplexId> > 
-                          vertexNeighborList_;
-      std::vector<std::vector<SimplexId> >
-                          vertexStarList_;
-      std::vector<std::vector<SimplexId> >
-                          vertexTriangleList_;
-
-
-  protected:
 
       int clear();
 
+      // Find the corresponding node index given the id.
+      int findNodeIndex(int id, int idType) const{
+          const vector<SimplexId> *intervals = NULL;
+          // determine which vector to search
+          if(idType == VERTEX_ID){
+              intervals = &vertexIntervals_;
+          }else if(idType == EDGE_ID){
+              intervals = &edgeIntervals_;
+          }else if(idType == TRIANGLE_ID){
+              intervals = &cellIntervals_;
+          }else{
+              return -1;
+          }
+
+          // use binary search to find the first element that is greater than or equal to the given id
+          int low = 0, high = intervals->size()-1;
+          while(low <= high){
+              int mid = low + (high-low)/2;
+              if(intervals->at(mid) == id){
+                  return mid;
+              }else if(intervals->at(mid) < id){
+                  low = mid + 1;
+              }else{
+                  high = mid - 1;
+              }
+          }
+          return low;
+      }
+      
       bool                doublePrecision_;
       SimplexId           cellNumber_, vertexNumber_;
       const void          *pointSet_;
-      const int           *indices;
+      vector<SimplexId>   vertexIntervals_;
+      vector<SimplexId>   edgeIntervals_;
+      vector<SimplexId>   cellIntervals_;
       const LongSimplexId *cellArray_;
 
   };
