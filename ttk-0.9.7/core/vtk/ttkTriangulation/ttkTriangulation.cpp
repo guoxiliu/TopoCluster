@@ -196,10 +196,9 @@ int ttkTriangulation::setInputData(vtkDataSet* dataSet){
   if(!triangulation_){
     allocate();
   }
-  
-  vtkAbstractArray *indexArray = dataSet->GetPointData()->GetAbstractArray("_index");
 
-  if(indexArray == nullptr){
+  // the input data set does not contain an array named "_index"
+  if(!dataSet->GetPointData()->HasArray("_index")){
     if((dataSet->GetDataObjectType() == VTK_UNSTRUCTURED_GRID)){
       
       if(((vtkUnstructuredGrid *) dataSet)->GetPoints()){
@@ -310,6 +309,8 @@ int ttkTriangulation::setInputData(vtkDataSet* dataSet){
     return 0;
   }
 
+  // the input data set contains an array named "_index"
+  vtkAbstractArray *indexArray = dataSet->GetPointData()->GetAbstractArray("_index");
   if((dataSet->GetDataObjectType() == VTK_UNSTRUCTURED_GRID)){
     
     if(((vtkUnstructuredGrid *) dataSet)->GetPoints()){

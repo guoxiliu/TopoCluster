@@ -14,6 +14,7 @@
 #pragma once
 
 // base code includes
+#include                  <algorithm>
 #include                  <AbstractTriangulation.h>
 
 #define VERTEX_ID 0
@@ -41,7 +42,33 @@ namespace ttk{
         cellNumber_ = cellNumber;
         cellArray_ = cellArray;
 
+        if((!cellArray_)||(!cellNumber_))
+          return -1;
+        
         // TODO: initialize the array of cell intervals
+        SimplexId nodeNum = 0, cid = 0;
+        for(; cid < cellNumber; cid++){
+          bool included = false;
+          for(int j = 0; j < cellArray[0]; j++){
+            SimplexId vid = cellArray[(cellArray[0] + 1)*cid + j + 1];
+            SimplexId prev = nodeNum > 0 ? vertexIntervals_[nodeNum-1] : -1;
+            if(vid > prev && vid <= vertexIntervals_[nodeNum]){
+              included = true;
+              break;
+            }
+          }
+          if(!included){
+            cellIntervals_.push_back(cid-1);
+            nodeNum++;
+          }
+        }
+        cellIntervals_.push_back(cid-1);
+        
+        // TEST: print out the cell intervals
+        cout << "Cell intervals: \n";
+        for(size_t i = 0; i < cellIntervals_.size(); i++){
+          cout << i << ": " << cellIntervals_[i] << endl;
+        }
 
         return 0;
       }
@@ -64,6 +91,12 @@ namespace ttk{
           }
         }
         vertexIntervals_.push_back(vid-1);
+
+        // TEST: print out the vertex intervals
+        cout << "Vertex intervals:\n";
+        for(size_t i = 0; i < vertexIntervals_.size(); i++){
+          cout << i << ": " << vertexIntervals_[i] << endl;
+        }
 
         return 0;
       }
@@ -476,7 +509,57 @@ namespace ttk{
       }
       
       int preprocessEdges(){
-        hasPreprocessedEdges_ = true;
+
+#ifndef TTK_ENABLE_KAMIKAZE
+        if(!cellArray_)
+          return -1;
+#endif
+
+        SimplexId tmpVertexId, verticesPerCell = cellArray_[0];
+        vector<vector<SimplexId>> edgeTable(vertexNumber_);
+        for(SimplexId i = 0; i < cellNumber_; i++){
+          pair<SimplexId, SimplexId> edgeIds;
+          SimplexId cellId = (verticesPerCell + 1) * i;
+          for(SimplexId j = 0; j < verticesPerCell-1; j++){
+            for(SimplexId k = j+1; k < verticesPerCell; k++){
+              edgeIds.first = cellArray_[cellId + j + 1];
+              edgeIds.second = cellArray_[cellId + k + 1];
+
+              if(edgeIds.first > edgeIds.second){
+                tmpVertexId = edgeIds.first;
+                edgeIds.first = edgeIds.second;
+                edgeIds.second = tmpVertexId;
+              }
+
+              bool hasFound = false;
+              for(SimplexId l = 0; l < (SimplexId) edgeTable[edgeIds.first].size(); l++){
+                if(edgeIds.second == edgeTable[edgeIds.first][l]){
+                  hasFound = true;
+                  break;
+                }
+              }
+              if(!hasFound){
+                edgeTable[edgeIds.first].push_back(edgeIds.second);
+              }
+            }
+          }
+        }
+
+        SimplexId edgeCount = 0;
+        for(SimplexId i = 0; i < (SimplexId) edgeTable[i].size(); i++){
+          edgeCount += edgeTable[i].size();
+        }
+        edgeList_.resize(edgeCount);
+
+        edgeCount = 0;
+        for(SimplexId i = 0; i < (SimplexId) edgeTable.size(); i++){
+          for(SimplexId j = 0; j < (SimplexId) edgeTable[i].size(); j++){
+            edgeList_[edgeCount].first = i;
+            edgeList_[edgeCount].second = edgeTable[i][j];
+            edgeCount++;
+          }
+        }
+
         return 0;
       }
       
@@ -500,7 +583,49 @@ namespace ttk{
       }
       
       int preprocessTriangles(){
-        hasPreprocessedTriangles_ = true;
+
+#ifndef TTK_ENABLE_KAMIKAZE
+        if(vertexNumber_ <= 0)
+          return -1;
+        if(cellNumber_ <= 0)
+          return -2;
+        if(!cellArray_)
+          return -3;
+#endif
+
+        if(triangleList_.size()){
+          triangleList_.clear();
+          triangleList_.reserve(9*vertexNumber_);
+        }
+
+        SimplexId triangleNum = 0;
+        vector<vector<pair<vector<SimplexId>, SimplexId>>> triangleTable(vertexNumber_);
+        for(SimplexId i = 0; i < cellNumber_; i++){
+          vector<SimplexId> triangle(3);
+          for(int j = 0; j < 4; j++){
+            for(int k = 0; k < 3; k++){
+              triangle[k] = cellArray_[5*i + 1 + (j + k) % 4];
+            }
+            sort(triangle.begin(), triangle.end());
+
+            SimplexId triangleId = -1;
+            for(SimplexId k = 0; k < (SimplexId) triangleTable[triangle[0]].size(); k++){
+              if(triangleTable[triangle[0]][k].first[1] == triangle[1] && triangleTable[triangle[0]][k].first[2] == triangle[2]){
+                triangleId = triangleTable[triangle[0]][k].second;
+                break;
+              }
+            }
+
+            if(triangleId == -1){
+              triangleId = triangleNum;
+              triangleTable[triangle[0]].push_back(make_pair(triangle, triangleNum));
+              triangleNum++;
+            }
+
+            triangleList_.push_back(triangle);
+          }
+        }
+
         return 0;
       }
       
@@ -589,6 +714,7 @@ namespace ttk{
       const void          *pointSet_;
       vector<SimplexId>   vertexIntervals_;
       vector<SimplexId>   edgeIntervals_;
+      vector<SimplexId>   triangleIntervals_;
       vector<SimplexId>   cellIntervals_;
       const LongSimplexId *cellArray_;
 
