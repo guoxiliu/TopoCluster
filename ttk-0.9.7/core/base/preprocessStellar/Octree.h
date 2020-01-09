@@ -254,11 +254,12 @@ class Octree
       }
 
       int count = 0;
+      cells->resize(totalCells);
       for(int i = 0; i < totalCells; i++){
         if(cellMap[i] == -1){
           count++;
         }
-        cells->push_back(cellMap[i]);
+        cells->at(cellMap[i]) = i;
       }
       cout << "[Octree] reindex(): There are " << count << " wrong entries!\n";
     }

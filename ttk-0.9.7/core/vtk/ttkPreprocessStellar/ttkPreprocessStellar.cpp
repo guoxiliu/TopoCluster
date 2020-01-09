@@ -43,7 +43,7 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
   indices->SetName("_index");
 
   // insert the vertices in the output mesh
-  for(unsigned int i = 0; i < vertexArray->size(); i++){
+  for(size_t i = 0; i < vertexArray->size(); i++){
     float x, y, z;
     triangulation->getVertexPoint(vertexArray->at(i), x, y, z);
     points->InsertNextPoint(x, y, z);
@@ -86,7 +86,7 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
       }
 
     newField->DeepCopy(inputScalars_);
-    for(int i=0; i<vertexArray->size(); i++){
+    for(size_t i=0; i<vertexArray->size(); i++){
       newField->SetTuple1(i, inputScalars_->GetTuple1(vertexArray->at(i)));
     }
 
