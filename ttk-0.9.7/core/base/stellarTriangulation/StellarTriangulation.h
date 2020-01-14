@@ -237,8 +237,20 @@ namespace ttk{
       }
       
       const vector<pair<SimplexId, SimplexId> > *getEdges(){
-        vector<pair<SimplexId, SimplexId>> *dummyPointer= new vector<pair<SimplexId, SimplexId>>();
-        return dummyPointer;
+        edgeList_.resize(edgeIntervals_.back()+1);
+        SimplexId edgeCount = 0;
+        for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
+          vector<vector<SimplexId>> localInternalEdgeTable, localExternalEdgeTable;
+          buildEdgeTable(nid, localInternalEdgeTable, localExternalEdgeTable);
+          for(SimplexId i = 0; i < (SimplexId) localInternalEdgeTable.size(); i++){
+            for(SimplexId j = 0; j < (SimplexId) localExternalEdgeTable.size(); j++){
+              edgeList_[edgeCount].first = i;
+              edgeList_[edgeCount].second = j;
+              edgeCount++;
+            }
+          }
+        }
+        return &edgeList_;
       }
         
       int getEdgeLink(const SimplexId &edgeId, 
@@ -326,7 +338,7 @@ namespace ttk{
             return -1;
         #endif
 
-        return edgeIntervals_.back();
+        return edgeIntervals_.back()+1;
       }
       
       SimplexId getNumberOfTriangles() const{
@@ -936,20 +948,20 @@ namespace ttk{
                     externalEdgeTable[localVertexId].push_back(edgeIds.second);
                   }
                 }
-                else if(edgeIds.first <= vertexIntervals_[nodeId]){
-                  bool hasFound = false;
-                  SimplexId localVertexId = edgeIds.first-vertexIntervals_[nodeId-1]-1;
-                  for(SimplexId l = 0; l < (SimplexId) internalEdgeTable[localVertexId].size(); l++){
-                    if(edgeIds.second == internalEdgeTable[localVertexId][l]){
-                      hasFound = true;
-                      break;
-                    }
+              }
+              else if(edgeIds.first <= vertexIntervals_[nodeId]){
+                bool hasFound = false;
+                SimplexId localVertexId = edgeIds.first-vertexIntervals_[nodeId-1]-1;
+                for(SimplexId l = 0; l < (SimplexId) internalEdgeTable[localVertexId].size(); l++){
+                  if(edgeIds.second == internalEdgeTable[localVertexId][l]){
+                    hasFound = true;
+                    break;
                   }
-                  // not found in the edge table - assign new edge id
-                  if(!hasFound){
-                    internalEdgeTable[localVertexId].push_back(edgeIds.second);
-                    edgeCount++;
-                  }
+                }
+                // not found in the edge table - assign new edge id
+                if(!hasFound){
+                  internalEdgeTable[localVertexId].push_back(edgeIds.second);
+                  edgeCount++;
                 }
               }
             }
