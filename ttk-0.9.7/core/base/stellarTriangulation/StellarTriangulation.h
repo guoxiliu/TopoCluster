@@ -554,28 +554,50 @@ namespace ttk{
         SimplexId &starId) const{
         
         #ifndef TTK_ENABLE_KAMIKAZE
-          if((vertexId < 0)||(vertexId >= (SimplexId) vertexStarList_.size()))
+          if((vertexId < 0)||(vertexId >= vertexNumber_))
             return -1;
-          if((localStarId < 0)
-            ||(localStarId >= (SimplexId) vertexStarList_[vertexId].size()))
+          if(localStarId < 0)
             return -2;
         #endif
 
-        starId = vertexStarList_[vertexId][localStarId];
-        return 0;
+        SimplexId nid = findNodeIndex(vertexId, VERTEX_ID);
+        vector<vector<SimplexId>> localVertexStars;
+        if(!getVertexStars(nid, localVertexStars)){
+          SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
+          if(localStarId >= (SimplexId) localVertexStars[localVertexId].size())
+            return -2;
+          starId = localVertexStars[localVertexId][localStarId];
+          return 0;
+        }
+
+
+        return -3;
       }
       
       SimplexId getVertexStarNumber(const SimplexId &vertexId) const{
 
         #ifndef TTK_ENABLE_KAMIKAZE
-          if((vertexId < 0)||(vertexId >= (SimplexId) vertexStarList_.size()))
+          if((vertexId < 0)||(vertexId >= vertexNumber_))
             return -1;
         #endif
 
-        return vertexStarList_[vertexId].size();
+        SimplexId nid = findNodeIndex(vertexId, VERTEX_ID);
+        vector<vector<SimplexId>> localVertexStars;
+        if(!getVertexStars(nid, localVertexStars)){
+          return localVertexStars[vertexId-vertexIntervals_[nid-1]-1].size();
+        }
+        return -2;
       }
       
       const vector<vector<SimplexId> > *getVertexStars(){
+        vertexStarList_.resize(vertexNumber_);
+        for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
+          vector<vector<SimplexId>> localVertexStars;
+          getVertexStars(nid, localVertexStars);
+          for(SimplexId i = 0; i < (SimplexId) localVertexStars.size(); i++){
+            vertexStarList_[vertexIntervals_[nid-1]+1+i] = localVertexStars[i];
+          }
+        }
         return &vertexStarList_;
       }
       
@@ -778,6 +800,15 @@ namespace ttk{
             return -4;
         #endif
 
+        // build triangle interval list
+        if(!triangleIntervals_.size()){
+          triangleIntervals_.resize(nodeNumber_+1);
+          triangleIntervals_[0] = -1;
+          for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
+
+          }
+        }
+
         return 0;
       }
       
@@ -846,7 +877,9 @@ namespace ttk{
 
       int clear();
 
-      // Find the corresponding node index given the id.
+      /**
+       * Find the corresponding node index given the id.
+       */ 
       SimplexId findNodeIndex(SimplexId id, int idType) const{
           const vector<SimplexId> *intervals = NULL;
           // determine which vector to search
@@ -875,7 +908,9 @@ namespace ttk{
           return low;
       }
 
-      // Build the whole edge list and return the number of edges in the node.
+      /** 
+       * Build the whole edge list and return the number of edges in the node.
+       */ 
       SimplexId buildEdgeTable(SimplexId nodeId, vector<vector<SimplexId>> &internalEdgeTable,
         vector<vector<SimplexId>> &externalEdgeTable) const{
 
@@ -885,7 +920,7 @@ namespace ttk{
         externalEdgeTable = vector<vector<SimplexId>>(vertexIntervals_[nodeId]-vertexIntervals_[nodeId-1]);
 
         // loop through the internal cell list
-        for(SimplexId cid = cellIntervals_[nodeId-1]; cid < cellIntervals_[nodeId]; cid++){
+        for(SimplexId cid = cellIntervals_[nodeId-1]+1; cid <= cellIntervals_[nodeId]; cid++){
           pair<SimplexId, SimplexId> edgeIds;
           SimplexId cellId = (verticesPerCell + 1) * cid;
 
@@ -971,8 +1006,10 @@ namespace ttk{
         return edgeCount;
       }
 
-      // Get the edge id given a pair of vertex ids.
-      // Need to make sure the pair is sorted.
+      /**
+       * Get the edge id given a pair of vertex ids.
+       * Note: make sure the passed pair is sorted.
+       */
       SimplexId getEdgeId(pair<SimplexId, SimplexId> &edgePair) const{
         SimplexId nid = findNodeIndex(edgePair.first, VERTEX_ID);
         vector<vector<SimplexId>> localInternalEdgeTable, localExternalEdgeTable;
@@ -992,7 +1029,43 @@ namespace ttk{
 
         return -1;
       }
+
       
+      /** 
+       * Get the vertex stars for all the vertices in a given node. 
+       * The function is kind of like getVertexCells().
+       */ 
+      int getVertexStars(SimplexId nodeId, vector<vector<SimplexId>> &vertexStars) const{
+
+        #ifndef TTK_ENABLE_KAMIKAZE
+          if(nodeId <= 0 && nodeId > nodeNumber_)
+            return -1;
+        #endif
+
+        vertexStars = vector<vector<SimplexId>>(vertexIntervals_[nodeId]-vertexIntervals_[nodeId-1]);
+        // loop through the internal cell list
+        for(SimplexId cid = cellIntervals_[nodeId-1]+1; cid <= cellIntervals_[nodeId]; cid++){
+          SimplexId cellId = (cellArray_[0]+1) * cid;
+          for(SimplexId j = 0; j < cellArray_[0]; j++){
+            // see if it is in the current node
+            if(cellArray_[cellId+j+1] > vertexIntervals_[nodeId-1] && cellArray_[cellId+j+1] <= vertexIntervals_[nodeId])
+              vertexStars[cellArray_[cellId+j+1]-vertexIntervals_[nodeId-1]-1].push_back(cid);
+          }
+        }
+
+        // and also external cell list
+        for(SimplexId cid : externalCells_[nodeId]){
+          SimplexId cellId = (cellArray_[0]+1) * cid;
+          for(SimplexId j = 0; j < cellArray_[0]; j++){
+            // see if it is in the current node
+            if(cellArray_[cellId+j+1] > vertexIntervals_[nodeId-1] && cellArray_[cellId+j+1] <= vertexIntervals_[nodeId])
+              vertexStars[cellArray_[cellId+j+1]-vertexIntervals_[nodeId-1]-1].push_back(cid);
+          }
+        }
+
+        return 0;
+      }
+
 
       bool                doublePrecision_;
       SimplexId           cellNumber_, vertexNumber_, nodeNumber_;
@@ -1002,7 +1075,6 @@ namespace ttk{
       vector<SimplexId>   triangleIntervals_;
       vector<SimplexId>   cellIntervals_;
       const LongSimplexId *cellArray_;
-      vector<vector<SimplexId>> externalTriangles_;
       vector<vector<SimplexId>> externalCells_;
   };
 }
