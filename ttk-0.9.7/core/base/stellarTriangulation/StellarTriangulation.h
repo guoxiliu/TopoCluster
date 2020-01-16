@@ -805,7 +805,9 @@ namespace ttk{
           triangleIntervals_.resize(nodeNumber_+1);
           triangleIntervals_[0] = -1;
           for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-
+            vector<vector<SimplexId>> localInternalTriangleList, localExternalTriangleList;
+            SimplexId triangleNum = buildTriangleList(nid, localInternalTriangleList, localExternalTriangleList);
+            triangleIntervals_[nid] = triangleIntervals_[nid-1] + triangleNum;
           }
         }
 
@@ -964,27 +966,8 @@ namespace ttk{
               edgeIds.first = cellArray_[cellId + j + 1];
               edgeIds.second = cellArray_[cellId + k + 1];
               
-              // if the first vertex of the edge is in the previous node
-              if(edgeIds.first <= vertexIntervals_[nodeId-1]){
-                // and the second vertex is in the current node
-                if(edgeIds.second > vertexIntervals_[nodeId-1] && edgeIds.second <= vertexIntervals_[nodeId]){
-                  // search the edge table to see if the edge has already existed
-                  bool hasFound = false;
-                  SimplexId localVertexId = edgeIds.second-vertexIntervals_[nodeId-1]-1;
-                  for(SimplexId l = 0; l < (SimplexId) externalEdgeTable[localVertexId].size(); l++){
-                    if(edgeIds.second == externalEdgeTable[localVertexId][l]){
-                      hasFound = true;
-                      break;
-                    }
-                  }
-                  // not found in the edge table
-                  if(!hasFound){
-                    // no need to increase the edge count cuz it has been counted in the previous node
-                    externalEdgeTable[localVertexId].push_back(edgeIds.second);
-                  }
-                }
-              }
-              else if(edgeIds.first <= vertexIntervals_[nodeId]){
+              // the edge is in the current node
+              if(edgeIds.first > vertexIntervals_[nodeId-1] && edgeIds.first <= vertexIntervals_[nodeId]){
                 bool hasFound = false;
                 SimplexId localVertexId = edgeIds.first-vertexIntervals_[nodeId-1]-1;
                 for(SimplexId l = 0; l < (SimplexId) internalEdgeTable[localVertexId].size(); l++){
@@ -993,10 +976,25 @@ namespace ttk{
                     break;
                   }
                 }
-                // not found in the edge table - assign new edge id
                 if(!hasFound){
                   internalEdgeTable[localVertexId].push_back(edgeIds.second);
                   edgeCount++;
+                }
+              }
+              // the edge is a bridge between two nodes
+              else if(edgeIds.second > vertexIntervals_[nodeId-1] && edgeIds.second <= vertexIntervals_[nodeId]){
+                bool hasFound = false;
+                SimplexId localVertexId = edgeIds.second-vertexIntervals_[nodeId-1]-1;
+                for(SimplexId l = 0; l < (SimplexId) externalEdgeTable[localVertexId].size(); l++){
+                  if(edgeIds.first == externalEdgeTable[localVertexId][l]){
+                    hasFound = true;
+                    break;
+                  }
+                }
+                // not found in the edge table
+                if(!hasFound){
+                  // no need to increase the edge count cuz it has been counted in the previous node
+                  externalEdgeTable[localVertexId].push_back(edgeIds.first);
                 }
               }
             }
@@ -1064,6 +1062,97 @@ namespace ttk{
         }
 
         return 0;
+      }
+
+      /**
+       * Build the whole triangle list and return the number of triangles in the node.
+       */
+      int buildTriangleList(SimplexId nodeId, vector<vector<SimplexId>> &internalTriangleList,
+        vector<vector<SimplexId>> &externalTriangleList) const{
+        
+        SimplexId triangleCount = 0, verticesPerCell = cellArray_[0];
+        SimplexId localVertexCount = vertexIntervals_[nodeId]-vertexIntervals_[nodeId-1];
+        internalTriangleList.reserve(9 * localVertexCount);
+        externalTriangleList.reserve(9 * localVertexCount);
+        vector<vector<vector<SimplexId>>> triangleTable(localVertexCount);
+
+        // loop through the internal cell list
+        for(SimplexId cid = cellIntervals_[nodeId-1]+1; cid <= cellIntervals_[nodeId]; cid++){
+          vector<SimplexId> triangleIds(3);
+          SimplexId cellId = (verticesPerCell + 1) * cid;
+
+          // loop through each triangle of the cell
+          for(SimplexId j = 0; j < verticesPerCell-2; j++){
+            triangleIds[0] = cellArray_[cellId + j + 1];
+            // the triangle does not belong to the current node
+            if(triangleIds[0] > vertexIntervals_[nodeId]){
+              break;
+            }
+            for(SimplexId k = j+1; k < verticesPerCell-1; k++){
+              for(SimplexId l = k+1; l < verticesPerCell-2; l++){
+                triangleIds[1] = cellArray_[cellId + k + 1];
+                triangleIds[2] = cellArray_[cellId + l + 1];
+                
+                // search the triangle table to see if the triangle has already existed
+                bool hasFound = false;
+                SimplexId localVertexId = triangleIds[0]-vertexIntervals_[nodeId-1]-1;
+                for(SimplexId t = 0; t < (SimplexId) triangleTable[localVertexId].size(); t++){
+                  if(triangleIds == triangleTable[localVertexId][t]){
+                    hasFound = true;
+                    break;
+                  }
+                }
+
+                // not found in the triangle table - assign new triangle id
+                if(!hasFound){
+                  triangleTable[localVertexId].push_back(triangleIds);
+                  triangleCount++;
+                }
+              }
+            }
+          }
+        }
+
+        // loop through the external cell list
+        for(SimplexId cid : externalCells_[nodeId]){
+          vector<SimplexId> triangleIds(3);
+          SimplexId cellId = (verticesPerCell + 1) * cid;
+
+          // loop through each triangle of the cell
+          for(SimplexId j = 0; j < verticesPerCell-2; j++){
+            for(SimplexId k = j+1; k < verticesPerCell-1; k++){
+              for(SimplexId l = k+1; l < verticesPerCell-2; l++){
+                triangleIds[0] = cellArray_[cellId + j + 1];
+                triangleIds[1] = cellArray_[cellId + k + 1];
+                triangleIds[2] = cellArray_[cellId + l + 1];
+
+                for(SimplexId v = 0; v < 3; v++){
+                  if(triangleIds[v] > vertexIntervals_[nodeId-1] && triangleIds[v] <= vertexIntervals_[nodeId]){
+                    bool hasFound = false;
+                    SimplexId localVertexId = triangleIds[v]-vertexIntervals_[nodeId-1]-1;
+                    for(SimplexId t = 0; t < (SimplexId) triangleTable[localVertexId].size(); t++){
+                      if(triangleTable[localVertexId][t] == triangleIds){
+                        hasFound = true;
+                        break;
+                      }
+                      if(!hasFound){
+                        if(v == 0){
+                          internalTriangleList.push_back(triangleIds);
+                          triangleCount++;
+                        }else{
+                          externalTriangleList.push_back(triangleIds);
+                        }
+                      }
+                    }
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        return triangleCount;
       }
 
 
