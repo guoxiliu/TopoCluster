@@ -17,6 +17,8 @@
 #include                  <algorithm>
 #include                  <AbstractTriangulation.h>
 
+#include                  <set>
+
 #define VERTEX_ID 0
 #define EDGE_ID 1
 #define TRIANGLE_ID 2
@@ -328,6 +330,18 @@ namespace ttk{
      
       int getEdgeTriangle(const SimplexId &edgeId, 
         const int &localTriangleId, SimplexId &triangleId) const{
+
+            if(getDimensionality() == 2){
+                getEdgeStar(edgeId,localTriangleId,triangleId);
+            }
+            else{
+                SimplexId nodeId = findNodeIndex(edgeId,EDGE_ID);
+                vector<vector<SimplexId> > edgeTriangles;
+                getEdgeTriangles(nodeId, edgeTriangles);
+
+                triangleId = edgeTriangles[edgeId - edgeIntervals_[nodeId-1]-1][localTriangleId];
+            }
+
         return 0;
       }
         
@@ -1601,6 +1615,147 @@ namespace ttk{
         }
         
         return 0;
+      }
+
+      int getEdgeTriangles(const SimplexId& nodeId, vector<vector<SimplexId> >& edgeTriangles) const{
+
+        #ifndef TTK_ENABLE_KAMIKAZE
+          if(nodeId <= 0 && nodeId > nodeNumber_)
+              return -1;
+        #endif
+
+          edgeTriangles.clear();
+          edgeTriangles = vector<vector<SimplexId> >(edgeIntervals_[nodeId] - edgeIntervals_[nodeId-1],vector<SimplexId>());
+
+          vector<set<SimplexId> > lists = vector<set<SimplexId> >(edgeIntervals_[nodeId] - edgeIntervals_[nodeId-1], set<SimplexId>());
+
+          //here we are working on the list of internal cells
+          for(SimplexId cid = cellIntervals_[nodeId-1]+1; cid <= cellIntervals_[nodeId]; cid++){
+              SimplexId cellId = (cellArray_[0]+1) * cid;
+
+              vector<SimplexId> tetra(4);
+              for(SimplexId j = 0; j < cellArray_[0]; j++){
+                  // see if it is in the current node
+                  tetra[j]=cellArray_[cellId+j+1];
+              }
+
+              vector<SimplexId> triangleNames(4);
+              for(SimplexId j = cellArray_[0]-1; j >= 0; j--){
+                  vector<SimplexId> triangle = tetra;
+                  triangle.erase(triangle.begin()+j);
+                  triangleNames[j] = getTriangleId(triangle);
+              }
+
+              vector<SimplexId> edgeNames(6);
+
+              for(SimplexId j = 0; j < cellArray_[0]; j++) {
+
+                  if (tetra[j] > vertexIntervals_[nodeId - 1] && tetra[j] <= vertexIntervals_[nodeId]) {
+
+                      for (SimplexId k = j + 1; k < cellArray_[0]; k++) {
+
+                          pair<SimplexId, SimplexId> edge(tetra[j], tetra[k]);
+                          SimplexId edgeName = getEdgeId(edge) - edgeIntervals_[nodeId-1]-1;
+
+                          int localIndex = j > 0 ? j+k : k-1;
+
+                          switch(localIndex){
+                              case 0:
+                                  lists[edgeName].insert(triangleNames[0]);
+                                  lists[edgeName].insert(triangleNames[1]);
+                                  break;
+                              case 1:
+                                  lists[edgeName].insert(triangleNames[0]);
+                                  lists[edgeName].insert(triangleNames[2]);
+                                  break;
+                              case 2:
+                                  lists[edgeName].insert(triangleNames[1]);
+                                  lists[edgeName].insert(triangleNames[2]);
+                                  break;
+                              case 3:
+                                  lists[edgeName].insert(triangleNames[0]);
+                                  lists[edgeName].insert(triangleNames[3]);
+                                  break;
+                              case 4:
+                                  lists[edgeName].insert(triangleNames[1]);
+                                  lists[edgeName].insert(triangleNames[3]);
+                                  break;
+                              case 5:
+                                  lists[edgeName].insert(triangleNames[2]);
+                                  lists[edgeName].insert(triangleNames[3]);
+                                  break;
+                          }
+                      }
+                  }
+              }
+          }
+
+          //here we are working on the list of external cells
+          for(auto cid : externalCells_[nodeId]){
+              SimplexId cellId = (cellArray_[0]+1) * cid;
+
+              vector<SimplexId> tetra(4);
+              for(SimplexId j = 0; j < cellArray_[0]; j++){
+                  // see if it is in the current node
+                  tetra[j]=cellArray_[cellId+j+1];
+              }
+
+              vector<SimplexId> triangleNames(4);
+              for(SimplexId j = cellArray_[0]-1; j >= 0; j--){
+                  vector<SimplexId> triangle = tetra;
+                  triangle.erase(triangle.begin()+j);
+                  triangleNames[j] = getTriangleId(triangle);
+              }
+
+              vector<SimplexId> edgeNames(6);
+
+              for(SimplexId j = 0; j < cellArray_[0]; j++) {
+
+                  if (tetra[j] > vertexIntervals_[nodeId - 1] && tetra[j] <= vertexIntervals_[nodeId]) {
+
+                      for (SimplexId k = j + 1; k < cellArray_[0]; k++) {
+
+                          pair<SimplexId, SimplexId> edge(tetra[j], tetra[k]);
+                          SimplexId edgeName = getEdgeId(edge) - edgeIntervals_[nodeId-1]-1;
+
+                          int localIndex = j > 0 ? j+k : k-1;
+
+                          switch(localIndex){
+                              case 0:
+                                  lists[edgeName].insert(triangleNames[0]);
+                                  lists[edgeName].insert(triangleNames[1]);
+                                  break;
+                              case 1:
+                                  lists[edgeName].insert(triangleNames[0]);
+                                  lists[edgeName].insert(triangleNames[2]);
+                                  break;
+                              case 2:
+                                  lists[edgeName].insert(triangleNames[1]);
+                                  lists[edgeName].insert(triangleNames[2]);
+                                  break;
+                              case 3:
+                                  lists[edgeName].insert(triangleNames[0]);
+                                  lists[edgeName].insert(triangleNames[3]);
+                                  break;
+                              case 4:
+                                  lists[edgeName].insert(triangleNames[1]);
+                                  lists[edgeName].insert(triangleNames[3]);
+                                  break;
+                              case 5:
+                                  lists[edgeName].insert(triangleNames[2]);
+                                  lists[edgeName].insert(triangleNames[3]);
+                                  break;
+                          }
+                      }
+                  }
+              }
+          }
+
+          for(int i=0; i<edgeTriangles.size(); i++){
+              edgeTriangles[i].insert(edgeTriangles[i].begin(), lists[i].begin(), lists[i].end());
+          }
+
+          return 0;
       }
 
       
