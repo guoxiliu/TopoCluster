@@ -104,6 +104,7 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
       triangulation->getCellVertex(cellArray->at(i), j, vertexId);
       cell[j] = vertexMap[vertexId];
     }
+    sort(cell, cell+dimension);
     if(dimension == 2){
       outputMesh->InsertNextCell(VTK_LINE, 2, cell);
     }else if(dimension == 3){
