@@ -36,12 +36,6 @@ int ttk::PreprocessStellar::execute(
   SimplexId vertexNumber = triangulation_->getNumberOfVertices();
   SimplexId cellNumber = triangulation_->getNumberOfCells();
 
-  // the following open-mp processing is only relevant for embarrassingly 
-  // parallel algorithms (such as smoothing) -- to adapt
-#ifdef TTK_ENABLE_OPENMP
-#pragma omp parallel for num_threads(threadNumber_) 
-#endif
-
   // create the octree
   Octree preOctree(triangulation_, argument);
   for(SimplexId i = 0; i < vertexNumber; i++){
