@@ -87,7 +87,7 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
 
     newField->DeepCopy(inputScalars_);
     for(size_t i=0; i<vertexArray->size(); i++){
-      newField->SetTuple1(i, inputScalars_->GetTuple1(vertexArray->at(i)));
+      newField->SetTuple(i, inputScalars_->GetTuple(vertexArray->at(i)));
     }
 
     pointData->AddArray(newField);

@@ -16,6 +16,7 @@
 // base code includes
 #include                  <Triangulation.h>
 #include                  <Wrapper.h>
+#include                  <cstdlib>     // for random generator
 
 
 namespace ttk{
@@ -91,6 +92,8 @@ template <class dataType> int ttk::TestStellar::execute() const{
 
   dataType *outputData = (dataType *) outputData_;
   dataType *inputData = (dataType *) inputData_;
+
+  srand(1);   // initialize the seed
   
   SimplexId vertexNumber = triangulation_->getNumberOfVertices();
   SimplexId edgeNumber = triangulation_->getNumberOfEdges();
@@ -100,6 +103,39 @@ template <class dataType> int ttk::TestStellar::execute() const{
   std::cout << "[TestStellar] vertex num: " << vertexNumber << ", edge num: "
     << edgeNumber << ", triangle num: " << triangleNumber << ", cell num: " << 
     cellNumber << std::endl;
+
+  // test vertex edge relationships
+  for(int i = 0; i < 10; i++){
+    SimplexId vertexId = rand() % vertexNumber;
+    SimplexId edgeNum = triangulation_->getVertexEdgeNumber(vertexId);
+    std::cout << "[TestStellar] vertexId: " << vertexId << ", edgeNum: " << edgeNum << std::endl;
+    
+    SimplexId edgeCount = 0;
+    for(SimplexId j = 0; j < edgeNum; j++){
+      SimplexId edgeId;
+      if(!triangulation_->getVertexEdge(vertexId, j, edgeId)){
+        SimplexId edgeVertexId;
+        for(SimplexId k = 0; k < 2; k++){
+          if(!triangulation_->getEdgeVertex(edgeId, k, edgeVertexId)){
+            if(edgeVertexId == vertexId){
+              edgeCount++;
+              break;
+            }
+          }
+          else{
+            std::cout << "[TestStellar] Something wrong in getEdgeVertex()!\n";
+          }
+        }
+      }
+      else{
+        std::cout << "[TestStellar] Something wrong in getVertexEdge()!\n";
+      }
+    }
+    if(edgeCount == edgeNum){
+      std::cout << "[TestStellar] Vertex id " << vertexId << " passed the test!\n";
+    }
+  }
+  
 
   // init the output -- to adapt
   for(SimplexId i = 0; i < vertexNumber; i++){
