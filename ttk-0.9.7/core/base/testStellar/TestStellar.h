@@ -103,40 +103,77 @@ template <class dataType> int ttk::TestStellar::execute() const{
   std::cout << "[TestStellar] vertex num: " << vertexNumber << ", edge num: "
     << edgeNumber << ", triangle num: " << triangleNumber << ", cell num: " << 
     cellNumber << std::endl;
-
+  
   // test vertex edge relationships
+  // for(SimplexId vertexId = 0; vertexId < vertexNumber; vertexId++){
+  // // for each vertex 
+  //   SimplexId edgeNum = triangulation_->getVertexEdgeNumber(vertexId);
+  //   for(SimplexId j = 0; j < edgeNum; j++){
+  //   // for each edge
+  //     SimplexId edgeId;
+  //     if(!triangulation_->getVertexEdge(vertexId, j, edgeId)){
+  //       SimplexId edgeVertexId;
+  //       bool hasFound = false;
+  //       for(SimplexId k = 0; k < 2; k++){
+  //         int result = triangulation_->getEdgeVertex(edgeId, k, edgeVertexId);
+  //         if(!result){
+  //           if(edgeVertexId == vertexId){
+  //             hasFound = true;
+  //             break;
+  //           }
+  //         }
+  //         else{
+  //           std::cout << "[TestStellar] vertexId " << vertexId << ":  Something wrong in getEdgeVertex()! Error code: " << result << "\n";
+  //         }
+  //       }
+  //       if(!hasFound){
+  //         std::cout << "[TestStellar] vertexId " << vertexId << " Cannot find in edge id " << edgeId << "\n";
+  //         triangulation_->getEdgeVertex(edgeId, 0, edgeVertexId);
+  //         std::cout << "edge id " << edgeId <<": " << edgeVertexId << ", ";
+  //         triangulation_->getEdgeVertex(edgeId, 0, edgeVertexId);
+  //         std::cout << edgeVertexId << ".\n";
+  //       }
+  //     }
+  //     else{
+  //       std::cout << "[TestStellar] vertexId " << vertexId << " Something wrong in getVertexEdge()!\n";
+  //     }
+  //   }
+  // }
+
+  // test vertex triangle relationships
   for(SimplexId vertexId = 0; vertexId < vertexNumber; vertexId++){
-    SimplexId edgeNum = triangulation_->getVertexEdgeNumber(vertexId);
-    std::cout << "[TestStellar] vertexId: " << vertexId << ", edgeNum: " << edgeNum;
-    
-    SimplexId edgeCount = 0;
-    for(SimplexId j = 0; j < edgeNum; j++){
-      SimplexId edgeId;
-      if(!triangulation_->getVertexEdge(vertexId, j, edgeId)){
-        SimplexId edgeVertexId;
-        for(SimplexId k = 0; k < 2; k++){
-          int result = triangulation_->getEdgeVertex(edgeId, k, edgeVertexId);
-          if(!result){
-            if(edgeVertexId == vertexId){
-              edgeCount++;
+  // for each vertex 
+    SimplexId triangleNum = triangulation_->getVertexTriangleNumber(vertexId);
+    for(SimplexId j = 0; j < triangleNum; j++){
+    // for each Triangle
+      SimplexId triangleId;
+      int result1 = triangulation_->getVertexTriangle(vertexId, j, triangleId);
+      if(!result1){
+        SimplexId triangleVertexId;
+        bool hasFound = false;
+        for(SimplexId k = 0; k < 3; k++){
+          int result2 = triangulation_->getTriangleVertex(triangleId, k, triangleVertexId);
+          if(!result2){
+            if(triangleVertexId == vertexId){
+              hasFound = true;
               break;
             }
           }
           else{
-            std::cout << " Something wrong in getEdgeVertex()! Error code: " << result << "\n";
+            std::cout << "[TestStellar] vertexId " << vertexId << ":  Something wrong in getTriangleVertex()! Error code: " << result2 << "\n";
           }
+        }
+        if(!hasFound){
+          std::cout << "[TestStellar] vertexId " << vertexId << " Cannot find in Triangle id " << triangleId << "\n";
+          triangulation_->getTriangleVertex(triangleId, 0, triangleVertexId);
+          std::cout << "Triangle id " << triangleId <<": " << triangleVertexId << ", ";
+          triangulation_->getTriangleVertex(triangleId, 0, triangleVertexId);
+          std::cout << triangleVertexId << ".\n";
         }
       }
       else{
-        std::cout << " Something wrong in getVertexEdge()!\n";
+        std::cout << "[TestStellar] vertexId " << vertexId << " Something wrong in getVertexTriangle()! Error code: " << result1 << "\n";
       }
-    }
-    if(edgeCount == edgeNum){
-      std::cout << " passed the test!\n";
-    }
-    else{
-      std::cout << " did not pass the test!\n";
-      break;
     }
   }
   
