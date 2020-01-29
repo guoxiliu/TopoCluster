@@ -56,12 +56,11 @@ namespace ttk{
         SimplexId nodeNum = 1, cid = 0;
         vector<SimplexId> cell;
 
-        // TODO: fix the cell intervals when the bucket threshold is small
-        while(cid < cellNumber){
+        while(nodeNum <= nodeNumber_){
           SimplexId startPos = (cellArray[0]+1)*cid+1;
           cell = vector<SimplexId>(cellArray+startPos, cellArray+startPos+cellArray[0]);
 
-          if(cell[0] > vertexIntervals_[nodeNum]){
+          if(cell[0] > vertexIntervals_[nodeNum] || cid >= cellNumber){
             cellIntervals_[nodeNum++] = cid - 1;
             continue;
           }
@@ -76,9 +75,9 @@ namespace ttk{
               }
             }
           }
-          cid++;
+          if(cid < cellNumber)
+            cid++;
         }
-        cellIntervals_.back() = cid-1;
         
         // TEST: print out the cell intervals
         cout << "[StellarTriangulation] Cell intervals: \n";
@@ -1085,18 +1084,20 @@ namespace ttk{
           }
 
           // use binary search to find the first element that is greater than or equal to the given id
-          SimplexId low = 0, high = intervals->size()-1;
+          SimplexId ans = -1;
+          SimplexId low = 1, high = nodeNumber_;
           while(low <= high){
-              SimplexId mid = low + (high-low)/2;
-              if(intervals->at(mid) == id){
-                  return mid;
-              }else if(intervals->at(mid) < id){
-                  low = mid + 1;
-              }else{
-                  high = mid - 1;
-              }
+            SimplexId mid = low + (high-low)/2;
+            if(intervals->at(mid) == id){
+              return mid;
+            }else if(intervals->at(mid) < id){
+              low = mid + 1;
+            }else{
+              ans = mid;
+              high = mid - 1;
+            }
           }
-          return low;
+          return ans;
       }
 
       /** 
@@ -1167,7 +1168,7 @@ namespace ttk{
               edgeIds.second = cellArray_[cellId + k + 1];
               
               // the edge is in the current node
-              if(internalEdgeList && edgeIds.first > vertexIntervals_[nodeId-1] && edgeIds.first <= vertexIntervals_[nodeId]){
+              if(edgeIds.first > vertexIntervals_[nodeId-1] && edgeIds.first <= vertexIntervals_[nodeId]){
                 if(edgeMap->find(edgeIds) == edgeMap->end()){
                   edgeCount++;
                   (*edgeMap)[edgeIds] = edgeCount+edgeIntervals_[nodeId-1];

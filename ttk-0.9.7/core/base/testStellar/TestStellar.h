@@ -105,10 +105,9 @@ template <class dataType> int ttk::TestStellar::execute() const{
     cellNumber << std::endl;
 
   // test vertex edge relationships
-  for(int i = 0; i < 10; i++){
-    SimplexId vertexId = rand() % vertexNumber;
+  for(SimplexId vertexId = 0; vertexId < vertexNumber; vertexId++){
     SimplexId edgeNum = triangulation_->getVertexEdgeNumber(vertexId);
-    std::cout << "[TestStellar] vertexId: " << vertexId << ", edgeNum: " << edgeNum << std::endl;
+    std::cout << "[TestStellar] vertexId: " << vertexId << ", edgeNum: " << edgeNum;
     
     SimplexId edgeCount = 0;
     for(SimplexId j = 0; j < edgeNum; j++){
@@ -116,23 +115,28 @@ template <class dataType> int ttk::TestStellar::execute() const{
       if(!triangulation_->getVertexEdge(vertexId, j, edgeId)){
         SimplexId edgeVertexId;
         for(SimplexId k = 0; k < 2; k++){
-          if(!triangulation_->getEdgeVertex(edgeId, k, edgeVertexId)){
+          int result = triangulation_->getEdgeVertex(edgeId, k, edgeVertexId);
+          if(!result){
             if(edgeVertexId == vertexId){
               edgeCount++;
               break;
             }
           }
           else{
-            std::cout << "[TestStellar] Something wrong in getEdgeVertex()!\n";
+            std::cout << " Something wrong in getEdgeVertex()! Error code: " << result << "\n";
           }
         }
       }
       else{
-        std::cout << "[TestStellar] Something wrong in getVertexEdge()!\n";
+        std::cout << " Something wrong in getVertexEdge()!\n";
       }
     }
     if(edgeCount == edgeNum){
-      std::cout << "[TestStellar] Vertex id " << vertexId << " passed the test!\n";
+      std::cout << " passed the test!\n";
+    }
+    else{
+      std::cout << " did not pass the test!\n";
+      break;
     }
   }
   
