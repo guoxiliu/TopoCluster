@@ -15,9 +15,11 @@
 
 // base code includes
 #include                  <algorithm>
-#include                  <AbstractTriangulation.h>
 #include                  <set>
 #include                  <map>
+#include                  <list>
+#include                  <unordered_map>
+#include                  <AbstractTriangulation.h>
 
 #define VERTEX_ID 0
 #define EDGE_ID 1
@@ -26,6 +28,78 @@
 
 using namespace std;
 namespace ttk{
+
+  class ExpandedNode
+  {
+  private:
+    /* components */
+    SimplexId nid;
+    vector<pair<SimplexId, SimplexId>> *internalEdgeList_;
+    vector<vector<SimplexId>> *internalTriangleList_;
+    vector<pair<SimplexId, SimplexId>> *externalEdgeList_;
+    vector<vector<SimplexId>> *externalTriangleList_;
+    map<pair<SimplexId, SimplexId>, SimplexId> *internalEdgeMap_;
+    map<vector<SimplexId>, SimplexId> *internalTriangleMap_;
+    /* vertex relationships */
+    vector<vector<SimplexId>> *vertexEdges_;
+    vector<vector<SimplexId>> *vertexTriangles_;
+    vector<vector<SimplexId>> *vertexStars_;
+    vector<vector<SimplexId>> *vertexNeighbors_;
+    /* edge relationships */
+    // edgeVertex relation can be extracted from internal edge list
+    vector<vector<SimplexId>> *edgeTriangles_;
+    vector<vector<SimplexId>> *edgeStars_;
+    /* triangle relationships */
+    // triangleVertex relation can be extracted from internal triangle list
+    vector<vector<SimplexId>> *triangleEdges_;
+    vector<vector<SimplexId>> *triangleStars_;
+    /* cell relationships */
+    vector<vector<SimplexId>> *cellEdges_;
+    vector<vector<SimplexId>> *cellTriangles_;
+
+  public:
+    ExpandedNode(SimplexId id){
+      /* components */
+      nid = id;
+      internalEdgeList_ = nullptr;
+      internalTriangleList_ = nullptr;
+      externalEdgeList_ = nullptr;
+      externalTriangleList_ = nullptr;
+      internalEdgeMap_ = nullptr;
+      internalTriangleMap_ = nullptr;
+      /* vertex relationships */
+      vertexEdges_ = nullptr;
+      vertexTriangles_ = nullptr;
+      vertexStars_ = nullptr;
+      /* edge relationships */
+      edgeTriangles_ = nullptr;
+      edgeStars_ = nullptr;
+      /* triangle relationships */
+      triangleEdges_ = nullptr;
+      triangleStars_ = nullptr;
+      /* cell relationships */
+      cellEdges_ = nullptr;
+      cellTriangles_ = nullptr;
+    }
+    ~ExpandedNode(){
+      delete internalEdgeList_;
+      delete internalTriangleList_;
+      delete externalEdgeList_;
+      delete externalTriangleList_;
+      delete vertexEdges_;
+      delete vertexTriangles_;
+      delete vertexStars_;
+      delete edgeTriangles_;
+      delete edgeStars_;
+      delete triangleEdges_;
+      delete triangleStars_;
+      delete cellEdges_;
+      delete cellTriangles_;
+    }
+
+    friend class StellarTriangulation;
+  };
+
   
   class StellarTriangulation : public AbstractTriangulation{
 
@@ -78,14 +152,6 @@ namespace ttk{
           if(cid < cellNumber)
             cid++;
         }
-        
-        // TEST: print out the cell intervals
-        cout << "[StellarTriangulation] Cell intervals: \n";
-        for(size_t i = 0; i < cellIntervals_.size(); i++){
-          cout << i << ": " << cellIntervals_[i] << endl;
-        }
-
-        return 0;
       }
 
       int setInputPoints(const SimplexId &pointNumber, const void *pointSet, 
@@ -110,12 +176,7 @@ namespace ttk{
         }
         vertexIntervals_.push_back(vid-1);
         nodeNumber_ = vertexIntervals_.size()-1;
-
-        // TEST: print out the vertex intervals
-        cout << "[StellarTriangulation] Node number: " << nodeNumber_ << ".\n Vertex intervals:\n";
-        for(size_t i = 0; i < vertexIntervals_.size(); i++){
-          cout << i << ": " << vertexIntervals_[i] << endl;
-        }
+        cacheSize_ = nodeNumber_ / 2;
 
         return 0;
       }
@@ -131,16 +192,17 @@ namespace ttk{
         #endif
 
         SimplexId nid = findNodeIndex(cellId, CELL_ID);
-        vector<vector<SimplexId>> localCellEdges;
-        if(!getCellEdges(nid, localCellEdges)){
-          SimplexId localCellId = cellId - cellIntervals_[nid-1] - 1;
-          if(localEdgeId >= (SimplexId) localCellEdges[localCellId].size()){
-            return -2;
-          }
-          edgeId = localCellEdges[localCellId][localEdgeId];
-          return 0;
+        SimplexId localCellId = cellId - cellIntervals_[nid-1] - 1;
+        ExpandedNode *exnode = searchCache(nid);
+        
+        if(!exnode->cellEdges_){
+          exnode->cellEdges_ = new vector<vector<SimplexId>>();
+          getCellEdges(nid, exnode->cellEdges_);
         }
-        return -3;
+        if(localEdgeId >= (SimplexId) (*(exnode->cellEdges_))[localCellId].size())
+          return -2;
+        edgeId = (*(exnode->cellEdges_))[localCellId][localEdgeId];
+        return 0;
       }
         
       inline SimplexId getCellEdgeNumber(const SimplexId &cellId) const{
@@ -160,9 +222,12 @@ namespace ttk{
       const vector<vector<SimplexId> > *getCellEdges(){
         cellEdgeList_.reserve(cellNumber_);
         for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-          vector<vector<SimplexId>> localCellEdges;
-          getCellEdges(nid, localCellEdges);
-          cellEdgeList_.insert(cellEdgeList_.end(), localCellEdges.begin(), localCellEdges.end());
+          ExpandedNode *exnode = searchCache(nid);
+          if(!exnode->cellEdges_){
+            exnode->cellEdges_ = new vector<vector<SimplexId>>();
+            getCellEdges(nid, exnode->cellEdges_);
+          }
+          cellEdgeList_.insert(cellEdgeList_.end(), exnode->cellEdges_->begin(), exnode->cellEdges_->end());
         }
         return &cellEdgeList_;
       }
@@ -192,12 +257,13 @@ namespace ttk{
         #endif
 
         SimplexId nid = findNodeIndex(cellId, CELL_ID);
-        vector<vector<SimplexId>> localCellTriangles;
-        if(!getCellTriangles(nid, localCellTriangles)){
-          triangleId = localCellTriangles[cellId-cellIntervals_[nid-1]-1][localTriangleId];
-          return 0;
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->cellTriangles_){
+          exnode->cellTriangles_ = new vector<vector<SimplexId>>();
+          getCellTriangles(nid, exnode->cellTriangles_);
         }
-        return -3;
+        triangleId = (*(exnode->cellTriangles_))[cellId-cellIntervals_[nid-1]-1][localTriangleId];
+        return 0;
       }
         
       SimplexId getCellTriangleNumber(const SimplexId &cellId) const{
@@ -217,9 +283,12 @@ namespace ttk{
       const vector<vector<SimplexId> > *getCellTriangles(){
         cellTriangleList_.reserve(edgeIntervals_.back()+1);
         for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-          vector<vector<SimplexId>> localCellTriangles;
-          getCellTriangles(nid, localCellTriangles);
-          cellTriangleList_.insert(cellTriangleList_.end(), localCellTriangles.begin(), localCellTriangles.end());
+          ExpandedNode *exnode = searchCache(nid);
+          if(!exnode->cellTriangles_){
+            exnode->cellTriangles_ = new vector<vector<SimplexId>>();
+            getCellTriangles(nid, exnode->cellTriangles_);
+          }
+          cellTriangleList_.insert(cellTriangleList_.end(), exnode->cellTriangles_->begin(), exnode->cellTriangles_->end());
         }
         return &cellTriangleList_;
       }
@@ -261,9 +330,13 @@ namespace ttk{
       const vector<pair<SimplexId, SimplexId> > *getEdges(){
         edgeList_.reserve(edgeIntervals_.back()+1);
         for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-          vector<pair<SimplexId, SimplexId>> localInternalEdges;
-          buildEdgeList(nid, &localInternalEdges, nullptr, nullptr, nullptr);
-          edgeList_.insert(edgeList_.end(), localInternalEdges.begin(), localInternalEdges.end());
+          ExpandedNode *exnode = searchCache(nid);
+          if(!exnode->internalEdgeList_){
+            exnode->internalEdgeList_ = new vector<pair<SimplexId, SimplexId>>();
+            exnode->internalEdgeMap_ = new map<pair<SimplexId, SimplexId>, SimplexId>();
+            buildEdgeList(nid, exnode->internalEdgeList_, nullptr, exnode->internalEdgeMap_, nullptr);
+          }
+          edgeList_.insert(edgeList_.end(), exnode->internalEdgeList_->begin(), exnode->internalEdgeList_->end());
         }
         return &edgeList_;
       }
@@ -293,12 +366,15 @@ namespace ttk{
         #endif
 
         SimplexId nid = findNodeIndex(edgeId, EDGE_ID);
-        vector<vector<SimplexId>> localEdgeStars;
-        buildEdgeList(nid, nullptr, nullptr, nullptr, &localEdgeStars);
         SimplexId localEdgeId = edgeId - edgeIntervals_[nid-1] - 1;
-        if(localStarId >= (SimplexId) localEdgeStars[localEdgeId].size())
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->edgeStars_){
+          exnode->edgeStars_ = new vector<vector<SimplexId>>();
+          buildEdgeList(nid, nullptr, nullptr, nullptr, exnode->edgeStars_);
+        }
+        if(localStarId >= (SimplexId) (*(exnode->edgeStars_))[localEdgeId].size())
           return -2;
-        starId = localEdgeStars[localEdgeId][localStarId];
+        starId = (*(exnode->edgeStars_))[localEdgeId][localStarId];
         return 0;
       }
         
@@ -310,19 +386,24 @@ namespace ttk{
         #endif
 
         SimplexId nid = findNodeIndex(edgeId, EDGE_ID);
-        vector<vector<SimplexId>> localEdgeStars;
-        buildEdgeList(nid, nullptr, nullptr, nullptr, &localEdgeStars);
-
+        ExpandedNode *exnode = searchCache(nid);
         SimplexId localEdgeId = edgeId - edgeIntervals_[nid-1] - 1;
-        return localEdgeStars[localEdgeId].size();
+        if(!exnode->edgeStars_){
+          exnode->edgeStars_ = new vector<vector<SimplexId>>();
+          buildEdgeList(nid, nullptr, nullptr, nullptr,  exnode->edgeStars_);
+        }
+        return (*(exnode->edgeStars_))[localEdgeId].size();
       }
       
       const vector<vector<SimplexId> > *getEdgeStars(){
         edgeStarList_.reserve(edgeIntervals_.back()+1);
         for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-          vector<vector<SimplexId>> localEdgeStars;
-          buildEdgeList(nid, nullptr, nullptr, nullptr, &localEdgeStars);
-          edgeStarList_.insert(edgeStarList_.end(), localEdgeStars.begin(), localEdgeStars.end());
+          ExpandedNode *exnode = searchCache(nid);
+          if(!exnode->edgeStars_){
+            exnode->edgeStars_ = new vector<vector<SimplexId>>();
+            buildEdgeList(nid, nullptr, nullptr, nullptr, exnode->edgeStars_);
+          }
+          edgeStarList_.insert(edgeStarList_.end(), exnode->edgeStars_->begin(), exnode->edgeStars_->end());
         }
         return &edgeStarList_;
       }
@@ -337,43 +418,46 @@ namespace ttk{
           return -2;
         #endif
 
-        SimplexId nodeId = findNodeIndex(edgeId, EDGE_ID);
-        vector<vector<SimplexId> > localEdgeTriangles;
-        getEdgeTriangles(nodeId, localEdgeTriangles);
-        SimplexId localEdgeId = edgeId-edgeIntervals_[nodeId-1]-1;
-        if(localTriangleId >= (SimplexId) localEdgeTriangles[localEdgeId].size())
+        SimplexId nid = findNodeIndex(edgeId, EDGE_ID);
+        SimplexId localEdgeId = edgeId-edgeIntervals_[nid-1]-1;
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->edgeTriangles_){
+          exnode->edgeTriangles_ = new vector<vector<SimplexId>>();
+          getEdgeTriangles(nid, exnode->edgeTriangles_);
+        }
+        if(localTriangleId >= (SimplexId) (*(exnode->edgeTriangles_))[localEdgeId].size())
           return -2;
-        triangleId = localEdgeTriangles[localEdgeId][localTriangleId];
-
+        triangleId = (*(exnode->edgeTriangles_))[localEdgeId][localTriangleId];
         return 0;
       }
-        
+      
       SimplexId getEdgeTriangleNumber(const SimplexId &edgeId) const{
 
         #ifndef TTK_ENABLE_KAMIKAZE
         if((edgeId < 0)||(edgeId > (SimplexId) edgeIntervals_.size()))
           return -1;
         #endif
-        
-        if(getDimensionality() == 2){
-          return getEdgeStarNumber(edgeId);
-        }
-        else{
-          SimplexId nodeId = findNodeIndex(edgeId,EDGE_ID);
-          vector<vector<SimplexId> > localEdgeTriangles;
-          getEdgeTriangles(nodeId, localEdgeTriangles);
-          return localEdgeTriangles[edgeId-edgeIntervals_[nodeId-1]-1].size();
-        }
 
-        return -2;
+        SimplexId nid = findNodeIndex(edgeId, EDGE_ID);
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->edgeTriangles_){
+          exnode->edgeTriangles_ = new vector<vector<SimplexId>>();
+          getEdgeTriangles(nid, exnode->edgeTriangles_);
+          
+        }
+        return (*(exnode->edgeTriangles_))[edgeId-edgeIntervals_[nid-1]-1].size();
       }
       
       const vector<vector<SimplexId> > *getEdgeTriangles(){
         edgeTriangleList_.reserve(edgeIntervals_.size()+1);
         for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-          vector<vector<SimplexId>> localEdgeTriangles;
-          getEdgeTriangles(nid, localEdgeTriangles);
-          edgeTriangleList_.insert(edgeTriangleList_.end(), localEdgeTriangles.begin(), localEdgeTriangles.end());
+          ExpandedNode *exnode = searchCache(nid);
+          if(!exnode->edgeTriangles_){
+            exnode->edgeTriangles_ = new vector<vector<SimplexId>>();
+            getEdgeTriangles(nid, exnode->edgeTriangles_);
+
+          }
+          edgeTriangleList_.insert(edgeTriangleList_.end(), exnode->edgeTriangles_->begin(), exnode->edgeTriangles_->end());
         }
         return &edgeTriangleList_;
       }
@@ -389,14 +473,18 @@ namespace ttk{
         #endif
 
         SimplexId nid = findNodeIndex(edgeId, EDGE_ID);
-        vector<pair<SimplexId, SimplexId>> localInternalEdges;
-        buildEdgeList(nid, &localInternalEdges, nullptr, nullptr, nullptr);
         SimplexId localEdgeId = edgeId-edgeIntervals_[nid-1]-1;
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->internalEdgeList_){
+          exnode->internalEdgeList_ = new vector<pair<SimplexId, SimplexId>>();
+          exnode->internalEdgeMap_ = new map<pair<SimplexId, SimplexId>, SimplexId>();
+          buildEdgeList(nid, exnode->internalEdgeList_, nullptr, exnode->internalEdgeMap_, nullptr);
+        }
         if(localVertexId){
-          vertexId = localInternalEdges[localEdgeId].second;
+          vertexId = exnode->internalEdgeList_->at(localEdgeId).second;
         }
         else{
-          vertexId = localInternalEdges[localEdgeId].first;
+          vertexId = exnode->internalEdgeList_->at(localEdgeId).first;
         }
         return 0;
       }
@@ -426,8 +514,17 @@ namespace ttk{
       inline SimplexId getNumberOfVertices() const { return vertexNumber_; }
       
       const vector<vector<SimplexId> > *getTriangles(){
-        vector<vector<SimplexId>> *dummyPointer= new vector<vector<SimplexId>>();
-        return dummyPointer;
+        triangleList_.reserve(edgeIntervals_.back()+1);
+        for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
+          ExpandedNode *exnode = searchCache(nid);
+          if(!exnode->internalTriangleList_){
+            exnode->internalTriangleList_ = new vector<vector<SimplexId>>();
+            exnode->internalTriangleMap_ = new map<vector<SimplexId>, SimplexId>();
+            buildTriangleList(nid, exnode->internalTriangleList_, nullptr, exnode->internalTriangleMap_, nullptr);
+          }
+          triangleList_.insert(triangleList_.end(), exnode->internalTriangleList_->begin(), exnode->internalTriangleList_->end());
+        }
+        return &triangleList_;
       }
       
       int getTriangleEdge(const SimplexId &triangleId,
@@ -441,12 +538,13 @@ namespace ttk{
         #endif
 
         SimplexId nid = findNodeIndex(triangleId, TRIANGLE_ID);
-        vector<vector<SimplexId>> localTriangleEdges;
-        if(!getTriangleEdges(nid, localTriangleEdges)){
-          edgeId = localTriangleEdges[triangleId-triangleIntervals_[nid-1]-1][localEdgeId];
-          return 0;
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->triangleEdges_){
+          exnode->triangleEdges_ = new vector<vector<SimplexId>>();
+          getTriangleEdges(nid, exnode->triangleEdges_);
         }
-        return -3;
+        edgeId = (*(exnode->triangleEdges_))[triangleId-triangleIntervals_[nid-1]-1][localEdgeId];
+        return 0;
       }
       
       SimplexId getTriangleEdgeNumber(const SimplexId &triangleId) const{
@@ -456,22 +554,23 @@ namespace ttk{
         #endif
 
         SimplexId nid = findNodeIndex(triangleId, TRIANGLE_ID);
-        vector<vector<SimplexId>> localTriangleEdges;
-        if(!getTriangleEdges(nid, localTriangleEdges)){
-          return localTriangleEdges[triangleId-triangleIntervals_[nid-1]-1].size();
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->triangleEdges_){
+          exnode->triangleEdges_ = new vector<vector<SimplexId>>();
+          getTriangleEdges(nid, exnode->triangleEdges_);
         }
-        return -2;
+        return (*(exnode->triangleEdges_))[triangleId-triangleIntervals_[nid-1]-1].size();
       }
       
       const vector<vector<SimplexId> > *getTriangleEdges(){
-        if(!hasPreprocessedTriangleEdges_){
-          return nullptr;
-        }
         triangleEdgeList_.reserve(triangleIntervals_.size()+1);
         for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-          vector<vector<SimplexId>> localTriangleEdges;
-          getTriangleEdges(nid, localTriangleEdges);
-          triangleEdgeList_.insert(triangleEdgeList_.end(), localTriangleEdges.begin(), localTriangleEdges.end());
+          ExpandedNode *exnode = searchCache(nid);
+          if(!exnode->triangleEdges_){
+            exnode->triangleEdges_ = new vector<vector<SimplexId>>();
+            getTriangleEdges(nid, exnode->triangleEdges_);
+          }
+          triangleEdgeList_.insert(triangleEdgeList_.end(), exnode->triangleEdges_->begin(), exnode->triangleEdges_->end());
         }
         return &triangleEdgeList_;
       }
@@ -501,14 +600,16 @@ namespace ttk{
         #endif
 
         SimplexId nid = findNodeIndex(triangleId, TRIANGLE_ID);
-        vector<vector<SimplexId>> localTriangleStars;
-        buildTriangleList(nid, nullptr, nullptr, nullptr, &localTriangleStars);
-
         SimplexId localTriangleId = triangleId-triangleIntervals_[nid-1]-1;
-        if(localStarId >= (SimplexId) localTriangleStars[localTriangleId].size())
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->triangleStars_){
+          exnode->triangleStars_ = new vector<vector<SimplexId>>();
+          buildTriangleList(nid, nullptr, nullptr, nullptr, exnode->triangleStars_);
+        }
+        if(localStarId >= (SimplexId) (*(exnode->triangleStars_))[localTriangleId].size())
           return -2;
         
-        return localTriangleStars[localTriangleId][localStarId];
+        return (*(exnode->triangleStars_))[localTriangleId][localStarId];
       }
         
       SimplexId getTriangleStarNumber(const SimplexId &triangleId) const{
@@ -519,21 +620,24 @@ namespace ttk{
         #endif
 
         SimplexId nid = findNodeIndex(triangleId, TRIANGLE_ID);
-        vector<vector<SimplexId>> localTriangleStars;
-        buildTriangleList(nid, nullptr, nullptr, nullptr, &localTriangleStars);
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->triangleStars_){
+          exnode->triangleStars_ = new vector<vector<SimplexId>>();
+          buildTriangleList(nid, nullptr, nullptr, nullptr, exnode->triangleStars_);
+        }
         
-        return localTriangleStars[triangleId-triangleIntervals_[nid-1]-1].size();
+        return (*(exnode->triangleStars_))[triangleId-triangleIntervals_[nid-1]-1].size();
       }
       
       const vector<vector<SimplexId> > *getTriangleStars(){
-        if(!hasPreprocessedTriangleStars_){
-          return nullptr;
-        }
         triangleStarList_.reserve(triangleIntervals_.back()+1);
         for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-          vector<vector<SimplexId>> localTriangleStars;
-          buildTriangleList(nid, nullptr, nullptr, nullptr, &localTriangleStars);
-          triangleStarList_.insert(triangleStarList_.end(), localTriangleStars.begin(), localTriangleStars.end());
+          ExpandedNode *exnode = searchCache(nid);
+          if(!exnode->triangleStars_){
+            exnode->triangleStars_ = new vector<vector<SimplexId>>();
+            buildTriangleList(nid, nullptr, nullptr, nullptr, exnode->triangleStars_);
+          }
+          triangleStarList_.insert(triangleStarList_.end(), exnode->triangleStars_->begin(), exnode->triangleStars_->end());
         }
         return &triangleStarList_;
       }
@@ -549,9 +653,13 @@ namespace ttk{
         #endif
 
         SimplexId nid = findNodeIndex(triangleId, TRIANGLE_ID);
-        vector<vector<SimplexId>> localInternalTriangles;
-        buildTriangleList(nid, &localInternalTriangles, nullptr, nullptr, nullptr);
-        vertexId = localInternalTriangles[triangleId-triangleIntervals_[nid-1]-1][localVertexId];
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->internalTriangleList_){
+          exnode->internalTriangleList_ = new vector<vector<SimplexId>>();
+          exnode->internalTriangleMap_ = new map<vector<SimplexId>, SimplexId>();
+          buildTriangleList(nid, exnode->internalTriangleList_, nullptr, exnode->internalTriangleMap_, nullptr);
+        }
+        vertexId = (*(exnode->internalTriangleList_))[triangleId-triangleIntervals_[nid-1]-1][localVertexId];
         return 0;
       }
       
@@ -567,15 +675,15 @@ namespace ttk{
         
         SimplexId nid = findNodeIndex(vertexId, VERTEX_ID);
         SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
-        vector<vector<SimplexId>> localVertexEdges;
-        if(!getVertexEdges(nid, localVertexEdges)){
-          if(localEdgeId >= (SimplexId) localVertexEdges[localVertexId].size())
-            return -2;
-          edgeId = localVertexEdges[localVertexId][localEdgeId];
-          return 0;
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->vertexEdges_){
+          exnode->vertexEdges_ = new vector<vector<SimplexId>>();
+          getVertexEdges(nid, exnode->vertexEdges_);
         }
-
-        return -3;
+        if(localEdgeId >= (SimplexId) (*exnode->vertexEdges_)[localVertexId].size())
+            return -2;
+        edgeId = (*(exnode->vertexEdges_))[localVertexId][localEdgeId];
+        return 0;
       }
       
       SimplexId getVertexEdgeNumber(const SimplexId &vertexId) const{
@@ -587,22 +695,23 @@ namespace ttk{
 
         SimplexId nid = findNodeIndex(vertexId, VERTEX_ID);
         SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
-        vector<vector<SimplexId>> localVertexEdges;
-        if(!getVertexEdges(nid, localVertexEdges)){
-          return localVertexEdges[localVertexId].size();
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->vertexEdges_){
+          exnode->vertexEdges_ = new vector<vector<SimplexId>>();
+          getVertexEdges(nid, exnode->vertexEdges_);
         }
-        return -2;
+        return (*(exnode->vertexEdges_))[localVertexId].size();
       }
       
       const vector<vector<SimplexId> > *getVertexEdges(){
-        if(!hasPreprocessedVertexEdges_)
-          return nullptr;
-
         vertexEdgeList_.reserve(vertexNumber_);
         for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-          vector<vector<SimplexId>> localVertexEdges;
-          getVertexEdges(nid, localVertexEdges);
-          vertexEdgeList_.insert(vertexEdgeList_.end(), localVertexEdges.begin(), localVertexEdges.end());
+          ExpandedNode *exnode = searchCache(nid);
+          if(!exnode->vertexEdges_){
+            exnode->vertexEdges_ = new vector<vector<SimplexId>>();
+            getVertexEdges(nid, exnode->vertexEdges_);
+          }
+          vertexEdgeList_.insert(vertexEdgeList_.end(), exnode->vertexEdges_->begin(), exnode->vertexEdges_->end());
         }
 
         return &vertexEdgeList_;
@@ -633,14 +742,15 @@ namespace ttk{
         
         SimplexId nid = findNodeIndex(vertexId, VERTEX_ID);
         SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
-        vector<vector<SimplexId>> localVertexNeighbors;
-        if(!getVertexNeighbors(nid, localVertexNeighbors)){
-          if(localNeighborId < (SimplexId) localVertexNeighbors[localVertexId].size())
-            return -2;  
-          neighborId = localVertexNeighbors[localVertexId][localNeighborId];
-          return 0;
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->vertexNeighbors_){
+          exnode->vertexNeighbors_ = new vector<vector<SimplexId>>();
+          getVertexNeighbors(nid, exnode->vertexNeighbors_);
         }
-        return -3;
+        if(localNeighborId < (SimplexId) (*(exnode->vertexNeighbors_))[localVertexId].size())
+          return -2;  
+        neighborId = (*(exnode->vertexNeighbors_))[localVertexId][localNeighborId];
+        return 0;
       }
       
       SimplexId getVertexNeighborNumber(const SimplexId &vertexId) const{
@@ -652,19 +762,23 @@ namespace ttk{
 
         SimplexId nid = findNodeIndex(vertexId, VERTEX_ID);
         SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
-        vector<vector<SimplexId>> localVertexNeighbors;
-        if(!getVertexNeighbors(nid, localVertexNeighbors)){
-          return localVertexNeighbors[localVertexId].size();
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->vertexNeighbors_){
+          exnode->vertexNeighbors_ = new vector<vector<SimplexId>>();
+          getVertexNeighbors(nid, exnode->vertexNeighbors_);
         }
-        return -2;
+        return (*(exnode->vertexNeighbors_))[localVertexId].size();
       }
       
       const vector<vector<SimplexId> > *getVertexNeighbors(){
         vertexNeighborList_.reserve(vertexNumber_);
         for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-          vector<vector<SimplexId>> localVertexNeighbors;
-          getVertexNeighbors(nid, localVertexNeighbors);
-          vertexNeighborList_.insert(vertexNeighborList_.end(), localVertexNeighbors.begin(), localVertexNeighbors.end());
+          ExpandedNode *exnode = searchCache(nid);
+          if(!exnode->vertexNeighbors_){
+            exnode->vertexNeighbors_ = new vector<vector<SimplexId>>();
+            getVertexNeighbors(nid, exnode->vertexNeighbors_);
+          }
+          vertexNeighborList_.insert(vertexNeighborList_.end(), exnode->vertexNeighbors_->begin(), exnode->vertexNeighbors_->end());
         }
         return &vertexNeighborList_;
       }
@@ -702,15 +816,16 @@ namespace ttk{
         #endif
 
         SimplexId nid = findNodeIndex(vertexId, VERTEX_ID);
-        vector<vector<SimplexId>> localVertexStars;
-        if(!getVertexStars(nid, localVertexStars)){
-          SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
-          if(localStarId >= (SimplexId) localVertexStars[localVertexId].size())
-            return -2;
-          starId = localVertexStars[localVertexId][localStarId];
-          return 0;
+        SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->vertexStars_){
+          exnode->vertexStars_ = new vector<vector<SimplexId>>();
+          getVertexStars(nid, exnode->vertexStars_);
         }
-        return -3;
+        if(localStarId >= (SimplexId) (*exnode->vertexStars_)[localVertexId].size())
+          return -2;
+        starId = (*exnode->vertexStars_)[localVertexId][localStarId];
+        return 0;
       }
       
       SimplexId getVertexStarNumber(const SimplexId &vertexId) const{
@@ -721,21 +836,24 @@ namespace ttk{
         #endif
 
         SimplexId nid = findNodeIndex(vertexId, VERTEX_ID);
-        vector<vector<SimplexId>> localVertexStars;
-        if(!getVertexStars(nid, localVertexStars)){
-          return localVertexStars[vertexId-vertexIntervals_[nid-1]-1].size();
+        SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->vertexStars_){
+          exnode->vertexStars_ = new vector<vector<SimplexId>>();
+          getVertexStars(nid, exnode->vertexStars_);
         }
-        return -2;
+        return (*(exnode->vertexStars_))[localVertexId].size();
       }
       
       const vector<vector<SimplexId> > *getVertexStars(){
         vertexStarList_.reserve(vertexNumber_);
         for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-          vector<vector<SimplexId>> localVertexStars;
-          getVertexStars(nid, localVertexStars);
-          for(SimplexId i = 0; i < (SimplexId) localVertexStars.size(); i++){
-            vertexStarList_.insert(vertexStarList_.end(), localVertexStars.begin(), localVertexStars.end());
+          ExpandedNode *exnode = searchCache(nid);
+          if(!exnode->vertexStars_){
+            exnode->vertexStars_ = new vector<vector<SimplexId>>();
+            getVertexStars(nid, exnode->vertexStars_);
           }
+          vertexStarList_.insert(vertexStarList_.end(), exnode->vertexStars_->begin(), exnode->vertexStars_->end());
         }
         return &vertexStarList_;
       }
@@ -751,16 +869,16 @@ namespace ttk{
         #endif
 
         SimplexId nid = findNodeIndex(vertexId, VERTEX_ID);
-        vector<vector<SimplexId>> localVertexTriangles;
-        SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
-        if(!getVertexTriangles(nid, localVertexTriangles)){
-          if(localTriangleId >= (SimplexId) localVertexTriangles[localVertexId].size()){
-            return -2;
-          }
-          triangleId = localVertexTriangles[localVertexId][localTriangleId];
-          return 0;
+        SimplexId localVertexId = vertexId-vertexIntervals_[nid-1]-1;
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->vertexTriangles_){
+          exnode->vertexTriangles_ = new vector<vector<SimplexId>>();
+          getVertexTriangles(nid, exnode->vertexTriangles_);
         }
-        return -3;
+        if(localTriangleId >= (SimplexId) (*(exnode->vertexTriangles_))[localVertexId].size())
+          return -2;
+        triangleId = (*(exnode->vertexTriangles_))[localVertexId][localTriangleId];
+        return 0;
       }
       
       SimplexId getVertexTriangleNumber(const SimplexId &vertexId) const{
@@ -771,21 +889,23 @@ namespace ttk{
         #endif
 
         SimplexId nid = findNodeIndex(vertexId, VERTEX_ID);
-        vector<vector<SimplexId>> localVertexTriangles;
-        if(!getVertexTriangles(nid, localVertexTriangles)){
-          return localVertexTriangles[vertexId-vertexIntervals_[nid-1]-1].size();
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->vertexTriangles_){
+          exnode->vertexTriangles_ = new vector<vector<SimplexId>>();
+          getVertexTriangles(nid, exnode->vertexTriangles_);
         }
-        return -2;
+        return (*(exnode->vertexTriangles_))[vertexId-vertexIntervals_[nid-1]-1].size();
       }
       
       const vector<vector<SimplexId> > *getVertexTriangles(){
         vertexTriangleList_.reserve(vertexNumber_);
         for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-          vector<vector<SimplexId>> localVertexTriangles;
-          getVertexTriangles(nid, localVertexTriangles);
-          for(SimplexId i = 0; i < (SimplexId) localVertexTriangles.size(); i++){
-            vertexTriangleList_.insert(vertexTriangleList_.end(), localVertexTriangles.begin(), localVertexTriangles.end());
+          ExpandedNode *exnode = searchCache(nid);
+          if(!exnode->vertexTriangles_){
+            exnode->vertexTriangles_ = new vector<vector<SimplexId>>();
+            getVertexTriangles(nid, exnode->vertexTriangles_);
           }
+          vertexTriangleList_.insert(vertexTriangleList_.end(), exnode->vertexTriangles_->begin(), exnode->vertexTriangles_->end());
         }
         return &vertexTriangleList_;
       }
@@ -933,20 +1053,15 @@ namespace ttk{
           edgeIntervals_.resize(nodeNumber_+1);
           edgeIntervals_[0] = -1;
           for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-            // map<pair<SimplexId,SimplexId>,SimplexId> localInternalEdgeMap;
-            // vector<pair<SimplexId, SimplexId>> localInternalEdges, localExternalEdges;
-            // SimplexId edgeNum = buildEdgeList(nid, &localInternalEdges, &localExternalEdges, &localInternalEdgeMap);
-            vector<pair<SimplexId, SimplexId>> localInternalEdges;
-            SimplexId edgeNum = buildEdgeList(nid, &localInternalEdges, nullptr, nullptr, nullptr);
+            ExpandedNode *exnode = searchCache(nid);
+            exnode->internalEdgeList_ = new vector<pair<SimplexId, SimplexId>>();
+            exnode->internalEdgeMap_ = new map<pair<SimplexId, SimplexId>, SimplexId>();
+            SimplexId edgeNum = buildEdgeList(nid, exnode ->internalEdgeList_, nullptr, exnode->internalEdgeMap_, nullptr);
             edgeIntervals_[nid] = edgeIntervals_[nid-1] + edgeNum;
           }
           hasPreprocessedEdges_ = true;
         }
 
-        cout << "Edge intervals: " << endl;
-        for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-          cout << nid << ": " << edgeIntervals_[nid] << endl;
-        }
         return 0;
       }
       
@@ -987,19 +1102,13 @@ namespace ttk{
           triangleIntervals_.resize(nodeNumber_+1);
           triangleIntervals_[0] = -1;
           for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-            // vector<vector<SimplexId>> localInternalTriangles, localExternalTriangles;
-            // map<vector<SimplexId>, SimplexId> localInternalTriangleMap;
-            // SimplexId triangleNum = buildTriangleList(nid, &localInternalTriangles, &localExternalTriangles, &localInternalTriangleMap, nullptr);
-            vector<vector<SimplexId>> localInternalTriangles;
-            SimplexId triangleNum = buildTriangleList(nid, &localInternalTriangles, nullptr, nullptr, nullptr);
+            ExpandedNode *exnode = searchCache(nid);
+            exnode->internalTriangleList_ = new vector<vector<SimplexId>>();
+            exnode->internalTriangleMap_ = new map<vector<SimplexId>, SimplexId>();
+            SimplexId triangleNum = buildTriangleList(nid, exnode->internalTriangleList_, nullptr, exnode->internalTriangleMap_, nullptr);
             triangleIntervals_[nid] = triangleIntervals_[nid-1] + triangleNum;
           }
           hasPreprocessedTriangles_ = true;
-        }
-
-        cout << "Triangle intervals: " << endl;
-        for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-          cout << nid << ": " << triangleIntervals_[nid] << endl;
         }
 
         return 0;
@@ -1092,6 +1201,28 @@ namespace ttk{
         return (low-intervals->begin());
       }
 
+      /**
+       * Search the node in the cache.
+       */
+      ExpandedNode* searchCache(const SimplexId &nodeId) const{
+        // cannot find the expanded node in the cache
+        if(cacheMap_.find(nodeId) == cacheMap_.end()){
+          if(cache_.size() >= cacheSize_){
+            cacheMap_.erase(cache_.back()->nid);
+            delete cache_.back();
+            cache_.pop_back();
+          }
+          cache_.push_front(new ExpandedNode(nodeId));
+          cacheMap_[nodeId] = cache_.begin();
+        }
+        // find the expanded node in the cache
+        else{
+          cache_.splice(cache_.begin(), cache_, cacheMap_[nodeId]);
+          cacheMap_[nodeId] = cache_.begin();
+        }
+        return cache_.front();
+      }
+
       /** 
        * Build the whole edge list and return the number of edges in the node.
        */ 
@@ -1128,32 +1259,34 @@ namespace ttk{
         set<pair<SimplexId, SimplexId>> externalEdgeSet;
 
         // loop through the internal cell list
-        for(SimplexId cid = cellIntervals_[nodeId-1]+1; cid <= cellIntervals_[nodeId]; cid++){
-          pair<SimplexId, SimplexId> edgeIds;
-          SimplexId cellId = (verticesPerCell + 1) * cid;
+        if(internalEdgeList || internalEdgeMap || edgeStars){
+          for(SimplexId cid = cellIntervals_[nodeId-1]+1; cid <= cellIntervals_[nodeId]; cid++){
+            pair<SimplexId, SimplexId> edgeIds;
+            SimplexId cellId = (verticesPerCell + 1) * cid;
 
-          // loop through each edge of the cell
-          for(SimplexId j = 0; j < verticesPerCell-1; j++){
-            edgeIds.first = cellArray_[cellId + j + 1];
-            // the edge does not belong to the current node
-            if(edgeIds.first > vertexIntervals_[nodeId]){
-              break;
-            }
-            for(SimplexId k = j+1; k < verticesPerCell; k++){
-              edgeIds.second = cellArray_[cellId + k + 1];
-              
-              // not found in the edge map - assign new edge id
-              if(edgeMap->find(edgeIds) == edgeMap->end()){
-                edgeCount++;
-                (*edgeMap)[edgeIds] = edgeCount+edgeIntervals_[nodeId-1];
-                if(internalEdgeList)
-                  internalEdgeList->push_back(edgeIds);
-                if(edgeStars){
-                  edgeStars->push_back(vector<SimplexId>{cid});
-                }
+            // loop through each edge of the cell
+            for(SimplexId j = 0; j < verticesPerCell-1; j++){
+              edgeIds.first = cellArray_[cellId + j + 1];
+              // the edge does not belong to the current node
+              if(edgeIds.first > vertexIntervals_[nodeId]){
+                break;
               }
-              else if(edgeStars){
-                (*edgeStars)[edgeMap->at(edgeIds)-edgeIntervals_[nodeId-1]-1].push_back(cid);
+              for(SimplexId k = j+1; k < verticesPerCell; k++){
+                edgeIds.second = cellArray_[cellId + k + 1];
+                
+                // not found in the edge map - assign new edge id
+                if(edgeMap->find(edgeIds) == edgeMap->end()){
+                  edgeCount++;
+                  (*edgeMap)[edgeIds] = edgeCount+edgeIntervals_[nodeId-1];
+                  if(internalEdgeList)
+                    internalEdgeList->push_back(edgeIds);
+                  if(edgeStars){
+                    edgeStars->push_back(vector<SimplexId>{cid});
+                  }
+                }
+                else if(edgeStars){
+                  (*edgeStars)[edgeMap->at(edgeIds)-edgeIntervals_[nodeId-1]-1].push_back(cid);
+                }
               }
             }
           }
@@ -1218,7 +1351,6 @@ namespace ttk{
         set<vector<SimplexId>> externalTriangleSet;
 
         if(internalTriangleList){
-          // NOTE: 9 is pretty empirical here...
           internalTriangleList->clear();
           internalTriangleList->reserve(9*localVertexNum);
         }
@@ -1236,34 +1368,36 @@ namespace ttk{
 
 
         // loop through the internal cell list
-        for(SimplexId cid = cellIntervals_[nodeId-1]+1; cid <= cellIntervals_[nodeId]; cid++){
-          vector<SimplexId> triangleIds(3);
-          SimplexId cellId = (verticesPerCell + 1) * cid;
+        if(internalTriangleList || internalTriangleMap || triangleStars){
+          for(SimplexId cid = cellIntervals_[nodeId-1]+1; cid <= cellIntervals_[nodeId]; cid++){
+            vector<SimplexId> triangleIds(3);
+            SimplexId cellId = (verticesPerCell + 1) * cid;
 
-          // loop through each triangle of the cell
-          for(SimplexId j = 0; j < verticesPerCell-2; j++){
-            triangleIds[0] = cellArray_[cellId + j + 1];
-            // the triangle does not belong to the current node
-            if(triangleIds[0] > vertexIntervals_[nodeId]){
-              break;
-            }
-            for(SimplexId k = j+1; k < verticesPerCell-1; k++){
-              for(SimplexId l = k+1; l < verticesPerCell; l++){
-                triangleIds[1] = cellArray_[cellId + k + 1];
-                triangleIds[2] = cellArray_[cellId + l + 1];
-                
-                if(triangleMap->find(triangleIds) == triangleMap->end()){
-                  triangleCount++;
-                  (*triangleMap)[triangleIds] = triangleCount + triangleIntervals_[nodeId-1];
-                  if(internalTriangleList){
-                    internalTriangleList->push_back(triangleIds);
+            // loop through each triangle of the cell
+            for(SimplexId j = 0; j < verticesPerCell-2; j++){
+              triangleIds[0] = cellArray_[cellId + j + 1];
+              // the triangle does not belong to the current node
+              if(triangleIds[0] > vertexIntervals_[nodeId]){
+                break;
+              }
+              for(SimplexId k = j+1; k < verticesPerCell-1; k++){
+                for(SimplexId l = k+1; l < verticesPerCell; l++){
+                  triangleIds[1] = cellArray_[cellId + k + 1];
+                  triangleIds[2] = cellArray_[cellId + l + 1];
+                  
+                  if(triangleMap->find(triangleIds) == triangleMap->end()){
+                    triangleCount++;
+                    (*triangleMap)[triangleIds] = triangleCount + triangleIntervals_[nodeId-1];
+                    if(internalTriangleList){
+                      internalTriangleList->push_back(triangleIds);
+                    }
+                    if(triangleStars){
+                      triangleStars->push_back(vector<SimplexId>{cid});
+                    }
                   }
-                  if(triangleStars){
-                    triangleStars->push_back(vector<SimplexId>{cid});
+                  else if(triangleStars){
+                    (*triangleStars)[triangleMap->at(triangleIds)-triangleIntervals_[nodeId-1]-1].push_back(cid);
                   }
-                }
-                else if(triangleStars){
-                  (*triangleStars)[triangleMap->at(triangleIds)-triangleIntervals_[nodeId-1]-1].push_back(cid);
                 }
               }
             }
@@ -1322,31 +1456,35 @@ namespace ttk{
       /**
        * Get the cell edges for all cells in a given node. 
        */
-      int getCellEdges(const SimplexId &nodeId, vector<vector<SimplexId>> &cellEdges) const{
+      int getCellEdges(const SimplexId &nodeId, vector<vector<SimplexId>> * const cellEdges) const{
         
         #ifndef TTK_ENABLE_KAMIKAZE
           if(nodeId <= 0 || nodeId > nodeNumber_)
             return -1;
         #endif
 
-        cellEdges.clear();
-        cellEdges.resize(cellIntervals_[nodeId]-cellIntervals_[nodeId-1]);
-        for(SimplexId i = 0; i < (SimplexId) cellEdges.size(); i++){
+        cellEdges->clear();
+        cellEdges->resize(cellIntervals_[nodeId]-cellIntervals_[nodeId-1]);
+        for(SimplexId i = 0; i < (SimplexId) cellEdges->size(); i++){
           cellEdges[i].reserve(6);
         }
-        map<pair<SimplexId,SimplexId>, SimplexId> internalEdgeMap;
-        buildEdgeList(nodeId, nullptr, nullptr, &internalEdgeMap, nullptr);
+        ExpandedNode *exnode = searchCache(nodeId);
+        if(!exnode->internalEdgeMap_){
+          exnode->internalEdgeList_ = new vector<pair<SimplexId, SimplexId>>();
+          exnode->internalEdgeMap_ = new map<pair<SimplexId, SimplexId>, SimplexId>();
+          buildEdgeList(nodeId, exnode->internalEdgeList_, nullptr, exnode->internalEdgeMap_, nullptr);
+        }
 
-        for(SimplexId i = 0; i < (SimplexId) cellEdges.size(); i++){
+        for(SimplexId i = 0; i < (SimplexId) cellEdges->size(); i++){
           SimplexId cellId = (cellArray_[0]+1)*(i+1+cellIntervals_[nodeId-1]);
           for(SimplexId j = 0; j < cellArray_[0]-1; j++){
             for(SimplexId k = j+1; k < cellArray_[0]; k++){
-              pair<SimplexId, SimplexId> edgePair(cellArray_[cellId+1+j], cellArray_[cellId+1+k]);
-              if(edgePair.first > vertexIntervals_[nodeId]){
-                cellEdges[i].push_back(getEdgeId(edgePair));
+              pair<SimplexId, SimplexId> edgePair(cellArray_[cellId+j+1], cellArray_[cellId+k+1]);
+              if(edgePair.first <= vertexIntervals_[nodeId]){
+                (*cellEdges)[i].push_back(exnode->internalEdgeMap_->at(edgePair));
               }
               else{
-                cellEdges[i].push_back(internalEdgeMap[edgePair]);
+                (*cellEdges)[i].push_back(getEdgeId(edgePair));
               }
             }
           }
@@ -1357,19 +1495,19 @@ namespace ttk{
       /**
        * Get the cell triangles for all cells in a given node. 
        */
-      int getCellTriangles(const SimplexId &nodeId, vector<vector<SimplexId>> &cellTriangles) const{
+      int getCellTriangles(const SimplexId &nodeId, vector<vector<SimplexId>> * const cellTriangles) const{
         
         #ifndef TTK_ENABLE_KAMIKAZE
           if(nodeId <= 0 || nodeId > nodeNumber_)
             return -1;
         #endif
 
-        cellTriangles.clear();
-        cellTriangles.resize(cellIntervals_[nodeId]-cellIntervals_[nodeId-1]);
-        for(SimplexId i = 0; i < (SimplexId) cellTriangles.size(); i++){
+        cellTriangles->clear();
+        cellTriangles->resize(cellIntervals_[nodeId]-cellIntervals_[nodeId-1]);
+        for(SimplexId i = 0; i < (SimplexId) cellTriangles->size(); i++){
           cellTriangles[i].reserve(4);
         }
-        for(SimplexId i = 0; i < (SimplexId) cellTriangles.size(); i++){
+        for(SimplexId i = 0; i < (SimplexId) cellTriangles->size(); i++){
           SimplexId cellId = (cellArray_[0]+1)*(i+cellIntervals_[nodeId-1]+1);
           vector<SimplexId> triangleVec(3);
           for(SimplexId j = 0; j < cellArray_[0]-2; j++){
@@ -1378,7 +1516,7 @@ namespace ttk{
               triangleVec[1] = cellArray_[cellId+1+k];
               for(SimplexId l = k+1; l < cellArray_[0]; l++){
                 triangleVec[2] = cellArray_[cellId+1+l];
-                cellTriangles[i].push_back(getTriangleId(triangleVec));
+                (*cellTriangles)[i].push_back(getTriangleId(triangleVec));
               }
             }
           }
@@ -1392,54 +1530,68 @@ namespace ttk{
        */
       SimplexId getEdgeId(pair<SimplexId, SimplexId> &edgePair) const{
         SimplexId nid = findNodeIndex(edgePair.first, VERTEX_ID);
-        map<pair<SimplexId, SimplexId>, SimplexId> localEdgeMap; 
-        buildEdgeList(nid, nullptr, nullptr, &localEdgeMap, nullptr);
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->internalEdgeMap_){
+          exnode->internalEdgeList_ = new vector<pair<SimplexId, SimplexId>>();
+          exnode->internalEdgeMap_ = new map<pair<SimplexId, SimplexId>, SimplexId>();
+          buildEdgeList(nid, exnode->internalEdgeList_, nullptr, exnode->internalEdgeMap_, nullptr);
+        }
 
-        if(localEdgeMap.find(edgePair) == localEdgeMap.end()){
+        if(exnode->internalEdgeMap_->find(edgePair) == exnode->internalEdgeMap_->end()){
           return -1;
         }
 
-        return localEdgeMap[edgePair];
+        return exnode->internalEdgeMap_->at(edgePair);
       }
 
       /**
        * Get the edge triangles for all the edges in a given node.
        */
-      int getEdgeTriangles(const SimplexId& nodeId, vector<vector<SimplexId> >& edgeTriangles) const{
+      int getEdgeTriangles(const SimplexId& nodeId, vector<vector<SimplexId>> * const edgeTriangles) const{
 
         #ifndef TTK_ENABLE_KAMIKAZE
           if(nodeId <= 0 || nodeId > nodeNumber_)
               return -1;
         #endif
 
-        edgeTriangles.clear();
-        edgeTriangles = vector<vector<SimplexId> >(edgeIntervals_[nodeId] - edgeIntervals_[nodeId-1]);
+        edgeTriangles->clear();
+        edgeTriangles->resize(edgeIntervals_[nodeId] - edgeIntervals_[nodeId-1]);
 
-        vector<vector<SimplexId>> internalTriangles, externalTriangles;
-        map<pair<SimplexId, SimplexId>, SimplexId> internalEdgeMap;
-        map<vector<SimplexId>, SimplexId> internalTriangleMap;
+        ExpandedNode *exnode = searchCache(nodeId);
+        if(!exnode->internalEdgeMap_){
+          exnode->internalEdgeList_ = new vector<pair<SimplexId, SimplexId>>();
+          exnode->internalEdgeMap_ = new map<pair<SimplexId, SimplexId>, SimplexId>();
+          buildEdgeList(nodeId, exnode->internalEdgeList_, nullptr, exnode->internalEdgeMap_, nullptr);
+        }
+        if(!exnode->internalTriangleList_){
+          exnode->internalTriangleList_ = new vector<vector<SimplexId>>();
+          exnode->internalTriangleMap_ = new map<vector<SimplexId>, SimplexId>();
+          exnode->externalTriangleList_ = new vector<vector<SimplexId>>();
+          buildTriangleList(nodeId, exnode->internalTriangleList_, exnode->externalTriangleList_, exnode->internalTriangleMap_, nullptr);
+        }
+        if(!exnode->externalTriangleList_){
+          exnode->externalTriangleList_ = new vector<vector<SimplexId>>();
+          buildTriangleList(nodeId, exnode->internalTriangleList_, exnode->externalTriangleList_, exnode->internalTriangleMap_, nullptr);
+        }
 
-        buildEdgeList(nodeId, nullptr, nullptr, &internalEdgeMap, nullptr);
-        buildTriangleList(nodeId, &internalTriangles, &externalTriangles, &internalTriangleMap, nullptr);
 
         // for internal triangles
         pair<SimplexId, SimplexId> edgeIds;
-        for(SimplexId tid = 0; tid < (SimplexId) internalTriangles.size(); tid++){
+        for(SimplexId tid = 0; tid < (SimplexId) exnode->internalTriangleList_->size(); tid++){
           for(SimplexId j = 0; j < 2; j++){
-            if(internalTriangles[tid][j] > vertexIntervals_[nodeId]){
+            if((*(exnode->internalTriangleList_))[tid][j] > vertexIntervals_[nodeId]){
               break;
             }
             for(SimplexId k = j+1; k < 3; k++){
-              edgeIds = pair<SimplexId,SimplexId>(internalTriangles[tid][j], internalTriangles[tid][k]);
-              edgeTriangles[internalEdgeMap[edgeIds]-edgeIntervals_[nodeId-1]-1].push_back(
+              edgeIds = pair<SimplexId,SimplexId>((*(exnode->internalTriangleList_))[tid][j], (*(exnode->internalTriangleList_))[tid][k]);
+              (*edgeTriangles)[(*(exnode->internalEdgeMap_))[edgeIds]-edgeIntervals_[nodeId-1]-1].push_back(
                 tid + triangleIntervals_[nodeId-1] + 1);
             }
           }
         }
 
         // for external triangles
-        for(vector<SimplexId> triangle : externalTriangles){
-          // loop through each edge of the cell
+        for(vector<SimplexId> triangle : (*(exnode->externalTriangleList_))){          // loop through each edge of the cell
           SimplexId triangleId = getTriangleId(triangle);
           for(SimplexId j = 0; j < 2; j++){
             for(SimplexId k = j+1; k < 3; k++){
@@ -1448,7 +1600,7 @@ namespace ttk{
               
               // the edge is in the current node
               if(edgeIds.first > vertexIntervals_[nodeId-1] && edgeIds.first <= vertexIntervals_[nodeId]){
-                edgeTriangles[internalEdgeMap[edgeIds]-edgeIntervals_[nodeId-1]-1].push_back(triangleId);
+                (*edgeTriangles)[(*(exnode->internalEdgeMap_))[edgeIds]-edgeIntervals_[nodeId-1]-1].push_back(triangleId);
               }
             }
           }
@@ -1459,47 +1611,59 @@ namespace ttk{
 
       /**
        * Get the edge id given a pair of vertex ids.
-       * Note: make sure the passed pair is already sorted.
+       * Note: make sure the passed vector is already sorted.
        */
       SimplexId getTriangleId(vector<SimplexId> &triangle) const{
         SimplexId nid = findNodeIndex(triangle.front(), VERTEX_ID);
-        map<vector<SimplexId>,SimplexId> localTriangleMap;
-        buildTriangleList(nid, nullptr, nullptr, &localTriangleMap, nullptr);
+        ExpandedNode *exnode = searchCache(nid);
+        if(!exnode->internalTriangleMap_){
+          exnode->internalTriangleList_ = new vector<vector<SimplexId>>();
+          exnode->internalTriangleMap_ = new map<vector<SimplexId>, SimplexId>();
+          buildTriangleList(nid, exnode->internalTriangleList_, nullptr, exnode->internalTriangleMap_, nullptr);
+        }
 
-        if(localTriangleMap.find(triangle) == localTriangleMap.end())
+        if(exnode->internalTriangleMap_->find(triangle) == exnode->internalTriangleMap_->end())
           return -1;
 
-        return localTriangleMap[triangle];
+        return exnode->internalTriangleMap_->at(triangle);
       }
 
       /**
        * Get the triangle edges for all the triangles in a given node.
        */
-      int getTriangleEdges(const SimplexId &nodeId, vector<vector<SimplexId>> &triangleEdges) const{
+      int getTriangleEdges(const SimplexId &nodeId, vector<vector<SimplexId>> *triangleEdges) const{
 
         #ifndef TTK_ENABLE_KAMIKAZE
           if(nodeId <= 0 || nodeId > nodeNumber_)
             return -1;
         #endif
 
-        triangleEdges.clear();
-        triangleEdges.resize(triangleIntervals_[nodeId]-triangleIntervals_[nodeId-1], vector<SimplexId>(3));
-        vector<vector<SimplexId>> internalTriangles;
-        map<pair<SimplexId,SimplexId>, SimplexId> internalEdgeMap;
-        buildEdgeList(nodeId, nullptr, nullptr, &internalEdgeMap, nullptr);
-        buildTriangleList(nodeId, &internalTriangles, nullptr, nullptr, nullptr);
+        triangleEdges->clear();
+        triangleEdges->resize(triangleIntervals_[nodeId]-triangleIntervals_[nodeId-1], vector<SimplexId>(3));
 
-        for(SimplexId tid = 0; tid < (SimplexId) internalTriangles.size(); tid++){
+        ExpandedNode *exnode = searchCache(nodeId);
+        if(!exnode->internalEdgeMap_){
+          exnode->internalEdgeList_ = new vector<pair<SimplexId, SimplexId>>();
+          exnode->internalEdgeMap_ = new map<pair<SimplexId, SimplexId>, SimplexId>();
+          buildEdgeList(nodeId, exnode->internalEdgeList_, nullptr, exnode->internalEdgeMap_, nullptr);
+        }
+        if(!exnode->internalTriangleList_){
+          exnode->internalTriangleList_ = new vector<vector<SimplexId>>();
+          exnode->internalTriangleMap_ = new map<vector<SimplexId>, SimplexId>();
+          buildTriangleList(nodeId, exnode->internalTriangleList_, nullptr, exnode->internalTriangleMap_, nullptr);
+        }
+
+        for(SimplexId tid = 0; tid < (SimplexId) exnode->internalTriangleList_->size(); tid++){
           // since the first vertex of the triangle is in the node ...
-          pair<SimplexId,SimplexId> edgePair(internalTriangles[tid][0], internalTriangles[tid][1]);
-          triangleEdges[tid][0] = internalEdgeMap[edgePair];
-          edgePair.second = internalTriangles[tid][2];
-          triangleEdges[tid][1] = internalEdgeMap[edgePair];
-          edgePair.first = internalTriangles[tid][1];
+          pair<SimplexId,SimplexId> edgePair(exnode->internalTriangleList_->at(tid)[0], exnode->internalTriangleList_->at(tid)[1]);
+          (*triangleEdges)[tid][0] = exnode->internalEdgeMap_->at(edgePair);
+          edgePair.second = exnode->internalTriangleList_->at(tid)[2];
+          (*triangleEdges)[tid][1] = exnode->internalEdgeMap_->at(edgePair);
+          edgePair.first = exnode->internalTriangleList_->at(tid)[1];
           if(edgePair.first > vertexIntervals_[nodeId-1] && edgePair.second <= vertexIntervals_[nodeId]){
-            triangleEdges[tid][2] = internalEdgeMap[edgePair];
+            (*triangleEdges)[tid][2] = exnode->internalEdgeMap_->at(edgePair);
           }else{
-            triangleEdges[tid][2] = getEdgeId(edgePair);
+            (*triangleEdges)[tid][2] = getEdgeId(edgePair);
           }
         }
 
@@ -1509,28 +1673,38 @@ namespace ttk{
       /**
        * Get the vertex edges for all the vertices in a given node.
        */
-      int getVertexEdges(const SimplexId &nodeId, vector<vector<SimplexId>> &vertexEdges) const{
+      int getVertexEdges(const SimplexId &nodeId, vector<vector<SimplexId>> * const vertexEdges) const{
 
         #ifndef TTK_ENABLE_KAMIKAZE
           if(nodeId <= 0 || nodeId > nodeNumber_)
             return -1;
         #endif
 
-        vertexEdges.clear();
-        vertexEdges.resize(vertexIntervals_[nodeId]-vertexIntervals_[nodeId-1]);
-        vector<pair<SimplexId, SimplexId>> localInternalEdges, localExternalEdges;
-        buildEdgeList(nodeId, &localInternalEdges, &localExternalEdges, nullptr, nullptr);
+        vertexEdges->clear();
+        vertexEdges->resize(vertexIntervals_[nodeId]-vertexIntervals_[nodeId-1]);
 
-        for(SimplexId i = 0; i < (SimplexId) localInternalEdges.size(); i++){
-          vertexEdges[localInternalEdges[i].first-vertexIntervals_[nodeId-1]-1].push_back(edgeIntervals_[nodeId-1]+i+1);
-          // the second vertex id of the edge must be greater than the first one
-          if(localInternalEdges[i].second <= vertexIntervals_[nodeId])
-            vertexEdges[localInternalEdges[i].second-vertexIntervals_[nodeId-1]-1].push_back(edgeIntervals_[nodeId-1]+i+1);
+        ExpandedNode *exnode = searchCache(nodeId);
+        if(!exnode->internalEdgeList_){
+          exnode->internalEdgeList_ = new vector<pair<SimplexId, SimplexId>>();
+          exnode->externalEdgeList_ = new vector<pair<SimplexId, SimplexId>>();
+          exnode->internalEdgeMap_ = new map<pair<SimplexId, SimplexId>, SimplexId>();
+          buildEdgeList(nodeId, exnode->internalEdgeList_, exnode->externalEdgeList_, exnode->internalEdgeMap_, nullptr);
+        }
+        if(!exnode->externalEdgeList_){
+          exnode->externalEdgeList_ = new vector<pair<SimplexId, SimplexId>>();
+          buildEdgeList(nodeId, nullptr, exnode->externalEdgeList_, nullptr, nullptr);
         }
 
-        for(SimplexId i = 0; i < (SimplexId) localExternalEdges.size(); i++){
-          vertexEdges[localExternalEdges[i].second-vertexIntervals_[nodeId-1]-1].push_back(getEdgeId(localExternalEdges[i]));
-        } 
+        for(SimplexId i = 0; i < (SimplexId) exnode->internalEdgeList_->size(); i++){
+          (*vertexEdges)[exnode->internalEdgeList_->at(i).first-vertexIntervals_[nodeId-1]-1].push_back(edgeIntervals_[nodeId-1]+i+1);
+          // the second vertex id of the edge must be greater than the first one
+          if(exnode->internalEdgeList_->at(i).second <= vertexIntervals_[nodeId])
+            (*vertexEdges)[exnode->internalEdgeList_->at(i).second-vertexIntervals_[nodeId-1]-1].push_back(edgeIntervals_[nodeId-1]+i+1);
+        }
+
+        for(SimplexId i = 0; i < (SimplexId) exnode->externalEdgeList_->size(); i++){
+          (*vertexEdges)[exnode->externalEdgeList_->at(i).second-vertexIntervals_[nodeId-1]-1].push_back(getEdgeId(exnode->externalEdgeList_->at(i)));
+        }
 
         return 0;
       }
@@ -1538,26 +1712,36 @@ namespace ttk{
       /**
        * Get the vertex neighbors for all the vertices in a given node.
        */
-      int getVertexNeighbors(const SimplexId &nodeId, vector<vector<SimplexId>> &vertexNeighbors) const{
+      int getVertexNeighbors(const SimplexId &nodeId, vector<vector<SimplexId>> * const vertexNeighbors) const{
 
         #ifndef TTK_ENABLE_KAMIKAZE
           if(nodeId <= 0 || nodeId > nodeNumber_)
             return -1;
         #endif
 
-        vertexNeighbors.clear();
-        vertexNeighbors.resize(vertexIntervals_[nodeId]-vertexIntervals_[nodeId-1]);
-        vector<pair<SimplexId, SimplexId>> localInternalEdges, localExternalEdges;
-        buildEdgeList(nodeId, &localInternalEdges, &localExternalEdges, nullptr, nullptr);
+        vertexNeighbors->clear();
+        vertexNeighbors->resize(vertexIntervals_[nodeId]-vertexIntervals_[nodeId-1]);
 
-        for(SimplexId i = 0; i < (SimplexId) localInternalEdges.size(); i++){
-          vertexNeighbors[localInternalEdges[i].first-vertexIntervals_[nodeId-1]-1].push_back(localInternalEdges[i].second);
-          if(localInternalEdges[i].second <= vertexIntervals_[nodeId])
-            vertexNeighbors[localInternalEdges[i].second-vertexIntervals_[nodeId-1]-1].push_back(i+edgeIntervals_[nodeId]+1);
+        ExpandedNode *exnode = searchCache(nodeId);
+        if(!exnode->internalEdgeList_){
+          exnode->internalEdgeList_ = new vector<pair<SimplexId, SimplexId>>();
+          exnode->externalEdgeList_ = new vector<pair<SimplexId, SimplexId>>();
+          exnode->internalEdgeMap_ = new map<pair<SimplexId, SimplexId>, SimplexId>();
+          buildEdgeList(nodeId, exnode->internalEdgeList_, exnode->externalEdgeList_, exnode->internalEdgeMap_, nullptr);
+        }
+        if(!exnode->externalEdgeList_){
+          exnode->externalEdgeList_ = new vector<pair<SimplexId, SimplexId>>();
+          buildEdgeList(nodeId, nullptr, exnode->externalEdgeList_, nullptr, nullptr);
         }
 
-        for(SimplexId i = 0; i < (SimplexId) localExternalEdges.size(); i++){
-          vertexNeighbors[localExternalEdges[i].second-vertexIntervals_[nodeId-1]-1].push_back(localExternalEdges[i].first);
+        for(SimplexId i = 0; i < (SimplexId) exnode->internalEdgeList_->size(); i++){
+          (*vertexNeighbors)[exnode->internalEdgeList_->at(i).first-vertexIntervals_[nodeId-1]-1].push_back(exnode->internalEdgeList_->at(i).second);
+          if(exnode->internalEdgeList_->at(i).second <= vertexIntervals_[nodeId])
+            (*vertexNeighbors)[exnode->internalEdgeList_->at(i).second-vertexIntervals_[nodeId-1]-1].push_back(i+edgeIntervals_[nodeId]+1);
+        }
+
+        for(SimplexId i = 0; i < (SimplexId) exnode->externalEdgeList_->size(); i++){
+          (*vertexNeighbors)[exnode->externalEdgeList_->at(i).second-vertexIntervals_[nodeId-1]-1].push_back(exnode->externalEdgeList_->at(i).first);
         }
 
         return 0;
@@ -1567,22 +1751,22 @@ namespace ttk{
        * Get the vertex stars for all the vertices in a given node. 
        * The function is similar as getVertexCells().
        */ 
-      int getVertexStars(const SimplexId &nodeId, vector<vector<SimplexId>> &vertexStars) const{
+      int getVertexStars(const SimplexId &nodeId, vector<vector<SimplexId>> * const vertexStars) const{
 
         #ifndef TTK_ENABLE_KAMIKAZE
           if(nodeId <= 0 || nodeId > nodeNumber_)
             return -1;
         #endif
 
-        vertexStars.clear();
-        vertexStars.resize(vertexIntervals_[nodeId]-vertexIntervals_[nodeId-1]);
+        vertexStars->clear();
+        vertexStars->resize(vertexIntervals_[nodeId]-vertexIntervals_[nodeId-1]);
         // loop through the internal cell list
         for(SimplexId cid = cellIntervals_[nodeId-1]+1; cid <= cellIntervals_[nodeId]; cid++){
           SimplexId cellId = (cellArray_[0]+1) * cid;
           for(SimplexId j = 0; j < cellArray_[0]; j++){
             // see if it is in the current node
             if(cellArray_[cellId+j+1] > vertexIntervals_[nodeId-1] && cellArray_[cellId+j+1] <= vertexIntervals_[nodeId])
-              vertexStars[cellArray_[cellId+j+1]-vertexIntervals_[nodeId-1]-1].push_back(cid);
+              (*vertexStars)[cellArray_[cellId+j+1]-vertexIntervals_[nodeId-1]-1].push_back(cid);
           }
         }
 
@@ -1592,7 +1776,7 @@ namespace ttk{
           for(SimplexId j = 0; j < cellArray_[0]; j++){
             // see if it is in the current node
             if(cellArray_[cellId+j+1] > vertexIntervals_[nodeId-1] && cellArray_[cellId+j+1] <= vertexIntervals_[nodeId])
-              vertexStars[cellArray_[cellId+j+1]-vertexIntervals_[nodeId-1]-1].push_back(cid);
+              (*vertexStars)[cellArray_[cellId+j+1]-vertexIntervals_[nodeId-1]-1].push_back(cid);
           }
         }
 
@@ -1602,32 +1786,41 @@ namespace ttk{
       /** 
        * Get the vertex triangles for all the vertices in a given node. 
        */ 
-      int getVertexTriangles(const SimplexId &nodeId, vector<vector<SimplexId>> &vertexTriangles) const{
+      int getVertexTriangles(const SimplexId &nodeId, vector<vector<SimplexId>> * const vertexTriangles) const{
 
         #ifndef TTK_ENABLE_KAMIKAZE
           if(nodeId <= 0 || nodeId > nodeNumber_)
             return -1;
         #endif
 
-        vertexTriangles.clear();
-        vertexTriangles.resize(vertexIntervals_[nodeId] - vertexIntervals_[nodeId-1]);
+        vertexTriangles->clear();
+        vertexTriangles->resize(vertexIntervals_[nodeId] - vertexIntervals_[nodeId-1]);
 
-        vector<vector<SimplexId>> localInternalTriangles, localExternalTriangles;
-        buildTriangleList(nodeId, &localInternalTriangles, &localExternalTriangles, nullptr, nullptr);
+        ExpandedNode *exnode = searchCache(nodeId);
+        if(!exnode->internalTriangleList_){
+          exnode->internalTriangleList_ = new vector<vector<SimplexId>>();
+          exnode->internalTriangleMap_ = new map<vector<SimplexId>, SimplexId>();
+          exnode->externalTriangleList_ = new vector<vector<SimplexId>>();
+          buildTriangleList(nodeId, exnode->internalTriangleList_, exnode->externalTriangleList_, exnode->internalTriangleMap_, nullptr);
+        }
+        if(!exnode->externalTriangleList_){
+          exnode->externalTriangleList_ = new vector<vector<SimplexId>>();
+          buildTriangleList(nodeId, exnode->internalTriangleList_, exnode->externalTriangleList_, exnode->internalTriangleMap_, nullptr);
+        }
 
         SimplexId triangleId = triangleIntervals_[nodeId-1]+1;
-        for(SimplexId i = 0; i < (SimplexId) localInternalTriangles.size(); i++){
+        for(SimplexId i = 0; i < (SimplexId) exnode->internalTriangleList_->size(); i++){
           for(SimplexId j = 0; j < 3; j++){
-            if(localInternalTriangles[i][j] > vertexIntervals_[nodeId-1] && localInternalTriangles[i][j] <= vertexIntervals_[nodeId])
-              vertexTriangles[localInternalTriangles[i][j]-vertexIntervals_[nodeId-1]-1].push_back(triangleId);
+            if(exnode->internalTriangleList_->at(i)[j] > vertexIntervals_[nodeId-1] && exnode->internalTriangleList_->at(i)[j] <= vertexIntervals_[nodeId])
+              (*vertexTriangles)[exnode->internalTriangleList_->at(i)[j]-vertexIntervals_[nodeId-1]-1].push_back(triangleId);
           }
           triangleId++;
         }
-        for(SimplexId i = 0; i < (SimplexId) localExternalTriangles.size(); i++){
-          triangleId = getTriangleId(localExternalTriangles[i]);
+        for(SimplexId i = 0; i < (SimplexId) exnode->externalTriangleList_->size(); i++){
+          triangleId = getTriangleId(exnode->externalTriangleList_->at(i));
           for(SimplexId j = 0; j < 3; j++){
-            if(localExternalTriangles[i][j] > vertexIntervals_[nodeId-1] && localExternalTriangles[i][j] <= vertexIntervals_[nodeId])
-              vertexTriangles[localExternalTriangles[i][j]-vertexIntervals_[nodeId-1]-1].push_back(triangleId);
+            if(exnode->externalTriangleList_->at(i)[j] > vertexIntervals_[nodeId-1] && exnode->externalTriangleList_->at(i)[j] <= vertexIntervals_[nodeId])
+              (*vertexTriangles)[exnode->externalTriangleList_->at(i)[j]-vertexIntervals_[nodeId-1]-1].push_back(triangleId);
           }
         }
         
@@ -1647,5 +1840,10 @@ namespace ttk{
       vector<SimplexId>   cellIntervals_;
       const LongSimplexId *cellArray_;
       vector<vector<SimplexId>> externalCells_;
+
+      // LRU cache
+      size_t cacheSize_;
+      mutable list<ExpandedNode*> cache_;
+      mutable unordered_map<SimplexId, list<ExpandedNode*>::iterator> cacheMap_;
   };
 }
