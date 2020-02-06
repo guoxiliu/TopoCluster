@@ -16,7 +16,6 @@
 // base code includes
 #include                  <Triangulation.h>
 #include                  <Wrapper.h>
-#include                  <chrono>
 
 namespace ttk{
   
@@ -103,245 +102,171 @@ template <class dataType> int ttk::TestStellar::execute() const{
 
 
   SimplexId verticesPerCell = triangulation_->getCellVertexNumber(0);
+  SimplexId edgesPerCell = triangulation_->getCellEdgeNumber(0);
+  SimplexId trianglesPerCell = triangulation_->getCellTriangleNumber(0);
 
-  // test vertex edge relationship
-  std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+  /* test vertex edge relationship */
+  t.reStart();
   for(SimplexId vertexId = 0; vertexId < vertexNumber; vertexId++){
-  // for each vertex 
     SimplexId edgeNum = triangulation_->getVertexEdgeNumber(vertexId);
+    SimplexId edgeId;
     for(SimplexId j = 0; j < edgeNum; j++){
-    // for each edge
-      SimplexId edgeId;
-      if(!triangulation_->getVertexEdge(vertexId, j, edgeId)){
-        SimplexId edgeVertexId;
-        bool hasFound = false;
-        for(SimplexId k = 0; k < 2; k++){
-          int result = triangulation_->getEdgeVertex(edgeId, k, edgeVertexId);
-          if(!result){
-            if(edgeVertexId == vertexId){
-              hasFound = true;
-              break;
-            }
-          }
-          else{
-            std::cout << "[TestStellar] vertexId " << vertexId << ":  Something wrong in getEdgeVertex()! Error code: " << result << "\n";
-          }
-        }
-        if(!hasFound){
-          std::cout << "[TestStellar] vertexId " << vertexId << " Cannot find in edge id " << edgeId << "\n";
-          triangulation_->getEdgeVertex(edgeId, 0, edgeVertexId);
-          std::cout << "edge id " << edgeId <<": " << edgeVertexId << ", ";
-          triangulation_->getEdgeVertex(edgeId, 1, edgeVertexId);
-          std::cout << edgeVertexId << ".\n";
-        }
-      }
-      else{
-        std::cout << "[TestStellar] vertexId " << vertexId << " Something wrong in getVertexEdge()!\n";
+      int result1 = triangulation_->getVertexEdge(vertexId, j, edgeId);
+      if(result1){
+        std::cerr << "[TestStellar] vertexId " << vertexId << " Something wrong in getVertexEdge()! Error code: " << result1 << "\n";
       }
     }
   }
+  std::cout << "[TestStellar] Time usage for VE: " << t.getElapsedTime() << " s.\n";
 
-  std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-  std::cout << "[TestStellar] Time usage for VE: " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << " ms\n";
-
-  // test vertex triangle relationship
-  begin = std::chrono::steady_clock::now();
+  /* test vertex triangle relationship */
+  t.reStart();
   for(SimplexId vertexId = 0; vertexId < vertexNumber; vertexId++){
-  // for each vertex 
     SimplexId triangleNum = triangulation_->getVertexTriangleNumber(vertexId);
+    SimplexId triangleId;
     for(SimplexId j = 0; j < triangleNum; j++){
-    // for each triangle
-      SimplexId triangleId;
       int result1 = triangulation_->getVertexTriangle(vertexId, j, triangleId);
-      if(!result1){
-        SimplexId triangleVertexId;
-        bool hasFound = false;
-        for(SimplexId k = 0; k < 3; k++){
-          int result2 = triangulation_->getTriangleVertex(triangleId, k, triangleVertexId);
-          if(!result2){
-            if(triangleVertexId == vertexId){
-              hasFound = true;
-              break;
-            }
-          }
-          else{
-            std::cout << "[TestStellar] vertexId " << vertexId << ":  Something wrong in getTriangleVertex()! Error code: " << result2 << "\n";
-          }
-        }
-        if(!hasFound){
-          std::cout << "[TestStellar] vertexId " << vertexId << " Cannot find in triangle id " << triangleId << "\n";
-          triangulation_->getTriangleVertex(triangleId, 0, triangleVertexId);
-          std::cout << "Triangle id " << triangleId <<": " << triangleVertexId << ", ";
-          triangulation_->getTriangleVertex(triangleId, 1, triangleVertexId);
-          std::cout << triangleVertexId << ", ";
-          triangulation_->getTriangleVertex(triangleId, 2, triangleVertexId);
-          std::cout << triangleVertexId << ".\n";
-        }
-      }
-      else{
-        std::cout << "[TestStellar] vertexId " << vertexId << " Something wrong in getVertexTriangle()! Error code: " << result1 << "\n";
+      if(result1){
+        std::cerr << "[TestStellar] vertexId " << vertexId << " Something wrong in getVertexTriangle()! Error code: " << result1 << "\n";
       }
     }
   }
-  end = std::chrono::steady_clock::now();
-  std::cout << "[TestStellar] Time usage for VT: " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << " ms\n";
+  std::cout << "[TestStellar] Time usage for VT: " << t.getElapsedTime() << " s.\n";
   
-
-  // test vertex star relationship
-  begin = std::chrono::steady_clock::now();
+  /* test vertex star relationship */
+  t.reStart();
   for(SimplexId vertexId = 0; vertexId < vertexNumber; vertexId++){
-  // for each vertex 
     SimplexId cellNum = triangulation_->getVertexStarNumber(vertexId);
+    SimplexId cellId;
     for(SimplexId j = 0; j < cellNum; j++){
-    // for each star
-      SimplexId cellId;
       int result1 = triangulation_->getVertexStar(vertexId, j, cellId);
-      if(!result1){
-        SimplexId cellVertexId;
-        bool hasFound = false;
-        for(SimplexId k = 0; k < verticesPerCell; k++){
-          int result2 = triangulation_->getCellVertex(cellId, k, cellVertexId);
-          if(!result2){
-            if(cellVertexId == vertexId){
-              hasFound = true;
-              break;
-            }
-          }
-          else{
-            std::cout << "[TestStellar] vertexId " << vertexId << ":  Something wrong in getCellVertex()! Error code: " << result2 << "\n";
-          }
-        }
-        if(!hasFound){
-          std::cout << "[TestStellar] vertexId " << vertexId << " Cannot find in cell id " << cellId << "\n";
-          triangulation_->getCellVertex(cellId, 0, cellVertexId);
-          std::cout << "Cell id " << cellId <<": " << cellVertexId << ", ";
-          triangulation_->getCellVertex(cellId, 1, cellVertexId);
-          std::cout << cellVertexId << ".\n";
-        }
-      }
-      else{
+      if(result1){
         std::cout << "[TestStellar] vertexId " << vertexId << " Something wrong in getVertexStar()! Error code: " << result1 << "\n";
       }
     }
   }
-  end = std::chrono::steady_clock::now();
-  std::cout << "[TestStellar] Time usage for VS: " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << " ms\n";
+  std::cout << "[TestStellar] Time usage for VS: " << t.getElapsedTime() << " s.\n";
 
-  // // test edge triangle relationship
-  // begin = std::chrono::steady_clock::now();
-  // for(SimplexId edgeId = 0; edgeId < edgeNumber; edgeId++){
-  // // for each vertex 
-  //   SimplexId triangleNum = triangulation_->getEdgeTriangleNumber(edgeId);
-  //   for(SimplexId j = 0; j < triangleNum; j++){
-  //   // for each triangle
-  //     SimplexId triangleId;
-  //     int result1 = triangulation_->getEdgeTriangle(edgeId, j, triangleId);
-  //     if(!result1){
-  //       SimplexId triangleEdgeId;
-  //       bool hasFound = false;
-  //       for(SimplexId k = 0; k < 3; k++){
-  //         int result2 = triangulation_->getTriangleEdge(triangleId, k, triangleEdgeId);
-  //         if(!result2){
-  //           if(triangleEdgeId == edgeId){
-  //             hasFound = true;
-  //             break;
-  //           }
-  //         }
-  //         else{
-  //           std::cout << "[TestStellar] edgeId " << edgeId << ":  Something wrong in getTriangleEdge()! Error code: " << result2 << "\n";
-  //         }
-  //       }
-  //       if(!hasFound){
-  //         std::cout << "[TestStellar] edgeId " << edgeId << " Cannot find in triangle id " << triangleId << "\n";
-  //         triangulation_->getTriangleEdge(triangleId, 0, triangleEdgeId);
-  //         std::cout << "Triangle id " << triangleId <<": " << triangleEdgeId << ", ";
-  //         triangulation_->getTriangleEdge(triangleId, 1, triangleEdgeId);
-  //         std::cout << triangleEdgeId << ", ";
-  //         triangulation_->getTriangleEdge(triangleId, 2, triangleEdgeId);
-  //         std::cout << triangleEdgeId << ".\n";
-  //       }
-  //     }
-  //     else{
-  //       std::cout << "[TestStellar] edgeId " << edgeId << " Something wrong in getEdgeTriangle()! Error code: " << result1 << "\n";
-  //     }
-  //   }
-  // }
-  // end = std::chrono::steady_clock::now();
-  // std::cout << "[TestStellar] Time usage for ET: " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << " ms\n";
+  /* test edge vertex relationship */
+  t.reStart();
+  for(SimplexId edgeId = 0; edgeId < edgeNumber; edgeId++){
+    SimplexId vertexId;
+    for(SimplexId j = 0; j < 2; j++){
+      int result1 = triangulation_->getEdgeVertex(edgeId, j, vertexId);
+      if(result1){
+        std::cout << "[TestStellar] edgeId " << edgeId << " Something wrong in getEdgeVertex()! Error code: " << result1 << "\n";
+      }
+    }
+  }
+  std::cout << "[TestStellar] Time usage for EV: " << t.getElapsedTime() << " s.\n";
 
-  // // test edge star relationship
-  // begin = std::chrono::steady_clock::now();
-  // SimplexId edgesPerCell = triangulation_->getCellEdgeNumber(0);
-  // for(SimplexId edgeId = 0; edgeId < edgeNumber; edgeId++){
-  // // for each vertex 
-  //   SimplexId cellNum = triangulation_->getEdgeStarNumber(edgeId);
-  //   for(SimplexId j = 0; j < cellNum; j++){
-  //   // for each triangle
-  //     SimplexId cellId;
-  //     int result1 = triangulation_->getEdgeStar(edgeId, j, cellId);
-  //     if(!result1){
-  //       SimplexId cellEdgeId;
-  //       bool hasFound = false;
-  //       for(SimplexId k = 0; k < edgesPerCell; k++){
-  //         int result2 = triangulation_->getCellEdge(cellId, k, cellEdgeId);
-  //         if(!result2){
-  //           if(cellEdgeId == edgeId){
-  //             hasFound = true;
-  //             break;
-  //           }
-  //         }
-  //         else{
-  //           std::cout << "[TestStellar] edgeId " << edgeId << ":  Something wrong in getCellEdge()! Error code: " << result2 << "\n";
-  //         }
-  //       }
-  //       if(!hasFound){
-  //         std::cout << "[TestStellar] edgeId " << edgeId << " Cannot find in triangle id " << cellId << "\n";
-  //       }
-  //     }
-  //     else{
-  //       std::cout << "[TestStellar] edgeId " << edgeId << " Something wrong in getEdgeStar()! Error code: " << result1 << "\n";
-  //     }
-  //   }
-  // }
-  // end = std::chrono::steady_clock::now();
-  // std::cout << "[TestStellar] Time usage for ES: " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << " ms\n";
 
-  // // test triangle star relationship
-  // begin = std::chrono::steady_clock::now();
-  // SimplexId trianglesPerCell = triangulation_->getCellTriangleNumber(0);
-  // for(SimplexId triangleId = 0; triangleId < edgeNumber; triangleId++){
-  // // for each vertex 
-  //   SimplexId cellNum = triangulation_->getTriangleStarNumber(triangleId);
-  //   for(SimplexId j = 0; j < cellNum; j++){
-  //   // for each triangle
-  //     SimplexId cellId;
-  //     int result1 = triangulation_->getTriangleStar(triangleId, j, cellId);
-  //     if(!result1){
-  //       SimplexId cellTriangleId;
-  //       bool hasFound = false;
-  //       for(SimplexId k = 0; k < trianglesPerCell; k++){
-  //         int result2 = triangulation_->getCellTriangle(cellId, k, cellTriangleId);
-  //         if(!result2){
-  //           if(cellTriangleId == triangleId){
-  //             hasFound = true;
-  //             break;
-  //           }
-  //         }
-  //         else{
-  //           std::cout << "[TestStellar] triangleId " << triangleId << ":  Something wrong in getCellTriangle()! Error code: " << result2 << "\n";
-  //         }
-  //       }
-  //       if(!hasFound){
-  //         std::cout << "[TestStellar] triangleId " << triangleId << " Cannot find in triangle id " << cellId << "\n";
-  //       }
-  //     }
-  //     else{
-  //       std::cout << "[TestStellar] triangleId " << triangleId << " Something wrong in getTriangleStar()! Error code: " << result1 << "\n";
-  //     }
-  //   }
-  // }
-  // end = std::chrono::steady_clock::now();
-  // std::cout << "[TestStellar] Time usage for TS: " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << " ms\n";
+  /* test edge triangle relationship */
+  t.reStart();
+  for(SimplexId edgeId = 0; edgeId < edgeNumber; edgeId++){
+    SimplexId triangleNum = triangulation_->getEdgeTriangleNumber(edgeId);
+    SimplexId triangleId;
+    for(SimplexId j = 0; j < triangleNum; j++){
+      int result1 = triangulation_->getEdgeTriangle(edgeId, j, triangleId);
+      if(result1){
+        std::cout << "[TestStellar] edgeId " << edgeId << " Something wrong in getEdgeTriangle()! Error code: " << result1 << "\n";
+      }
+    }
+  }
+  std::cout << "[TestStellar] Time usage for ET: " << t.getElapsedTime() << " s.\n";
+  
+  /* test edge star relationship */
+  t.reStart();
+  for(SimplexId edgeId = 0; edgeId < edgeNumber; edgeId++){
+    SimplexId cellNum = triangulation_->getEdgeStarNumber(edgeId);
+    SimplexId cellId;
+    for(SimplexId j = 0; j < cellNum; j++){
+      int result1 = triangulation_->getEdgeStar(edgeId, j, cellId);
+      if(result1){
+        std::cout << "[TestStellar] edgeId " << edgeId << " Something wrong in getEdgeStar()! Error code: " << result1 << "\n";
+      }
+    }
+  }
+  std::cout << "[TestStellar] Time usage for ES: " << t.getElapsedTime() << " s.\n";
+
+  /* test triangle vertex relationship */
+  t.reStart();
+  for(SimplexId triangleId = 0; triangleId < triangleNumber; triangleId++){
+    SimplexId vertexId;
+    for(SimplexId j = 0; j < 3; j++){
+      int result1 = triangulation_->getTriangleVertex(triangleId, j, vertexId);
+      if(result1){
+        std::cout << "[TestStellar] triangleId " << triangleId << " Something wrong in getTriangleVertex()! Error code: " << result1 << "\n";
+      }
+    }
+  }
+  std::cout << "[TestStellar] Time usage for TV: " << t.getElapsedTime() << " s.\n";
+
+  /* test triangle edge relationship */
+  t.reStart();
+  for(SimplexId triangleId = 0; triangleId < triangleNumber; triangleId++){
+    SimplexId edgeId;
+    for(SimplexId j = 0; j < 3; j++){
+      int result1 = triangulation_->getTriangleEdge(triangleId, j, edgeId);
+      if(result1){
+        std::cout << "[TestStellar] triangleId " << triangleId << " Something wrong in getTriangleEdge()! Error code: " << result1 << "\n";
+      }
+    }
+  }
+  std::cout << "[TestStellar] Time usage for TE: " << t.getElapsedTime() << " s.\n";
+
+  /* test triangle star relationship */
+  t.reStart();
+  for(SimplexId triangleId = 0; triangleId < edgeNumber; triangleId++){
+    SimplexId cellNum = triangulation_->getTriangleStarNumber(triangleId);
+    SimplexId cellId;
+    for(SimplexId j = 0; j < cellNum; j++){
+      int result1 = triangulation_->getTriangleStar(triangleId, j, cellId);
+      if(result1){
+        std::cout << "[TestStellar] triangleId " << triangleId << " Something wrong in getTriangleStar()! Error code: " << result1 << "\n";
+      }
+    }
+  }
+  std::cout << "[TestStellar] Time usage for TS: " << t.getElapsedTime() << " s.\n";
+
+  /* test cell vertex relationship */
+  t.reStart();
+  for(SimplexId cellId = 0; cellId < cellNumber; cellId++){
+    SimplexId vertexId;
+    for(SimplexId j = 0; j < verticesPerCell; j++){
+      int result1 = triangulation_->getCellVertex(cellId, j, vertexId);
+      if(result1){
+        std::cout << "[TestStellar] cellId " << cellId << " Something wrong in getCellVertex()! Error code: " << result1 << "\n";
+      }
+    }
+  }
+  std::cout << "[TestStellar] Time usage for CV: " << t.getElapsedTime() << " s.\n";
+
+  /* test cell edge relationship */
+  t.reStart();
+  for(SimplexId cellId = 0; cellId < cellNumber; cellId++){
+    SimplexId edgeId;
+    for(SimplexId j = 0; j < edgesPerCell; j++){
+      int result1 = triangulation_->getCellEdge(cellId, j, edgeId);
+      if(result1){
+        std::cout << "[TestStellar] cellId " << cellId << " Something wrong in getCellEdge()! Error code: " << result1 << "\n";
+      }
+    }
+  }
+  std::cout << "[TestStellar] Time usage for CE: " << t.getElapsedTime() << " s.\n";
+
+  /* test cell triangle relationship */
+  t.reStart();
+  for(SimplexId cellId = 0; cellId < cellNumber; cellId++){
+    SimplexId triangleId;
+    for(SimplexId j = 0; j < trianglesPerCell; j++){
+      int result1 = triangulation_->getCellTriangle(cellId, j, triangleId);
+      if(result1){
+        std::cout << "[TestStellar] cellId " << cellId << " Something wrong in getCellTriangle()! Error code: " << result1 << "\n";
+      }
+    }
+  }
+  std::cout << "[TestStellar] Time usage for CT: " << t.getElapsedTime() << " s.\n";
 
 
   // init the output -- to adapt
