@@ -42,12 +42,6 @@ namespace ttk{
       /// Setup a (valid) triangulation object for this TTK base object.
       inline int setupTriangulation(Triangulation *triangulation){
         triangulation_ = triangulation;
-       
-        if(triangulation_){
-          // Pre-condition functions.
-          triangulation_->preprocessVertexNeighbors();
-        }
-        
         return 0;
       }
     
