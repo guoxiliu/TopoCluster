@@ -324,12 +324,23 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //   }
   // }
 
+
   /* To test the edge triangle */
   for(SimplexId i = 0; i < triangleNumber; i++){
+
+    SimplexId TENum = triangulation_->getTriangleEdgeNumber(i);
+      if(TENum != 3 ){
+          std::cout << "Problems TE" << i << std::endl;
+      }
+
     for(SimplexId j = 0; j < 3; j++){
       SimplexId edgeId;
       triangulation_->getTriangleEdge(i, j, edgeId);
       SimplexId edgeTriangleNum = triangulation_->getEdgeTriangleNumber(edgeId);
+      if(edgeTriangleNum > 0 ){
+          std::cout << "OK " << edgeId << std::endl;
+      }
+
       vector<SimplexId> edgeTriangles;
       bool hasFound = false;
       for(SimplexId k = 0; k < edgeTriangleNum; k++){

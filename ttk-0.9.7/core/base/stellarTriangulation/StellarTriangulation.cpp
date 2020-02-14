@@ -14,6 +14,7 @@ StellarTriangulation::~StellarTriangulation(){
 
 int StellarTriangulation::clear(){
   vertexNumber_ = 0;
+
   cellNumber_ = 0;
   doublePrecision_ = false;
 

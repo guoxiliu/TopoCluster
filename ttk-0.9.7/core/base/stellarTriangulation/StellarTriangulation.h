@@ -403,7 +403,7 @@ namespace ttk{
         const int &localTriangleId, SimplexId &triangleId) const{
 
         #ifndef TTK_ENABLE_KAMIKAZE
-        if((edgeId < 0)||(edgeId > (SimplexId) edgeIntervals_.size()))
+        if((edgeId < 0)||(edgeId > (SimplexId) edgeIntervals_.back()))
           return -1;
         if(localTriangleId < 0)
           return -2;
@@ -425,7 +425,7 @@ namespace ttk{
       SimplexId getEdgeTriangleNumber(const SimplexId &edgeId) const{
 
         #ifndef TTK_ENABLE_KAMIKAZE
-        if((edgeId < 0)||(edgeId > (SimplexId) edgeIntervals_.size()))
+        if((edgeId < 0)||(edgeId > (SimplexId) edgeIntervals_.back()))
           return -1;
         #endif
 
@@ -440,7 +440,7 @@ namespace ttk{
       }
       
       const vector<vector<SimplexId> > *getEdgeTriangles(){
-        edgeTriangleList_.reserve(edgeIntervals_.size()+1);
+        edgeTriangleList_.reserve(edgeIntervals_.back()+1);
         for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
           ExpandedNode *exnode = searchCache(nid);
           if(exnode->edgeTriangles_ == nullptr){
@@ -1842,37 +1842,32 @@ namespace ttk{
           buildExternalTriangleMap(nodeId, exnode->externalTriangleMap_);
         }
 
-
         // for internal triangles
         pair<SimplexId, SimplexId> edgeIds;
         for(SimplexId tid = 0; tid < (SimplexId) exnode->internalTriangleList_->size(); tid++){
-          for(SimplexId j = 0; j < 2; j++){
-            if((*(exnode->internalTriangleList_))[tid][j] > vertexIntervals_[nodeId]){
-              break;
-            }
-            for(SimplexId k = j+1; k < 3; k++){
-              edgeIds = pair<SimplexId,SimplexId>((*(exnode->internalTriangleList_))[tid][j], (*(exnode->internalTriangleList_))[tid][k]);
-              (*edgeTriangles)[exnode->internalEdgeMap_->at(edgeIds)-edgeIntervals_[nodeId-1]-1].push_back(
-                tid + triangleIntervals_[nodeId-1] + 1);
-            }
+          //
+          pair<SimplexId,SimplexId> edge = pair<SimplexId ,SimplexId >((*(exnode->internalTriangleList_))[tid][0], (*(exnode->internalTriangleList_))[tid][1]);
+          (*edgeTriangles)[exnode->internalEdgeMap_->at(edge)-edgeIntervals_[nodeId-1]-1].push_back(tid + triangleIntervals_[nodeId-1] + 1);
+
+
+          edge = pair<SimplexId ,SimplexId >((*(exnode->internalTriangleList_))[tid][0], (*(exnode->internalTriangleList_))[tid][2]);
+          (*edgeTriangles)[exnode->internalEdgeMap_->at(edge)-edgeIntervals_[nodeId-1]-1].push_back(tid + triangleIntervals_[nodeId-1] + 1);
+
+          if((*(exnode->internalTriangleList_))[tid][1] <= vertexIntervals_[nodeId]){
+              edge = pair<SimplexId ,SimplexId >((*(exnode->internalTriangleList_))[tid][1], (*(exnode->internalTriangleList_))[tid][2]);
+              (*edgeTriangles)[exnode->internalEdgeMap_->at(edge)-edgeIntervals_[nodeId-1]-1].push_back(tid + triangleIntervals_[nodeId-1] + 1);
           }
+//
         }
 
         // for external triangles
         map<vector<SimplexId>, SimplexId>::iterator iter;
         // loop through each edge of the cell
         for(iter = exnode->externalTriangleMap_->begin(); iter != exnode->externalTriangleMap_->end(); iter++){
-          for(SimplexId j = 0; j < 2; j++){
-            for(SimplexId k = j+1; k < 3; k++){
-              edgeIds.first = iter->first.at(j);
-              edgeIds.second = iter->first.at(k);
-              
-              // the edge is in the current node
-              if(edgeIds.first > vertexIntervals_[nodeId-1] && edgeIds.first <= vertexIntervals_[nodeId]){
-                (*edgeTriangles)[exnode->internalEdgeMap_->at(edgeIds)-edgeIntervals_[nodeId-1]-1].push_back(iter->second);
-              }
+            pair<SimplexId,SimplexId> edge = pair<SimplexId, SimplexId >(iter->first.at(1), iter->first.at(2));
+            if(edge.first > vertexIntervals_[nodeId-1] && edge.first <= vertexIntervals_[nodeId]){
+                (*edgeTriangles)[exnode->internalEdgeMap_->at(edge)-edgeIntervals_[nodeId-1]-1].push_back(iter->second);
             }
-          }
         }
 
         return 0;
