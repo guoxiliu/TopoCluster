@@ -1,4 +1,0 @@
-ttk_add_vtk_library(ttkMultivariateGradient
-	SOURCES ttkMultivariateGradient.cpp
-	HEADERS ttkMultivariateGradient.h
-	LINK multivariateGradient ttkTriangulation)

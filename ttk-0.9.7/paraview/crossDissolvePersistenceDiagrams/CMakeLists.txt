@@ -1,6 +1,0 @@
-ttk_add_paraview_plugin(ttkcrossDissolvePersistenceDiagrams
-	SOURCES ${VTKWRAPPER_DIR}/ttkcrossDissolvePersistenceDiagrams/ttkcrossDissolvePersistenceDiagrams.cpp
-	PLUGIN_VERSION 1.0
-	PLUGIN_XML crossDissolvePersistenceDiagrams.xml
-	LINK crossDissolvePersistenceDiagrams)
-

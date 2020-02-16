@@ -1,4 +1,0 @@
-ttk_add_vtk_library(ttkndPersistentHomology
-	SOURCES ttkndPersistentHomology.cpp
-	HEADERS ttkndPersistentHomology.h
-	LINK ndPersistentHomology ttkTriangulation persistentHomology)

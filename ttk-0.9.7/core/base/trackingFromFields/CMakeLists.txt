@@ -1,4 +1,0 @@
-ttk_add_base_library(trackingFromFields
-	SOURCES TrackingFromFields.cpp
-	HEADERS TrackingFromFields.h
-	LINK persistenceDiagram bottleneckDistance trackingFromPersistenceDiagrams)

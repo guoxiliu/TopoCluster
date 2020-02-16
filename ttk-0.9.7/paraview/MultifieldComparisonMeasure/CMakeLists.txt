@@ -1,6 +1,0 @@
-ttk_add_paraview_plugin(ttkMultifieldComparisonMeasure
-	SOURCES ${VTKWRAPPER_DIR}/ttkMultifieldComparisonMeasure/ttkMultifieldComparisonMeasure.cpp
-	PLUGIN_VERSION 1.0
-	PLUGIN_XML MultifieldComparisonMeasure.xml
-	LINK multifieldComparisonMeasure)
-

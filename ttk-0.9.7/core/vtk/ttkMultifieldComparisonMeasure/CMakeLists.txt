@@ -1,4 +1,0 @@
-ttk_add_vtk_library(ttkMultifieldComparisonMeasure
-	SOURCES ttkMultifieldComparisonMeasure.cpp
-	HEADERS ttkMultifieldComparisonMeasure.h
-	LINK multifieldComparisonMeasure ttkTriangulation)

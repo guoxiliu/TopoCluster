@@ -1,6 +1,0 @@
-ttk_add_base_library(persistenceCurve
-	SOURCES PersistenceCurve.cpp
-	HEADERS PersistenceCurve.h
-	LINK discreteGradient
-		triangulation morseSmaleComplex3D ftmTreePP)
-

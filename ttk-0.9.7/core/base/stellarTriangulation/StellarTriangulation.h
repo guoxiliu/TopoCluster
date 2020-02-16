@@ -154,6 +154,8 @@ namespace ttk{
           if(cid < cellNumber)
             cid++;
         }
+
+        return 0;
       }
 
       int setInputPoints(const SimplexId &pointNumber, const void *pointSet, 

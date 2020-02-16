@@ -59,7 +59,7 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
 
   for(auto name : scalarFields){
     vtkDataArray* inputScalars_ = input->GetPointData()->GetArray(name.data());
-    vtkDataArray* newField;
+    vtkDataArray* newField = nullptr;
 
       switch(inputScalars_->GetDataType()){
 
