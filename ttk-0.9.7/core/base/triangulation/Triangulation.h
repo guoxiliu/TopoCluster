@@ -3193,7 +3193,10 @@ namespace ttk{
                           implicitTriangulation_;
       StellarTriangulation
                           stellarTriangulation_;
+  
+      friend class TestStellar;
   };
+
 }
 
 // if the package is not a template, comment the following line

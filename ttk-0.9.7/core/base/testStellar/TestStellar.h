@@ -44,6 +44,8 @@ namespace ttk{
         triangulation_ = triangulation;
         
         if(triangulation_){
+          Timer t;
+          t.getStartTime();
           // build edges and triangles
           triangulation_->preprocessEdges();
           triangulation_->preprocessTriangles();
@@ -61,6 +63,7 @@ namespace ttk{
           // cell related relationships
           triangulation_->preprocessCellEdges();
           triangulation_->preprocessCellTriangles();
+          std::cout << "[TestStellar] Time usage for preprocessing: " << t.getElapsedTime() << " s.\n";
         }
         
         return 0;
@@ -267,63 +270,6 @@ template <class dataType> int ttk::TestStellar::execute() const{
     }
   }
   std::cout << "[TestStellar] Time usage for CT: " << t.getElapsedTime() << " s.\n";
-
-  /* To test the vertex edge */
-  for(SimplexId i = 0; i < edgeNumber; i++){
-    for(SimplexId j = 0; j < 3; j++){
-      SimplexId vertexId;
-      triangulation_->getEdgeVertex(i, j, vertexId);
-      SimplexId vertexEdgeNum = triangulation_->getVertexEdgeNumber(vertexId);
-      vector<SimplexId> vertexEdges;
-      bool hasFound = false;
-      for(SimplexId k = 0; k < vertexEdgeNum; k++){
-        SimplexId edgeId;
-        triangulation_->getVertexEdge(vertexId, k, edgeId);
-        vertexEdges.push_back(edgeId);
-        if(edgeId == i){
-          hasFound = true;
-          break;
-        }
-      }
-      if(!hasFound){
-        std::cout << "Edge id " << i << " not found in vertex id " << vertexId << std::endl;
-        std::cout << "Vertex id " << vertexId << ":[ ";
-        for(SimplexId tid : vertexEdges){
-          std::cout << tid << " ";
-        }
-        std::cout << "]\n";
-      }
-    }
-  }
-
-  /* To test the vertex triangle */
-  for(SimplexId i = 0; i < triangleNumber; i++){
-    for(SimplexId j = 0; j < 3; j++){
-      SimplexId vertexId;
-      triangulation_->getTriangleVertex(i, j, vertexId);
-      SimplexId vertexTriangleNum = triangulation_->getVertexTriangleNumber(vertexId);
-      vector<SimplexId> vertexTriangles;
-      bool hasFound = false;
-      for(SimplexId k = 0; k < vertexTriangleNum; k++){
-        SimplexId triangleId;
-        triangulation_->getVertexTriangle(vertexId, k, triangleId);
-        vertexTriangles.push_back(triangleId);
-        if(triangleId == i){
-          hasFound = true;
-          break;
-        }
-      }
-      if(!hasFound){
-        std::cout << "Triangle id " << i << " not found in vertex id " << vertexId << std::endl;
-        std::cout << "Vertex id " << vertexId << ":[ ";
-        for(SimplexId tid : vertexTriangles){
-          std::cout << tid << " ";
-        }
-        std::cout << "]\n";
-      }
-    }
-  }
-
 
   // init the output -- to adapt
   for(SimplexId i = 0; i < vertexNumber; i++){

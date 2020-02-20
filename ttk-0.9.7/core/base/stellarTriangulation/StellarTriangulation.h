@@ -180,7 +180,7 @@ namespace ttk{
         }
         vertexIntervals_.push_back(vid-1);
         nodeNumber_ = vertexIntervals_.size()-1;
-        cacheSize_ = 100;
+        initCache();
 
         cout << "[StellarTriangulation] node num: " << nodeNumber_ << ", cache size: " << cacheSize_ << endl;
 
@@ -1162,6 +1162,54 @@ namespace ttk{
         return 0;
       }
 
+
+      /**
+       * Initialize the cache.
+       */
+      void initCache(const size_t size=100){
+        cacheSize_ = size;
+        missCount_ = 0;
+      }
+
+      /**
+       * Search the node in the cache.
+       */
+      ExpandedNode* searchCache(const SimplexId &nodeId, const SimplexId reservedId=0) const{
+        // cannot find the expanded node in the cache
+        if(cacheMap_.find(nodeId) == cacheMap_.end()){
+          missCount_++;
+          if(cache_.size() >= cacheSize_){
+            if(cache_.back()->nid == reservedId){
+              return nullptr;
+            }
+            cacheMap_.erase(cache_.back()->nid);
+            delete cache_.back();
+            cache_.pop_back();
+          }
+          cache_.push_front(new ExpandedNode(nodeId));
+          cacheMap_[nodeId] = cache_.begin();
+        }
+        // find the expanded node in the cache
+        else{
+          cache_.splice(cache_.begin(), cache_, cacheMap_[nodeId]);
+          cacheMap_[nodeId] = cache_.begin();
+        }
+        return cache_.front();
+      }
+
+      /**
+       * Clear the counts for cache.
+       */ 
+      void clearCacheCount(){
+        missCount_ = 0;
+      }
+
+      /**
+       * Get the cache miss rate.
+       */  
+      int getMissCount() const{
+        return missCount_;
+      }
       
     protected:
 
@@ -1187,31 +1235,6 @@ namespace ttk{
 
         vector<SimplexId>::const_iterator low = lower_bound(intervals->begin(), intervals->end(), id);
         return (low-intervals->begin());
-      }
-
-      /**
-       * Search the node in the cache.
-       */
-      ExpandedNode* searchCache(const SimplexId &nodeId, const SimplexId reservedId=0) const{
-        // cannot find the expanded node in the cache
-        if(cacheMap_.find(nodeId) == cacheMap_.end()){
-          if(cache_.size() >= cacheSize_){
-            if(cache_.back()->nid == reservedId){
-              return nullptr;
-            }
-            cacheMap_.erase(cache_.back()->nid);
-            delete cache_.back();
-            cache_.pop_back();
-          }
-          cache_.push_front(new ExpandedNode(nodeId));
-          cacheMap_[nodeId] = cache_.begin();
-        }
-        // find the expanded node in the cache
-        else{
-          cache_.splice(cache_.begin(), cache_, cacheMap_[nodeId]);
-          cacheMap_[nodeId] = cache_.begin();
-        }
-        return cache_.front();
       }
 
       /** 
@@ -1845,7 +1868,6 @@ namespace ttk{
         }
 
         // for internal triangles
-        pair<SimplexId, SimplexId> edgeIds;
         for(SimplexId tid = 0; tid < (SimplexId) exnode->internalTriangleList_->size(); tid++){
           //
           pair<SimplexId,SimplexId> edge = pair<SimplexId ,SimplexId >((*(exnode->internalTriangleList_))[tid][0], (*(exnode->internalTriangleList_))[tid][1]);
@@ -1859,7 +1881,6 @@ namespace ttk{
               edge = pair<SimplexId ,SimplexId >((*(exnode->internalTriangleList_))[tid][1], (*(exnode->internalTriangleList_))[tid][2]);
               (*edgeTriangles)[exnode->internalEdgeMap_->at(edge)-edgeIntervals_[nodeId-1]-1].push_back(tid + triangleIntervals_[nodeId-1] + 1);
           }
-//
         }
 
         // for external triangles
@@ -2115,7 +2136,10 @@ namespace ttk{
 
       // LRU cache
       size_t cacheSize_;
+      mutable int missCount_;
       mutable list<ExpandedNode*> cache_;
       mutable unordered_map<SimplexId, list<ExpandedNode*>::iterator> cacheMap_;
+
+      friend class TestStellar;
   };
 }

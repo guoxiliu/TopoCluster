@@ -93,7 +93,11 @@ int ttkTestStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> &out
   
   {
     stringstream msg;
-    msg << "[ttkTestStellar] Memory usage: " << m.getInstantUsage() 
+    msg << "[ttkTestStellar] Initial Memory usage: " << m.getInitialMemoryUsage() 
+      << " MB." << endl;
+    msg << "[ttkTestStellar] Instant Memory usage: " << m.getInstantUsage() 
+      << " MB." << endl;
+    msg << "[ttkTestStellar] Elapsed Memory usage: " << m.getElapsedUsage() 
       << " MB." << endl;
     dMsg(cout, msg.str(), memoryMsg);
   }
