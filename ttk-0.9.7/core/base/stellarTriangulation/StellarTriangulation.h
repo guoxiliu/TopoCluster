@@ -166,6 +166,7 @@ namespace ttk{
 
         vertexNumber_ = pointNumber;
         pointSet_ = pointSet;
+        vertexIndices_ = indexArray;
         doublePrecision_ = doublePrecision;
 
         // initialize the array of vertex intervals
@@ -851,7 +852,7 @@ namespace ttk{
         }
         return &vertexStarList_;
       }
-      
+
       int getVertexTriangle(const SimplexId &vertexId, 
         const int &localTriangleId, SimplexId &triangleId) const{
         
@@ -1190,7 +1191,7 @@ namespace ttk{
           cacheMap_[nodeId] = cache_.begin();
         }
         // find the expanded node in the cache
-        else{
+        else if(cacheMap_[nodeId] != cache_.begin()){
           cache_.splice(cache_.begin(), cache_, cacheMap_[nodeId]);
           cacheMap_[nodeId] = cache_.begin();
         }
@@ -1219,11 +1220,12 @@ namespace ttk{
        * Find the corresponding node index given the id.
        */ 
       SimplexId findNodeIndex(SimplexId id, int idType) const{
+        if(idType == VERTEX_ID){
+          return vertexIndices_[id]+1;
+        }
         const vector<SimplexId> *intervals = nullptr;
         // determine which vector to search
-        if(idType == VERTEX_ID){
-          intervals = &vertexIntervals_;
-        }else if(idType == EDGE_ID){
+        if(idType == EDGE_ID){
           intervals = &edgeIntervals_;
         }else if(idType == TRIANGLE_ID){
           intervals = &triangleIntervals_;
@@ -2127,6 +2129,7 @@ namespace ttk{
       bool                doublePrecision_;
       SimplexId           cellNumber_, vertexNumber_, nodeNumber_;
       const void          *pointSet_;
+      const int           *vertexIndices_;
       vector<SimplexId>   vertexIntervals_;
       vector<SimplexId>   edgeIntervals_;
       vector<SimplexId>   triangleIntervals_;

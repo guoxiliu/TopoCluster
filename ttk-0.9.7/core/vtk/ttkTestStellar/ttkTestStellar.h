@@ -36,6 +36,7 @@
 // ttk code includes
 #include                  <TestStellar.h>
 #include                  <ttkWrapper.h>
+#include                  <Usage.h>
 
 // in this example, this wrapper takes a data-set on the input and produces a 
 // data-set on the output - to adapt.
@@ -68,7 +69,7 @@ class ttkTestStellar
     
     vtkSetMacro(ScalarField, std::string);
     vtkGetMacro(ScalarField, std::string);
-        
+    
     // TODO-2
     // Over-ride the input types.
     // By default, this filter has one input and one output, of the same type.

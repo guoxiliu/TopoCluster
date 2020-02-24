@@ -7,7 +7,7 @@ vtkStandardNewMacro(ttkTestStellar)
 
 int ttkTestStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> &outputs){
 
-  Memory m;
+  MemoryUsage m;
   
   vtkDataSet *input = inputs[0];
   vtkDataSet *output = outputs[0];
@@ -93,12 +93,8 @@ int ttkTestStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> &out
   
   {
     stringstream msg;
-    msg << "[ttkTestStellar] Initial Memory usage: " << m.getInitialMemoryUsage() 
-      << " MB." << endl;
-    msg << "[ttkTestStellar] Instant Memory usage: " << m.getInstantUsage() 
-      << " MB." << endl;
-    msg << "[ttkTestStellar] Elapsed Memory usage: " << m.getElapsedUsage() 
-      << " MB." << endl;
+    msg << "[ttkTestStellar] Memory usage: " << m.getValue_in_MB(false) 
+      << " MB." << endl;;
     dMsg(cout, msg.str(), memoryMsg);
   }
   
