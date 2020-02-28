@@ -1047,10 +1047,18 @@ namespace ttk{
         if(!hasPreprocessedEdges_){
           edgeIntervals_.resize(nodeNumber_+1);
           edgeIntervals_[0] = -1;
+          vector<SimplexId> edgeCount(nodeNumber_+1);
+          #ifdef TTK_ENABLE_OPENMP
+          #pragma omp parallel for num_threads(threadNumber_)
+          #endif
           for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-            SimplexId edgeNum = countInternalEdges(nid);
-            edgeIntervals_[nid] = edgeIntervals_[nid-1] + edgeNum;
+            edgeCount[nid] = countInternalEdges(nid);
           }
+
+          for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
+            edgeIntervals_[nid] = edgeIntervals_[nid-1]+edgeCount[nid];
+          }
+
           hasPreprocessedEdges_ = true;
         }
 
@@ -1093,10 +1101,18 @@ namespace ttk{
         if(!hasPreprocessedTriangles_){
           triangleIntervals_.resize(nodeNumber_+1);
           triangleIntervals_[0] = -1;
+          vector<SimplexId> triangleCount(nodeNumber_+1);
+          #ifdef TTK_ENABLE_OPENMP
+          #pragma omp parallel for num_threads(threadNumber_)
+          #endif
           for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-            SimplexId triangleNum = countInternalTriangles(nid);
-            triangleIntervals_[nid] = triangleIntervals_[nid-1] + triangleNum;
+            triangleCount[nid] = countInternalTriangles(nid);
           }
+
+          for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
+            triangleIntervals_[nid] = triangleIntervals_[nid-1]+triangleCount[nid];
+          }
+
           hasPreprocessedTriangles_ = true;
         }
 
@@ -1172,6 +1188,33 @@ namespace ttk{
         missCount_ = 0;
       }
 
+    protected:
+
+      int clear();
+
+      /**
+       * Find the corresponding node index given the id.
+       */ 
+      SimplexId findNodeIndex(SimplexId id, int idType) const{
+        if(idType == VERTEX_ID){
+          return vertexIndices_[id]+1;
+        }
+        const vector<SimplexId> *intervals = nullptr;
+        // determine which vector to search
+        if(idType == EDGE_ID){
+          intervals = &edgeIntervals_;
+        }else if(idType == TRIANGLE_ID){
+          intervals = &triangleIntervals_;
+        }else if(idType == CELL_ID){
+          intervals = &cellIntervals_;
+        }else{
+          return -1;
+        }
+
+        vector<SimplexId>::const_iterator low = lower_bound(intervals->begin(), intervals->end(), id);
+        return (low-intervals->begin());
+      }
+
       /**
        * Search the node in the cache.
        */
@@ -1199,6 +1242,23 @@ namespace ttk{
       }
 
       /**
+       * Insert a vector of nodes in the cache.
+       */
+      void insertCache(const vector<ExpandedNode*> nodeVec, const SimplexId reservedId=0) const{
+        for(ExpandedNode *exnode : nodeVec){
+          if(cache_.size() >= cacheSize_){
+            if(cache_.back()->nid == reservedId)
+              break;
+            cacheMap_.erase(cache_.back()->nid);
+            delete cache_.back();
+            cache_.pop_back();
+          }
+          cache_.push_front(exnode);
+          cacheMap_[exnode->nid] = cache_.begin();
+        }
+      }
+
+      /**
        * Clear the counts for cache.
        */ 
       void clearCacheCount(){
@@ -1210,33 +1270,6 @@ namespace ttk{
        */  
       int getMissCount() const{
         return missCount_;
-      }
-      
-    protected:
-
-      int clear();
-
-      /**
-       * Find the corresponding node index given the id.
-       */ 
-      SimplexId findNodeIndex(SimplexId id, int idType) const{
-        if(idType == VERTEX_ID){
-          return vertexIndices_[id]+1;
-        }
-        const vector<SimplexId> *intervals = nullptr;
-        // determine which vector to search
-        if(idType == EDGE_ID){
-          intervals = &edgeIntervals_;
-        }else if(idType == TRIANGLE_ID){
-          intervals = &triangleIntervals_;
-        }else if(idType == CELL_ID){
-          intervals = &cellIntervals_;
-        }else{
-          return -1;
-        }
-
-        vector<SimplexId>::const_iterator low = lower_bound(intervals->begin(), intervals->end(), id);
-        return (low-intervals->begin());
       }
 
       /** 
@@ -1287,6 +1320,7 @@ namespace ttk{
               
               // not found in the edge map - assign new edge id
               if(edgeMap->find(edgeIds) == edgeMap->end()){
+                
                 edgeCount++;
                 (*edgeMap)[edgeIds] = edgeCount+edgeIntervals_[nodeId-1];
                 if(internalEdgeList)
@@ -1348,11 +1382,21 @@ namespace ttk{
 
         SimplexId verticesPerCell = cellArray_[0];
         unordered_map<SimplexId, vector<pair<SimplexId, SimplexId>>> edgeNodes;
+        unordered_map<SimplexId, vector<pair<SimplexId, SimplexId>>> threadedEdgeNodes[threadNumber_];
         
         // loop through the external cell list
-        for(SimplexId cid : externalCells_[nodeId]){
+        // threadNumber_ = 1;
+        #ifdef TTK_ENABLE_OPENMP
+        #pragma omp parallel for num_threads(threadNumber_)
+        #endif
+        for(size_t i = 0; i < externalCells_[nodeId].size(); i++){
+          ThreadId tid = 0;
+          #ifdef TTK_ENABLE_OPENMP
+          tid = omp_get_thread_num();
+          #endif
+
           pair<SimplexId, SimplexId> edgeIds;
-          SimplexId cellId = (verticesPerCell + 1) * cid;
+          SimplexId cellId = (verticesPerCell + 1) * externalCells_[nodeId][i];
 
           // loop through each edge of the cell
           for(SimplexId j = 0; j < verticesPerCell-1; j++){
@@ -1362,32 +1406,74 @@ namespace ttk{
               
               // check if the edge is an external edge
               if(edgeIds.first <= vertexIntervals_[nodeId-1] && edgeIds.second > vertexIntervals_[nodeId-1] && edgeIds.second <= vertexIntervals_[nodeId]){
-                edgeNodes[findNodeIndex(edgeIds.first, VERTEX_ID)].push_back(edgeIds);
+                SimplexId nid = findNodeIndex(edgeIds.first, VERTEX_ID);
+                threadedEdgeNodes[tid][nid].push_back(edgeIds);
               }
             }
           }
         }
 
-        ExpandedNode *exnode;
-        unordered_map<SimplexId, vector<pair<SimplexId, SimplexId>>>::iterator iter;
-        for(iter = edgeNodes.begin(); iter != edgeNodes.end(); iter++){
-          exnode = searchCache(iter->first, nodeId);
-          if(!exnode){
-            map<pair<SimplexId, SimplexId>, SimplexId> localInternalEdgeMap;
-            buildInternalEdgeList(iter->first, nullptr, &localInternalEdgeMap, nullptr);
-            for(pair<SimplexId, SimplexId> edgePair : iter->second){
-              (*externalEdgeMap)[edgePair] = localInternalEdgeMap.at(edgePair);
+        if(threadNumber_ > 1){
+          for(int i = 0; i < threadNumber_; i++){
+            for(auto iter : threadedEdgeNodes[i]){
+              edgeNodes[iter.first].insert(edgeNodes[iter.first].end(), threadedEdgeNodes[i][iter.first].begin(), threadedEdgeNodes[i][iter.first].end());
             }
           }
-          else{
+        }
+        else{
+          edgeNodes = threadedEdgeNodes[0];
+        }
+
+        map<pair<SimplexId, SimplexId>, SimplexId> threadedEdgeMap[threadNumber_];
+        vector<vector<ExpandedNode*>> threadedNodes(threadNumber_);
+
+        #ifdef TTK_ENABLE_OPENMP
+        #pragma omp parallel for num_threads(threadNumber_)
+        #endif
+        for(size_t b = 0; b < edgeNodes.bucket_count(); b++){
+          for(auto iter = edgeNodes.begin(b); iter != edgeNodes.end(b); iter++){
+            ThreadId tid = 0;
+            #ifdef TTK_ENABLE_OPENMP
+            tid = omp_get_thread_num();
+            #endif
+
+            ExpandedNode *exnode;
+            if(cacheMap_.find(iter->first) == cacheMap_.end()){
+              exnode = new ExpandedNode(iter->first);
+              threadedNodes[tid].push_back(exnode);
+            }
+            else{
+              exnode = (*(cacheMap_[iter->first]));
+            }
             if(exnode->internalEdgeMap_ == nullptr){
               exnode->internalEdgeMap_ = new map<pair<SimplexId, SimplexId>, SimplexId>();
               buildInternalEdgeList(iter->first, nullptr, exnode->internalEdgeMap_, nullptr);
             }
-            for(pair<SimplexId, SimplexId> edgePair : iter->second){
-              (*externalEdgeMap)[edgePair] = exnode->internalEdgeMap_->at(edgePair);
+            for(size_t i = 0; i < iter->second.size(); i++){
+              SimplexId eid = exnode->internalEdgeMap_->at(iter->second[i]);
+              threadedEdgeMap[tid][iter->second[i]] = eid;
             }
           }
+        }
+
+        // now merget the external edge map
+        if(threadNumber_ > 1){
+          for(int i = 0; i < threadNumber_; i++){
+            (*externalEdgeMap).insert(threadedEdgeMap[i].begin(), threadedEdgeMap[i].end());
+          }
+        }
+        else{
+          (*externalEdgeMap) = threadedEdgeMap[0];
+        }
+
+        // now insert new nodes into cache
+        if(threadNumber_ > 1){
+          for(int i = 0; i < threadNumber_; i++){
+            insertCache(threadedNodes[i]);
+          }
+        }
+        else{
+          insertCache(threadedNodes[0]);
         }
 
         return 0;
@@ -1516,9 +1602,15 @@ namespace ttk{
 
         SimplexId verticesPerCell = cellArray_[0];
         unordered_map<SimplexId, vector<vector<SimplexId>>> triangleNodes;
+        unordered_map<SimplexId, vector<vector<SimplexId>>> threadedTriangleNodes[threadNumber_];
 
         // loop through the external cell list
         for(SimplexId cid : externalCells_[nodeId]){
+          ThreadId tid = 0;
+          #ifdef TTK_ENABLE_OPENMP
+          tid = omp_get_thread_num();
+          #endif
+
           vector<SimplexId> triangleIds(3);
           SimplexId cellId = (verticesPerCell + 1) * cid;
 
@@ -1532,10 +1624,10 @@ namespace ttk{
                   triangleIds[2] = cellArray_[cellId + l + 1];
 
                   if(triangleIds[1] > vertexIntervals_[nodeId-1] && triangleIds[1] <= vertexIntervals_[nodeId]){
-                    triangleNodes[findNodeIndex(triangleIds[0], VERTEX_ID)].push_back(triangleIds);
+                    threadedTriangleNodes[tid][findNodeIndex(triangleIds[0], VERTEX_ID)].push_back(triangleIds);
                   }
                   else if(triangleIds[2] > vertexIntervals_[nodeId-1] && triangleIds[2] <= vertexIntervals_[nodeId]){
-                    triangleNodes[findNodeIndex(triangleIds[0], VERTEX_ID)].push_back(triangleIds);
+                    threadedTriangleNodes[tid][findNodeIndex(triangleIds[0], VERTEX_ID)].push_back(triangleIds);
                   }
                 }
               }
@@ -1543,24 +1635,48 @@ namespace ttk{
           }
         }
 
-        ExpandedNode *exnode;
-        unordered_map<SimplexId, vector<vector<SimplexId>>>::iterator iter;
-        for(iter = triangleNodes.begin(); iter != triangleNodes.end(); iter++){
-          exnode = searchCache(iter->first, nodeId);
-          if(!exnode){
-            map<vector<SimplexId>, SimplexId> localInternalTriangleMap;
-            buildInternalTriangleList(iter->first, nullptr, &localInternalTriangleMap, nullptr);
-            for(vector<SimplexId> triangleVec : iter->second){
-              (*externalTriangleMap)[triangleVec] = localInternalTriangleMap.at(triangleVec);
+        if(threadNumber_ > 1){
+          for(int i = 0; i < threadNumber_; i++){
+            for(auto iter : threadedTriangleNodes[i]){
+              triangleNodes[iter.first].insert(triangleNodes[iter.first].end(), threadedTriangleNodes[i][iter.first].begin(), threadedTriangleNodes[i][iter.first].end());
             }
           }
-          else{
-            if(exnode->internalTriangleMap_ == nullptr){
-              exnode->internalTriangleMap_ = new map<vector<SimplexId>, SimplexId>();
-              buildInternalTriangleList(iter->first, nullptr, exnode->internalTriangleMap_, nullptr);
+        }
+        else{
+          triangleNodes = threadedTriangleNodes[0];
+        }
+
+        #ifdef TTK_ENABLE_OPENMP
+        #pragma omp parallel for num_threads(threadNumber_)
+        #endif
+        for(size_t b = 0; b < triangleNodes.bucket_count(); b++){
+          for(auto iter = triangleNodes.begin(b); iter != triangleNodes.end(b); iter++){
+            ExpandedNode *exnode;
+            #ifdef TTK_ENABLE_OPENMP
+            #pragma omp critical
+            #endif
+            exnode = searchCache(iter->first, nodeId);
+            if(!exnode){
+              map<vector<SimplexId>, SimplexId> localInternalTriangleMap;
+              buildInternalTriangleList(iter->first, nullptr, &localInternalTriangleMap, nullptr);
+              for(vector<SimplexId> triangleVec : iter->second){
+                #ifdef TTK_ENABLE_OPENMP
+                #pragma omp critical
+                #endif
+                (*externalTriangleMap)[triangleVec] = localInternalTriangleMap.at(triangleVec);
+              }
             }
-            for(vector<SimplexId> triangleVec : iter->second){
-              (*externalTriangleMap)[triangleVec] = exnode->internalTriangleMap_->at(triangleVec);
+            else{
+              if(exnode->internalTriangleMap_ == nullptr){
+                exnode->internalTriangleMap_ = new map<vector<SimplexId>, SimplexId>();
+                buildInternalTriangleList(iter->first, nullptr, exnode->internalTriangleMap_, nullptr);
+              }
+              for(vector<SimplexId> triangleVec : iter->second){
+                #ifdef TTK_ENABLE_OPENMP
+                #pragma omp critical
+                #endif
+                (*externalTriangleMap)[triangleVec] = exnode->internalTriangleMap_->at(triangleVec);
+              }
             }
           }
         }
@@ -1718,47 +1834,60 @@ namespace ttk{
           buildInternalEdgeList(nodeId, exnode->internalEdgeList_, exnode->internalEdgeMap_, nullptr);
         }
 
+        #ifdef TTK_ENABLE_OPENMP
+        #pragma omp parallel for num_threads(threadNumber_)
+        #endif
         for(SimplexId i = cellIntervals_[nodeId-1]+1; i <= cellIntervals_[nodeId]; i++){
           SimplexId cellId = (cellArray_[0]+1)*i;
           // get the internal edge id from the map
           for(SimplexId k = 1; k < cellArray_[0]; k++){
             pair<SimplexId, SimplexId> edgePair(cellArray_[cellId+1], cellArray_[cellId+k+1]);
-            cellEdges->at(i-cellIntervals_[nodeId-1]-1).at(k-1) = exnode->internalEdgeMap_->at(edgePair);
+            (*cellEdges)[i-cellIntervals_[nodeId-1]-1][k-1] = exnode->internalEdgeMap_->at(edgePair);
           }
           for(SimplexId j = 1; j < cellArray_[0]-1; j++){
             for(SimplexId k = j+1; k < cellArray_[0]; k++){
               pair<SimplexId, SimplexId> edgePair(cellArray_[cellId+j+1], cellArray_[cellId+k+1]);
               if(edgePair.first <= vertexIntervals_[nodeId]){
-                cellEdges->at(i-cellIntervals_[nodeId-1]-1).at(j+k) = exnode->internalEdgeMap_->at(edgePair);
+                (*cellEdges)[i-cellIntervals_[nodeId-1]-1][j+k] = exnode->internalEdgeMap_->at(edgePair);
               }
               // group the external edges by node id
               else{
                 vector<SimplexId> edgeTuple{i, j+k, edgePair.first, edgePair.second};
+                #ifdef TTK_ENABLE_OPENMP
+                #pragma omp critical
+                #endif
                 edgeNodes[findNodeIndex(edgePair.first, VERTEX_ID)].push_back(edgeTuple);
               }
             }
           }
         }
 
-        map<pair<SimplexId, SimplexId>, SimplexId> localInternalEdgeMap;
-        unordered_map<SimplexId, vector<vector<SimplexId>>>::iterator iter;
-        for(iter = edgeNodes.begin(); iter != edgeNodes.end(); iter++){
-          exnode = searchCache(iter->first, nodeId);
-          if(!exnode){
-            buildInternalEdgeList(iter->first, nullptr, &localInternalEdgeMap, nullptr);
-            for(vector<SimplexId> edgeTuple : iter->second){
-              pair<SimplexId, SimplexId> edgePair(edgeTuple[2], edgeTuple[3]);
-              (*cellEdges)[edgeTuple[0]-cellIntervals_[nodeId-1]-1][edgeTuple[1]] = localInternalEdgeMap.at(edgePair);
+        #ifdef TTK_ENABLE_OPENMP
+        #pragma omp parallel for num_threads(threadNumber_)
+        #endif
+        for(size_t b = 0; b < edgeNodes.bucket_count(); b++){
+          for(auto iter = edgeNodes.begin(); iter != edgeNodes.end(); iter++){
+            #ifdef TTK_ENABLE_OPENMP
+            #pragma omp critical
+            #endif
+            exnode = searchCache(iter->first, nodeId);
+            if(!exnode){
+              map<pair<SimplexId, SimplexId>, SimplexId> localInternalEdgeMap;
+              buildInternalEdgeList(iter->first, nullptr, &localInternalEdgeMap, nullptr);
+              for(vector<SimplexId> edgeTuple : iter->second){
+                pair<SimplexId, SimplexId> edgePair(edgeTuple[2], edgeTuple[3]);
+                (*cellEdges)[edgeTuple[0]-cellIntervals_[nodeId-1]-1][edgeTuple[1]] = localInternalEdgeMap.at(edgePair);
+              }
             }
-          }
-          else{
-            if(exnode->internalEdgeMap_ == nullptr){
-              exnode->internalEdgeMap_ = new map<pair<SimplexId, SimplexId>, SimplexId>();
-              buildInternalEdgeList(iter->first, nullptr, exnode->internalEdgeMap_, nullptr);
-            }
-            for(vector<SimplexId> edgeTuple : iter->second){
-              pair<SimplexId, SimplexId> edgePair(edgeTuple[2], edgeTuple[3]);
-              (*cellEdges)[edgeTuple[0]-cellIntervals_[nodeId-1]-1][edgeTuple[1]] = exnode->internalEdgeMap_->at(edgePair);
+            else{
+              if(exnode->internalEdgeMap_ == nullptr){
+                exnode->internalEdgeMap_ = new map<pair<SimplexId, SimplexId>, SimplexId>();
+                buildInternalEdgeList(iter->first, nullptr, exnode->internalEdgeMap_, nullptr);
+              }
+              for(vector<SimplexId> edgeTuple : iter->second){
+                pair<SimplexId, SimplexId> edgePair(edgeTuple[2], edgeTuple[3]);
+                (*cellEdges)[edgeTuple[0]-cellIntervals_[nodeId-1]-1][edgeTuple[1]] = exnode->internalEdgeMap_->at(edgePair);
+              }
             }
           }
         }
@@ -1789,6 +1918,9 @@ namespace ttk{
           buildInternalTriangleList(nodeId, exnode->internalTriangleList_, exnode->internalTriangleMap_, nullptr);
         }
 
+        #ifdef TTK_ENABLE_OPENMP
+        #pragma omp parallel for num_threads(threadNumber_)
+        #endif
         for(SimplexId i = cellIntervals_[nodeId-1]+1; i <= cellIntervals_[nodeId]; i++){
           SimplexId cellId = (cellArray_[0]+1)*i;
           vector<SimplexId> triangleVec(3);
@@ -1798,7 +1930,7 @@ namespace ttk{
             triangleVec[1] = cellArray_[cellId+1+k];
             for(SimplexId l = k+1; l < cellArray_[0]; l++){
               triangleVec[2] = cellArray_[cellId+1+l];
-              cellTriangles->at(i-cellIntervals_[nodeId-1]-1).at(k+l-3) = exnode->internalTriangleMap_->at(triangleVec);
+              (*cellTriangles)[i-cellIntervals_[nodeId-1]-1][k+l-3] = exnode->internalTriangleMap_->at(triangleVec);
             }
           }
           // group the external triangles by node id
@@ -1806,33 +1938,43 @@ namespace ttk{
           triangleVec[1] = cellArray_[cellId+3];
           triangleVec[2] = cellArray_[cellId+4];
           if(triangleVec[0] <= vertexIntervals_[nodeId]){
-            cellTriangles->at(i-cellIntervals_[nodeId-1]-1).back() = exnode->internalTriangleMap_->at(triangleVec);
+            (*cellTriangles)[i-cellIntervals_[nodeId-1]-1].back() = exnode->internalTriangleMap_->at(triangleVec);
           }
           else{
             vector<SimplexId> triangleTuple{i, triangleVec[0], triangleVec[1], triangleVec[2]};
+            #ifdef TTK_ENABLE_OPENMP
+            #pragma omp critical
+            #endif
             triangleNodes[findNodeIndex(triangleVec[0], VERTEX_ID)].push_back(triangleTuple);
           }
         }
 
-        unordered_map<SimplexId, vector<vector<SimplexId>>>::iterator iter;
-        for(iter = triangleNodes.begin(); iter != triangleNodes.end(); iter++){
-          exnode = searchCache(iter->first, nodeId);
-          if(!exnode){
-            map<vector<SimplexId>, SimplexId> localInternalTriangleMap;
-            buildInternalTriangleList(iter->first, nullptr, &localInternalTriangleMap, nullptr);
-            for(vector<SimplexId> triangleVec : iter->second){
-              vector<SimplexId> triangle(triangleVec.begin()+1, triangleVec.end());
-              (*cellTriangles)[triangleVec[0]-cellIntervals_[nodeId-1]-1].back() = localInternalTriangleMap.at(triangle);
+        #ifdef TTK_ENABLE_OPENMP
+        #pragma omp parallel for num_threads(threadNumber_)
+        #endif
+        for(size_t b = 0; b < triangleNodes.bucket_count(); b++){
+          for(auto iter = triangleNodes.begin(); iter != triangleNodes.end(); iter++){
+            #ifdef TTK_ENABLE_OPENMP
+            #pragma omp critical
+            #endif
+            exnode = searchCache(iter->first, nodeId);
+            if(!exnode){
+              map<vector<SimplexId>, SimplexId> localInternalTriangleMap;
+              buildInternalTriangleList(iter->first, nullptr, &localInternalTriangleMap, nullptr);
+              for(vector<SimplexId> triangleVec : iter->second){
+                vector<SimplexId> triangle(triangleVec.begin()+1, triangleVec.end());
+                (*cellTriangles)[triangleVec[0]-cellIntervals_[nodeId-1]-1].back() = localInternalTriangleMap.at(triangle);
+              }
             }
-          }
-          else{
-            if(exnode->internalTriangleMap_ == nullptr){
-              exnode->internalTriangleMap_ = new map<vector<SimplexId>, SimplexId>();
-              buildInternalTriangleList(iter->first, nullptr, exnode->internalTriangleMap_, nullptr);
-            }
-            for(vector<SimplexId> triangleVec : iter->second){
-              vector<SimplexId> triangle(triangleVec.begin()+1, triangleVec.end());
-              (*cellTriangles)[triangleVec[0]-cellIntervals_[nodeId-1]-1].back() = exnode->internalTriangleMap_->at(triangle);
+            else{
+              if(exnode->internalTriangleMap_ == nullptr){
+                exnode->internalTriangleMap_ = new map<vector<SimplexId>, SimplexId>();
+                buildInternalTriangleList(iter->first, nullptr, exnode->internalTriangleMap_, nullptr);
+              }
+              for(vector<SimplexId> triangleVec : iter->second){
+                vector<SimplexId> triangle(triangleVec.begin()+1, triangleVec.end());
+                (*cellTriangles)[triangleVec[0]-cellIntervals_[nodeId-1]-1].back() = exnode->internalTriangleMap_->at(triangle);
+              }
             }
           }
         }
@@ -1870,18 +2012,30 @@ namespace ttk{
         }
 
         // for internal triangles
+        #ifdef TTK_ENABLE_OPENMP
+        #pragma omp parallel for num_threads(threadNumber_)
+        #endif
         for(SimplexId tid = 0; tid < (SimplexId) exnode->internalTriangleList_->size(); tid++){
-          //
-          pair<SimplexId,SimplexId> edge = pair<SimplexId ,SimplexId >((*(exnode->internalTriangleList_))[tid][0], (*(exnode->internalTriangleList_))[tid][1]);
-          (*edgeTriangles)[exnode->internalEdgeMap_->at(edge)-edgeIntervals_[nodeId-1]-1].push_back(tid + triangleIntervals_[nodeId-1] + 1);
+          pair<SimplexId,SimplexId> edge1 = pair<SimplexId ,SimplexId >((*(exnode->internalTriangleList_))[tid][0], (*(exnode->internalTriangleList_))[tid][1]);
+          pair<SimplexId,SimplexId> edge2 = pair<SimplexId ,SimplexId >((*(exnode->internalTriangleList_))[tid][0], (*(exnode->internalTriangleList_))[tid][2]);
 
+          #ifdef TTK_ENABLE_OPENMP
+          #pragma omp critical
+          {
+          #endif
+          (*edgeTriangles)[exnode->internalEdgeMap_->at(edge1)-edgeIntervals_[nodeId-1]-1].push_back(tid + triangleIntervals_[nodeId-1] + 1);
 
-          edge = pair<SimplexId ,SimplexId >((*(exnode->internalTriangleList_))[tid][0], (*(exnode->internalTriangleList_))[tid][2]);
-          (*edgeTriangles)[exnode->internalEdgeMap_->at(edge)-edgeIntervals_[nodeId-1]-1].push_back(tid + triangleIntervals_[nodeId-1] + 1);
+          (*edgeTriangles)[exnode->internalEdgeMap_->at(edge2)-edgeIntervals_[nodeId-1]-1].push_back(tid + triangleIntervals_[nodeId-1] + 1);
+          #ifdef TTK_ENABLE_OPENMP
+          }
+          #endif
 
           if((*(exnode->internalTriangleList_))[tid][1] <= vertexIntervals_[nodeId]){
-              edge = pair<SimplexId ,SimplexId >((*(exnode->internalTriangleList_))[tid][1], (*(exnode->internalTriangleList_))[tid][2]);
-              (*edgeTriangles)[exnode->internalEdgeMap_->at(edge)-edgeIntervals_[nodeId-1]-1].push_back(tid + triangleIntervals_[nodeId-1] + 1);
+            edge1 = pair<SimplexId ,SimplexId >((*(exnode->internalTriangleList_))[tid][1], (*(exnode->internalTriangleList_))[tid][2]);
+            #ifdef TTK_ENABLE_OPENMP
+            #pragma omp critical
+            #endif
+            (*edgeTriangles)[exnode->internalEdgeMap_->at(edge1)-edgeIntervals_[nodeId-1]-1].push_back(tid + triangleIntervals_[nodeId-1] + 1);
           }
         }
 
@@ -1889,10 +2043,10 @@ namespace ttk{
         map<vector<SimplexId>, SimplexId>::iterator iter;
         // loop through each edge of the cell
         for(iter = exnode->externalTriangleMap_->begin(); iter != exnode->externalTriangleMap_->end(); iter++){
-            pair<SimplexId,SimplexId> edge = pair<SimplexId, SimplexId >(iter->first.at(1), iter->first.at(2));
-            if(edge.first > vertexIntervals_[nodeId-1] && edge.first <= vertexIntervals_[nodeId]){
-                (*edgeTriangles)[exnode->internalEdgeMap_->at(edge)-edgeIntervals_[nodeId-1]-1].push_back(iter->second);
-            }
+          pair<SimplexId,SimplexId> edge = pair<SimplexId, SimplexId >(iter->first.at(1), iter->first.at(2));
+          if(edge.first > vertexIntervals_[nodeId-1] && edge.first <= vertexIntervals_[nodeId]){
+            (*edgeTriangles)[exnode->internalEdgeMap_->at(edge)-edgeIntervals_[nodeId-1]-1].push_back(iter->second);
+          }
         }
 
         return 0;
@@ -1924,6 +2078,9 @@ namespace ttk{
           buildInternalTriangleList(nodeId, exnode->internalTriangleList_, exnode->internalTriangleMap_, nullptr);
         }
 
+        #ifdef TTK_ENABLE_OPENMP
+        #pragma omp parallel for num_threads(threadNumber_)
+        #endif
         for(SimplexId tid = 0; tid < (SimplexId) exnode->internalTriangleList_->size(); tid++){
           // since the first vertex of the triangle is in the node ...
           pair<SimplexId,SimplexId> edgePair((*(exnode->internalTriangleList_))[tid][0], (*(exnode->internalTriangleList_))[tid][1]);
@@ -1935,29 +2092,40 @@ namespace ttk{
             (*triangleEdges)[tid][2] = exnode->internalEdgeMap_->at(edgePair);
           }else{
             vector<SimplexId> edgeTuple{tid, edgePair.first, edgePair.second};
-            edgeNodes[findNodeIndex(edgePair.first, VERTEX_ID)].push_back(edgeTuple);
+            SimplexId nid = findNodeIndex(edgePair.first, VERTEX_ID);
+            #ifdef TTK_ENABLE_OPENMP
+            #pragma omp critical
+            #endif
+            edgeNodes[nid].push_back(edgeTuple);
           }
         }
 
-        unordered_map<SimplexId, vector<vector<SimplexId>>>::iterator iter;
-        for(iter = edgeNodes.begin(); iter != edgeNodes.end(); iter++){
-          exnode = searchCache(iter->first, nodeId);
-          if(!exnode){
-            map<pair<SimplexId, SimplexId>, SimplexId> localInternalEdgeMap;
-            buildInternalEdgeList(iter->first, nullptr, &localInternalEdgeMap, nullptr);
-            for(vector<SimplexId> edgeTuple : iter->second){
-              pair<SimplexId, SimplexId> edgePair(edgeTuple[1], edgeTuple[2]);
-              (*triangleEdges)[edgeTuple[0]][2] = localInternalEdgeMap.at(edgePair);
+        #ifdef TTK_ENABLE_OPENMP
+        #pragma omp parallel for num_threads(threadNumber_)
+        #endif
+        for(size_t b = 0; b < edgeNodes.bucket_count(); b++){
+          for(auto iter = edgeNodes.begin(); iter != edgeNodes.end(); iter++){
+            #ifdef TTK_ENABLE_OPENMP
+            #pragma omp critical
+            #endif
+            exnode = searchCache(iter->first, nodeId);
+            if(!exnode){
+              map<pair<SimplexId, SimplexId>, SimplexId> localInternalEdgeMap;
+              buildInternalEdgeList(iter->first, nullptr, &localInternalEdgeMap, nullptr);
+              for(vector<SimplexId> edgeTuple : iter->second){
+                pair<SimplexId, SimplexId> edgePair(edgeTuple[1], edgeTuple[2]);
+                (*triangleEdges)[edgeTuple[0]][2] = localInternalEdgeMap.at(edgePair);
+              }
             }
-          }
-          else{
-            if(exnode->internalEdgeMap_ == nullptr){
-              exnode->internalEdgeMap_ = new map<pair<SimplexId, SimplexId>, SimplexId>();
-              buildInternalEdgeList(iter->first, nullptr, exnode->internalEdgeMap_, nullptr);
-            }
-            for(vector<SimplexId> edgeTuple : iter->second){
-              pair<SimplexId, SimplexId> edgePair(edgeTuple[1], edgeTuple[2]);
-              (*triangleEdges)[edgeTuple[0]][2] = exnode->internalEdgeMap_->at(edgePair);
+            else{
+              if(exnode->internalEdgeMap_ == nullptr){
+                exnode->internalEdgeMap_ = new map<pair<SimplexId, SimplexId>, SimplexId>();
+                buildInternalEdgeList(iter->first, nullptr, exnode->internalEdgeMap_, nullptr);
+              }
+              for(vector<SimplexId> edgeTuple : iter->second){
+                pair<SimplexId, SimplexId> edgePair(edgeTuple[1], edgeTuple[2]);
+                (*triangleEdges)[edgeTuple[0]][2] = exnode->internalEdgeMap_->at(edgePair);
+              }
             }
           }
         }
@@ -1992,8 +2160,9 @@ namespace ttk{
         for(SimplexId i = 0; i < (SimplexId) exnode->internalEdgeList_->size(); i++){
           (*vertexEdges)[exnode->internalEdgeList_->at(i).first-vertexIntervals_[nodeId-1]-1].push_back(edgeIntervals_[nodeId-1]+i+1);
           // the second vertex id of the edge must be greater than the first one
-          if(exnode->internalEdgeList_->at(i).second <= vertexIntervals_[nodeId])
+          if(exnode->internalEdgeList_->at(i).second <= vertexIntervals_[nodeId]){
             (*vertexEdges)[exnode->internalEdgeList_->at(i).second-vertexIntervals_[nodeId-1]-1].push_back(edgeIntervals_[nodeId-1]+i+1);
+          }
         }
 
         map<pair<SimplexId, SimplexId>, SimplexId>::iterator iter;
@@ -2053,26 +2222,58 @@ namespace ttk{
             return -1;
         #endif
 
+        SimplexId localVertexNum = vertexIntervals_[nodeId]-vertexIntervals_[nodeId-1];
         vertexStars->clear();
-        vertexStars->resize(vertexIntervals_[nodeId]-vertexIntervals_[nodeId-1]);
+        vertexStars->resize(localVertexNum);
+
+        // threadNumber_ = 1;
+
+        vector<vector<vector<SimplexId>>> threadedVertexStars(threadNumber_, vector<vector<SimplexId>>(localVertexNum));
         // loop through the internal cell list
+        #ifdef TTK_ENABLE_OPENMP
+        #pragma omp parallel for num_threads(threadNumber_)
+        #endif
         for(SimplexId cid = cellIntervals_[nodeId-1]+1; cid <= cellIntervals_[nodeId]; cid++){
+          ThreadId tid = 0;
+          #ifdef TTK_ENABLE_OPENMP
+          tid = omp_get_thread_num();
+          #endif
           SimplexId cellId = (cellArray_[0]+1) * cid;
           for(SimplexId j = 0; j < cellArray_[0]; j++){
             // see if it is in the current node
-            if(cellArray_[cellId+j+1] > vertexIntervals_[nodeId-1] && cellArray_[cellId+j+1] <= vertexIntervals_[nodeId])
-              (*vertexStars)[cellArray_[cellId+j+1]-vertexIntervals_[nodeId-1]-1].push_back(cid);
+            if(cellArray_[cellId+j+1] > vertexIntervals_[nodeId-1] && cellArray_[cellId+j+1] <= vertexIntervals_[nodeId]){
+              threadedVertexStars[tid][cellArray_[cellId+j+1]-vertexIntervals_[nodeId-1]-1].push_back(cid);
+            }
           }
         }
 
         // and also external cell list
-        for(SimplexId cid : externalCells_[nodeId]){
-          SimplexId cellId = (cellArray_[0]+1) * cid;
+        #ifdef TTK_ENABLE_OPENMP
+        #pragma omp parallel for num_threads(threadNumber_)
+        #endif
+        for(SimplexId j = 0; j < (SimplexId) externalCells_[nodeId].size(); j++){
+          ThreadId tid = 0;
+          #ifdef TTK_ENABLE_OPENMP
+          tid = omp_get_thread_num();
+          #endif
+          SimplexId cellId = (cellArray_[0]+1) * externalCells_[nodeId][j];
           for(SimplexId j = 0; j < cellArray_[0]; j++){
             // see if it is in the current node
-            if(cellArray_[cellId+j+1] > vertexIntervals_[nodeId-1] && cellArray_[cellId+j+1] <= vertexIntervals_[nodeId])
-              (*vertexStars)[cellArray_[cellId+j+1]-vertexIntervals_[nodeId-1]-1].push_back(cid);
+            if(cellArray_[cellId+j+1] > vertexIntervals_[nodeId-1] && cellArray_[cellId+j+1] <= vertexIntervals_[nodeId]){
+              threadedVertexStars[tid][cellArray_[cellId+j+1]-vertexIntervals_[nodeId-1]-1].push_back(externalCells_[nodeId][j]);
+            }
           }
+        }
+
+        if(threadNumber_ > 1){
+          for(int i = 0; i < threadNumber_; i++){
+            for(size_t j = 0; j < vertexStars->size(); j++){
+              (*vertexStars)[j].insert((*vertexStars)[j].begin(), threadedVertexStars[i][j].begin(), threadedVertexStars[i][j].end());
+            }
+          }
+        }
+        else{
+          (*vertexStars) = threadedVertexStars[0];
         }
 
         return 0;
