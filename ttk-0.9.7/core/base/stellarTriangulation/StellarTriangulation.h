@@ -37,9 +37,7 @@ namespace ttk{
     SimplexId nid;
     vector<pair_int> *internalEdgeList_;
     vector<vector<SimplexId>> *internalTriangleList_;
-    boost::unordered_map<pair_int, SimplexId> *internalEdgeMap_;
     boost::unordered_map<pair_int, SimplexId> *externalEdgeMap_;
-    boost::unordered_map<vector<SimplexId>, SimplexId> *internalTriangleMap_;
     boost::unordered_map<vector<SimplexId>, SimplexId> *externalTriangleMap_;
     /* vertex relationships */
     vector<vector<SimplexId>> *vertexEdges_;
@@ -64,9 +62,7 @@ namespace ttk{
       nid = id;
       internalEdgeList_ = nullptr;
       internalTriangleList_ = nullptr;
-      internalEdgeMap_ = nullptr;
       externalEdgeMap_ = nullptr;
-      internalTriangleMap_ = nullptr;
       externalTriangleMap_ = nullptr;
       /* vertex relationships */
       vertexEdges_ = nullptr;
@@ -85,9 +81,7 @@ namespace ttk{
     ~ExpandedNode(){
       delete internalEdgeList_;
       delete internalTriangleList_;
-      delete internalEdgeMap_;
       delete externalEdgeMap_;
-      delete internalTriangleMap_;
       delete externalTriangleMap_;
       delete vertexEdges_;
       delete vertexTriangles_;
@@ -329,8 +323,7 @@ namespace ttk{
         edgeList_.reserve(edgeIntervals_.back()+1);
         for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
           vector<pair_int> localInternalEdges;
-          boost::unordered_map<pair_int, SimplexId> localInternalEdgeMap;
-          buildInternalEdgeList(nid, &localInternalEdges, &localInternalEdgeMap, nullptr);
+          buildInternalEdgeList(nid, &localInternalEdges);
           edgeList_.insert(edgeList_.end(), localInternalEdges.begin(), localInternalEdges.end());
         }
         return &edgeList_;
@@ -365,7 +358,7 @@ namespace ttk{
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->edgeStars_ == nullptr){
           exnode->edgeStars_ = new vector<vector<SimplexId>>();
-          buildInternalEdgeList(nid, nullptr, nullptr, exnode->edgeStars_);
+          getEdgeStars(exnode);
         }
         if(localStarId >= (SimplexId) (*(exnode->edgeStars_))[localEdgeId].size())
           return -2;
@@ -385,7 +378,7 @@ namespace ttk{
         SimplexId localEdgeId = edgeId - edgeIntervals_[nid-1] - 1;
         if(exnode->edgeStars_ == nullptr){
           exnode->edgeStars_ = new vector<vector<SimplexId>>();
-          buildInternalEdgeList(nid, nullptr, nullptr,  exnode->edgeStars_);
+          getEdgeStars(exnode);
         }
         return (*(exnode->edgeStars_))[localEdgeId].size();
       }
@@ -396,7 +389,7 @@ namespace ttk{
           ExpandedNode *exnode = searchCache(nid);
           if(exnode->edgeStars_ == nullptr){
             exnode->edgeStars_ = new vector<vector<SimplexId>>();
-            buildInternalEdgeList(nid, nullptr, nullptr, exnode->edgeStars_);
+            getEdgeStars(exnode);
           }
           edgeStarList_.insert(edgeStarList_.end(), exnode->edgeStars_->begin(), exnode->edgeStars_->end());
         }
@@ -438,7 +431,6 @@ namespace ttk{
         if(exnode->edgeTriangles_ == nullptr){
           exnode->edgeTriangles_ = new vector<vector<SimplexId>>();
           getEdgeTriangles(exnode);
-          
         }
         return exnode->edgeTriangles_->at(edgeId-edgeIntervals_[nid-1]-1).size();
       }
@@ -472,8 +464,7 @@ namespace ttk{
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->internalEdgeList_ == nullptr){
           exnode->internalEdgeList_ = new vector<pair_int>();
-          exnode->internalEdgeMap_ = new boost::unordered_map<pair_int, SimplexId>();
-          buildInternalEdgeList(nid, exnode->internalEdgeList_, exnode->internalEdgeMap_, nullptr);
+          buildInternalEdgeList(nid, exnode->internalEdgeList_);
         }
         if(localVertexId){
           vertexId = exnode->internalEdgeList_->at(localEdgeId).second;
@@ -514,8 +505,7 @@ namespace ttk{
           ExpandedNode *exnode = searchCache(nid);
           if(exnode->internalTriangleList_ == nullptr){
             exnode->internalTriangleList_ = new vector<vector<SimplexId>>();
-            exnode->internalTriangleMap_ = new boost::unordered_map<vector<SimplexId>, SimplexId>();
-            buildInternalTriangleList(nid, exnode->internalTriangleList_, exnode->internalTriangleMap_, nullptr);
+            buildInternalTriangleList(nid, exnode->internalTriangleList_);
           }
           triangleList_.insert(triangleList_.end(), exnode->internalTriangleList_->begin(), exnode->internalTriangleList_->end());
         }
@@ -599,7 +589,7 @@ namespace ttk{
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->triangleStars_ == nullptr){
           exnode->triangleStars_ = new vector<vector<SimplexId>>();
-          buildInternalTriangleList(nid, nullptr, nullptr, exnode->triangleStars_);
+          getTriangleStars(exnode);
         }
         if(localStarId >= (SimplexId) exnode->triangleStars_->at(localTriangleId).size())
           return -2;
@@ -619,7 +609,7 @@ namespace ttk{
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->triangleStars_ == nullptr){
           exnode->triangleStars_ = new vector<vector<SimplexId>>();
-          buildInternalTriangleList(nid, nullptr, nullptr, exnode->triangleStars_);
+          getTriangleStars(exnode);
         }
         
         return (*(exnode->triangleStars_))[triangleId-triangleIntervals_[nid-1]-1].size();
@@ -631,7 +621,7 @@ namespace ttk{
           ExpandedNode *exnode = searchCache(nid);
           if(exnode->triangleStars_ == nullptr){
             exnode->triangleStars_ = new vector<vector<SimplexId>>();
-            buildInternalTriangleList(nid, nullptr, nullptr, exnode->triangleStars_);
+            getTriangleStars(exnode);
           }
           triangleStarList_.insert(triangleStarList_.end(), exnode->triangleStars_->begin(), exnode->triangleStars_->end());
         }
@@ -652,8 +642,7 @@ namespace ttk{
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->internalTriangleList_ == nullptr){
           exnode->internalTriangleList_ = new vector<vector<SimplexId>>();
-          exnode->internalTriangleMap_ = new boost::unordered_map<vector<SimplexId>, SimplexId>();
-          buildInternalTriangleList(nid, exnode->internalTriangleList_, exnode->internalTriangleMap_, nullptr);
+          buildInternalTriangleList(nid, exnode->internalTriangleList_);
         }
         vertexId = exnode->internalTriangleList_->at(triangleId-triangleIntervals_[nid-1]-1)[localVertexId];
         return 0;
@@ -1049,12 +1038,13 @@ namespace ttk{
         if(!hasPreprocessedEdges_){
           edgeIntervals_.resize(nodeNumber_+1);
           edgeIntervals_[0] = -1;
+          internalEdgeMaps_.resize(nodeNumber_+1);
           vector<SimplexId> edgeCount(nodeNumber_+1);
           #ifdef TTK_ENABLE_OPENMP
           #pragma omp parallel for num_threads(threadNumber_)
           #endif
           for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-            edgeCount[nid] = countInternalEdges(nid);
+            edgeCount[nid] = buildInternalEdgeMap(nid, &internalEdgeMaps_[nid]);
           }
 
           for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
@@ -1103,12 +1093,13 @@ namespace ttk{
         if(!hasPreprocessedTriangles_){
           triangleIntervals_.resize(nodeNumber_+1);
           triangleIntervals_[0] = -1;
+          internalTriangleMaps_.resize(nodeNumber_+1);
           vector<SimplexId> triangleCount(nodeNumber_+1);
           #ifdef TTK_ENABLE_OPENMP
           #pragma omp parallel for num_threads(threadNumber_)
           #endif
           for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-            triangleCount[nid] = countInternalTriangles(nid);
+            triangleCount[nid] = buildInternalTriangleMap(nid, &internalTriangleMaps_[nid]);
           }
 
           for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
@@ -1233,6 +1224,7 @@ namespace ttk{
           }
           cache_.push_front(new ExpandedNode(nodeId));
           cacheMap_[nodeId] = cache_.begin();
+          return cache_.front();
         }
         return (*cacheMap_[nodeId]);
       }
@@ -1258,11 +1250,30 @@ namespace ttk{
 
       /** 
        * Build the internal edge list in the node.
+       */
+      int buildInternalEdgeList(SimplexId nodeId,
+        vector<pair_int> * const internalEdgeList) const{
+
+        #ifndef TTK_ENABLE_KAMIKAZE
+          if(nodeId <= 0 || nodeId > nodeNumber_)
+            return -1;
+        #endif
+
+        internalEdgeList->clear();
+        internalEdgeList->resize(internalEdgeMaps_[nodeId].size());
+        int k = 0;
+        for(auto iter = internalEdgeMaps_[nodeId].begin(); iter != internalEdgeMaps_[nodeId].end(); iter++){
+          (*internalEdgeList)[k++] = iter->first;
+        }
+
+        return 0;
+      }
+
+      /** 
+       * Build the internal edge map in the node.
        */ 
-      int buildInternalEdgeList(SimplexId nodeId, 
-        vector<pair_int> * const internalEdgeList,
-        boost::unordered_map<pair_int, SimplexId> * const internalEdgeMap,
-        vector<vector<SimplexId>> * const edgeStars) const{
+      int buildInternalEdgeMap(SimplexId nodeId, 
+        boost::unordered_map<pair_int, SimplexId> * const internalEdgeMap) const{
         
         #ifndef TTK_ENABLE_KAMIKAZE
           if(nodeId <= 0 || nodeId > nodeNumber_)
@@ -1270,18 +1281,7 @@ namespace ttk{
         #endif
 
         SimplexId edgeCount = 0, verticesPerCell = cellArray_[0];
-        boost::unordered_map<pair_int, SimplexId> *edgeMap;
-        // loop through all the internal cells first
-        if(edgeStars){
-          edgeStars->clear();
-          edgeStars->reserve(6*(vertexIntervals_[nodeId]-vertexIntervals_[nodeId-1]));
-        }
-        if(internalEdgeMap){
-          internalEdgeMap->clear();
-          edgeMap = internalEdgeMap;
-        }else{
-          edgeMap = new boost::unordered_map<pair_int, SimplexId>();
-        }
+        internalEdgeMap->clear();
 
         // loop through the internal cell list
         for(SimplexId cid = cellIntervals_[nodeId-1]+1; cid <= cellIntervals_[nodeId]; cid++){
@@ -1299,14 +1299,9 @@ namespace ttk{
               edgeIds.second = cellArray_[cellId + k + 1];
               
               // not found in the edge map - assign new edge id
-              if(edgeMap->find(edgeIds) == edgeMap->end()){
+              if(internalEdgeMap->find(edgeIds) == internalEdgeMap->end()){
                 edgeCount++;
-                (*edgeMap)[edgeIds] = edgeCount+edgeIntervals_[nodeId-1];
-                if(edgeStars)
-                  edgeStars->push_back(vector<SimplexId>{cid});
-              }
-              else if(edgeStars){
-                edgeStars->at(edgeMap->at(edgeIds)-edgeIntervals_[nodeId-1]-1).push_back(cid);
+                (*internalEdgeMap)[edgeIds] = edgeCount+edgeIntervals_[nodeId-1];
               }
             }
           }
@@ -1325,52 +1320,36 @@ namespace ttk{
               
               // the edge is in the current node
               if(edgeIds.first > vertexIntervals_[nodeId-1] && edgeIds.first <= vertexIntervals_[nodeId]){
-                if(edgeMap->find(edgeIds) == edgeMap->end()){
+                if(internalEdgeMap->find(edgeIds) == internalEdgeMap->end()){
                   edgeCount++;
-                  (*edgeMap)[edgeIds] = edgeCount+edgeIntervals_[nodeId-1];
-                  if(edgeStars)
-                    edgeStars->push_back(vector<SimplexId>{cid});
-                }
-                else if(edgeStars){
-                  edgeStars->at(edgeMap->at(edgeIds)-edgeIntervals_[nodeId-1]-1).push_back(cid);
+                  (*internalEdgeMap)[edgeIds] = edgeCount+edgeIntervals_[nodeId-1];
                 }
               }
             }
           }
         }
-
-        if(internalEdgeList){
-          internalEdgeList->clear();
-          internalEdgeList->resize(edgeMap->size());
-          int k = 0;
-          for(auto iter = edgeMap->begin(); iter != edgeMap->end(); iter++){
-            (*internalEdgeList)[k++] = iter->first;
-          }
-        }
-
-        if(!internalEdgeMap){
-          delete edgeMap;
-        }
-        return 0;
+        return edgeCount;
       }
 
       /** 
        * Build the external edge list in the node.
        */ 
-      int buildExternalEdgeMap(ExpandedNode * const nodePtr) const{
+      int buildExternalEdgeMap(SimplexId nodeId, 
+        boost::unordered_map<pair_int, SimplexId> * const externalEdgeMap) const{
         
         #ifndef TTK_ENABLE_KAMIKAZE
-          if(nodePtr->nid <= 0 || nodePtr->nid > nodeNumber_)
+          if(nodeId <= 0 || nodeId > nodeNumber_)
             return -1;
+          if(!externalEdgeMap)
+            return -2;
         #endif
 
         SimplexId verticesPerCell = cellArray_[0];
-        boost::unordered_map<SimplexId, vector<pair_int>> edgeNodes;
         
         // loop through the external cell list
-        for(size_t i = 0; i < externalCells_[nodePtr->nid].size(); i++){
+        for(size_t i = 0; i < externalCells_[nodeId].size(); i++){
           pair_int edgeIds;
-          SimplexId cellId = (verticesPerCell + 1) * externalCells_[nodePtr->nid][i];
+          SimplexId cellId = (verticesPerCell + 1) * externalCells_[nodeId][i];
 
           // loop through each edge of the cell
           for(SimplexId j = 0; j < verticesPerCell-1; j++){
@@ -1379,31 +1358,10 @@ namespace ttk{
               edgeIds.second = cellArray_[cellId + k + 1];
               
               // check if the edge is an external edge
-              if(edgeIds.first <= vertexIntervals_[nodePtr->nid-1] && edgeIds.second > vertexIntervals_[nodePtr->nid-1] && edgeIds.second <= vertexIntervals_[nodePtr->nid]){
-                SimplexId nid = findNodeIndex(edgeIds.first, VERTEX_ID);
-                edgeNodes[nid].push_back(edgeIds);
+              if(edgeIds.first <= vertexIntervals_[nodeId-1] && edgeIds.second > vertexIntervals_[nodeId-1] && edgeIds.second <= vertexIntervals_[nodeId]){
+                SimplexId nodeNum = findNodeIndex(edgeIds.first, VERTEX_ID);
+                (*externalEdgeMap)[edgeIds] = internalEdgeMaps_[nodeNum].at(edgeIds);
               }
-            }
-          }
-        }
-
-        boost::unordered_map<SimplexId, vector<pair_int>>::iterator iter;
-        for(iter = edgeNodes.begin(); iter != edgeNodes.end(); iter++){
-          ExpandedNode *exnode = searchCache(iter->first, nodePtr->nid);
-          if(!exnode){
-            boost::unordered_map<pair_int, SimplexId> localInternalEdgeMap;
-            buildInternalEdgeList(iter->first, nullptr, &localInternalEdgeMap, nullptr);
-            for(pair_int edgePair : iter->second){
-              (*(nodePtr->externalEdgeMap_))[edgePair] = localInternalEdgeMap.at(edgePair);
-            }
-          }
-          else{
-            if(exnode->internalEdgeMap_ == nullptr){
-              exnode->internalEdgeMap_ = new boost::unordered_map<pair_int, SimplexId>();
-              buildInternalEdgeList(iter->first, nullptr, exnode->internalEdgeMap_, nullptr);
-            }
-            for(pair_int edgePair : iter->second){
-              (*(nodePtr->externalEdgeMap_))[edgePair] = exnode->internalEdgeMap_->at(edgePair);
             }
           }
         }
@@ -1415,243 +1373,28 @@ namespace ttk{
        * Build the internal triangle list in the node.
        */
       int buildInternalTriangleList(SimplexId nodeId, 
-        vector<vector<SimplexId>> * const internalTriangleList,
-        boost::unordered_map<vector<SimplexId>, SimplexId> * const internalTriangleMap,
-        vector<vector<SimplexId>> * const triangleStars) const{
-
-        #ifndef TTK_ENABLE_KAMIKAZE
-          if(nodeId <= 0 || nodeId > nodeNumber_)
-            return -1;
-        #endif
-
-        SimplexId triangleCount = 0, verticesPerCell = cellArray_[0];
-        SimplexId localVertexNum = vertexIntervals_[nodeId]-vertexIntervals_[nodeId-1];
-        boost::unordered_map<vector<SimplexId>, SimplexId> *triangleMap;
-        set<vector<SimplexId>> externalTriangleSet;
-
-        if(triangleStars){
-          triangleStars->clear();
-          triangleStars->reserve(9*localVertexNum);
-        }
-        if(internalTriangleMap){
-          internalTriangleMap->clear();
-          triangleMap = internalTriangleMap;
-        }else{
-          triangleMap = new boost::unordered_map<vector<SimplexId>, SimplexId>();
-        }
-
-        // loop through the internal cell list
-        for(SimplexId cid = cellIntervals_[nodeId-1]+1; cid <= cellIntervals_[nodeId]; cid++){
-          vector<SimplexId> triangleIds(3);
-          SimplexId cellId = (verticesPerCell + 1) * cid;
-
-          // loop through each triangle of the cell
-          for(SimplexId j = 0; j < verticesPerCell-2; j++){
-            triangleIds[0] = cellArray_[cellId + j + 1];
-            // the triangle does not belong to the current node
-            if(triangleIds[0] > vertexIntervals_[nodeId]){
-              break;
-            }
-            for(SimplexId k = j+1; k < verticesPerCell-1; k++){
-              for(SimplexId l = k+1; l < verticesPerCell; l++){
-                triangleIds[1] = cellArray_[cellId + k + 1];
-                triangleIds[2] = cellArray_[cellId + l + 1];
-                
-                if(triangleMap->find(triangleIds) == triangleMap->end()){
-                  triangleCount++;
-                  (*triangleMap)[triangleIds] = triangleCount + triangleIntervals_[nodeId-1];
-                  if(triangleStars){
-                    triangleStars->push_back(vector<SimplexId>{cid});
-                  }
-                }
-                else if(triangleStars){
-                  triangleStars->at(triangleMap->at(triangleIds)-triangleIntervals_[nodeId-1]-1).push_back(cid);
-                }
-              }
-            }
-          }
-        }
-
-        // loop through the external cell list
-        for(SimplexId cid : externalCells_[nodeId]){
-          vector<SimplexId> triangleIds(3);
-          SimplexId cellId = (verticesPerCell + 1) * cid;
-
-          // loop through each triangle of the cell
-          for(SimplexId j = 0; j < verticesPerCell-2; j++){
-            triangleIds[0] = cellArray_[cellId + j + 1];
-            if(triangleIds[0] > vertexIntervals_[nodeId-1] && triangleIds[0] <= vertexIntervals_[nodeId]){
-              for(SimplexId k = j+1; k < verticesPerCell-1; k++){
-                for(SimplexId l = k+1; l < verticesPerCell; l++){
-                  triangleIds[1] = cellArray_[cellId + k + 1];
-                  triangleIds[2] = cellArray_[cellId + l + 1];
-
-                  if(triangleMap->find(triangleIds) == triangleMap->end()){
-                      triangleCount++;
-                      (*triangleMap)[triangleIds] = triangleCount + triangleIntervals_[nodeId-1];
-                      if(internalTriangleList){
-                        internalTriangleList->push_back(triangleIds);
-                      }
-                      if(triangleStars){
-                        triangleStars->push_back(vector<SimplexId>{cid});
-                      }
-                  }
-                  else if(triangleStars){
-                    triangleStars->at(triangleMap->at(triangleIds)-triangleIntervals_[nodeId-1]-1).push_back(cid);
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        if(internalTriangleList){
-          internalTriangleList->clear();
-          internalTriangleList->resize(triangleMap->size());
-          int k = 0;
-          for(auto iter = triangleMap->begin(); iter != triangleMap->end(); iter++){
-            (*internalTriangleList)[k++] = iter->first;
-          }
-        }
-
-        if(!internalTriangleMap){
-          delete triangleMap;
-        }
-
-        return 0;
-      }
-
-      /**
-       * Build the external triangle list in the node.
-       */
-      int buildExternalTriangleMap(ExpandedNode * const nodePtr) const{
-
-        #ifndef TTK_ENABLE_KAMIKAZE
-          if(nodePtr->nid <= 0 || nodePtr->nid > nodeNumber_)
-            return -1;
-        #endif
-
-        SimplexId verticesPerCell = cellArray_[0];
-        boost::unordered_map<SimplexId, vector<vector<SimplexId>>> triangleNodes;
-
-        // loop through the external cell list
-        for(SimplexId cid : externalCells_[nodePtr->nid]){
-          vector<SimplexId> triangleIds(3);
-          SimplexId cellId = (verticesPerCell + 1) * cid;
-
-          // loop through each triangle of the cell
-          for(SimplexId j = 0; j < verticesPerCell-2; j++){
-            triangleIds[0] = cellArray_[cellId + j + 1];
-            if(triangleIds[0] <= vertexIntervals_[nodePtr->nid-1]){
-              for(SimplexId k = j+1; k < verticesPerCell-1; k++){
-                for(SimplexId l = k+1; l < verticesPerCell; l++){
-                  triangleIds[1] = cellArray_[cellId + k + 1];
-                  triangleIds[2] = cellArray_[cellId + l + 1];
-
-                  if(triangleIds[1] > vertexIntervals_[nodePtr->nid-1] && triangleIds[1] <= vertexIntervals_[nodePtr->nid]){
-                    triangleNodes[findNodeIndex(triangleIds[0], VERTEX_ID)].push_back(triangleIds);
-                  }
-                  else if(triangleIds[2] > vertexIntervals_[nodePtr->nid-1] && triangleIds[2] <= vertexIntervals_[nodePtr->nid]){
-                    triangleNodes[findNodeIndex(triangleIds[0], VERTEX_ID)].push_back(triangleIds);
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        ExpandedNode *exnode;
-        boost::unordered_map<SimplexId, vector<vector<SimplexId>>>::iterator iter;
-        for(iter = triangleNodes.begin(); iter != triangleNodes.end(); iter++){
-          exnode = searchCache(iter->first, nodePtr->nid);
-
-          if(!exnode){
-            boost::unordered_map<vector<SimplexId>, SimplexId> localInternalTriangleMap;
-            buildInternalTriangleList(iter->first, nullptr, &localInternalTriangleMap, nullptr);
-            for(vector<SimplexId> triangleVec : iter->second){
-              (*(nodePtr->externalTriangleMap_))[triangleVec] = localInternalTriangleMap.at(triangleVec);
-            }
-          }
-          else{
-            if(exnode->internalTriangleMap_ == nullptr){
-              exnode->internalTriangleMap_ = new boost::unordered_map<vector<SimplexId>, SimplexId>();
-              buildInternalTriangleList(iter->first, nullptr, exnode->internalTriangleMap_, nullptr);
-            }
-            for(vector<SimplexId> triangleVec : iter->second){
-              (*(nodePtr->externalTriangleMap_))[triangleVec] = exnode->internalTriangleMap_->at(triangleVec);
-            }
-          }
-        }
-
-        return 0;
-      }
-
-      /** 
-       * Get the number of internal edges in the node.
-       */ 
-      SimplexId countInternalEdges(SimplexId nodeId) const{
+        vector<vector<SimplexId>> * const internalTriangleList) const{
         
         #ifndef TTK_ENABLE_KAMIKAZE
           if(nodeId <= 0 || nodeId > nodeNumber_)
             return -1;
         #endif
 
-        SimplexId edgeCount = 0, verticesPerCell = cellArray_[0];
-        boost::unordered_set<pair_int, boost::hash<pair_int>> edgeSet;
-
-        // loop through the internal cell list
-        for(SimplexId cid = cellIntervals_[nodeId-1]+1; cid <= cellIntervals_[nodeId]; cid++){
-          pair_int edgeIds;
-          SimplexId cellId = (verticesPerCell + 1) * cid;
-
-          // loop through each edge of the cell
-          for(SimplexId j = 0; j < verticesPerCell-1; j++){
-            edgeIds.first = cellArray_[cellId + j + 1];
-            // the edge does not belong to the current node
-            if(edgeIds.first > vertexIntervals_[nodeId]){
-              break;
-            }
-            for(SimplexId k = j+1; k < verticesPerCell; k++){
-              edgeIds.second = cellArray_[cellId + k + 1];
-              
-              // not found in the edge map - assign new edge id
-              if(edgeSet.find(edgeIds) == edgeSet.end()){
-                edgeCount++;
-                edgeSet.insert(edgeIds);
-              }
-            }
-          }
+        internalTriangleList->clear();
+        internalTriangleList->resize(internalTriangleMaps_[nodeId].size());
+        int k = 0;
+        for(auto iter = internalTriangleMaps_[nodeId].begin(); iter != internalTriangleMaps_[nodeId].end(); iter++){
+          (*internalTriangleList)[k++] = iter->first;
         }
 
-        // loop through the external cell list
-        for(SimplexId cid : externalCells_[nodeId]){
-          pair_int edgeIds;
-          SimplexId cellId = (verticesPerCell + 1) * cid;
-
-          // loop through each edge of the cell
-          for(SimplexId j = 0; j < verticesPerCell-1; j++){
-            for(SimplexId k = j+1; k < verticesPerCell; k++){
-              edgeIds.first = cellArray_[cellId + j + 1];
-              edgeIds.second = cellArray_[cellId + k + 1];
-              
-              // the edge is in the current node
-              if(edgeIds.first > vertexIntervals_[nodeId-1] && edgeIds.first <= vertexIntervals_[nodeId]){
-                if(edgeSet.find(edgeIds) == edgeSet.end()){
-                  edgeCount++;
-                  edgeSet.insert(edgeIds);
-                }
-              }
-            }
-          }
-        }
-
-        return edgeCount;
+        return 0;
       }
 
       /**
-       * Get the number of internal triangles in the node.
+       * Build the internal triangle map in the node.
        */
-      int countInternalTriangles(SimplexId nodeId) const{
+      int buildInternalTriangleMap(SimplexId nodeId, 
+        boost::unordered_map<vector<SimplexId>, SimplexId> * const internalTriangleMap) const{
 
         #ifndef TTK_ENABLE_KAMIKAZE
           if(nodeId <= 0 || nodeId > nodeNumber_)
@@ -1659,7 +1402,7 @@ namespace ttk{
         #endif
 
         SimplexId triangleCount = 0, verticesPerCell = cellArray_[0];
-        boost::unordered_set<vector<SimplexId>, boost::hash<vector<SimplexId>>> triangleSet;
+        internalTriangleMap->clear();
 
         // loop through the internal cell list
         for(SimplexId cid = cellIntervals_[nodeId-1]+1; cid <= cellIntervals_[nodeId]; cid++){
@@ -1678,9 +1421,9 @@ namespace ttk{
                 triangleIds[1] = cellArray_[cellId + k + 1];
                 triangleIds[2] = cellArray_[cellId + l + 1];
                 
-                if(triangleSet.find(triangleIds) == triangleSet.end()){
+                if(internalTriangleMap->find(triangleIds) == internalTriangleMap->end()){
                   triangleCount++;
-                  triangleSet.insert(triangleIds);
+                  (*internalTriangleMap)[triangleIds] = triangleCount + triangleIntervals_[nodeId-1];
                 }
               }
             }
@@ -1701,9 +1444,9 @@ namespace ttk{
                   triangleIds[1] = cellArray_[cellId + k + 1];
                   triangleIds[2] = cellArray_[cellId + l + 1];
 
-                  if(triangleSet.find(triangleIds) == triangleSet.end()){
+                  if(internalTriangleMap->find(triangleIds) == internalTriangleMap->end()){
                     triangleCount++;
-                    triangleSet.insert(triangleIds);
+                    (*internalTriangleMap)[triangleIds] = triangleCount + triangleIntervals_[nodeId-1];
                   }
                 }
               }
@@ -1712,6 +1455,50 @@ namespace ttk{
         }
 
         return triangleCount;
+      }
+
+      /**
+       * Build the external triangle list in the node.
+       */
+      int buildExternalTriangleMap(SimplexId nodeId, 
+        boost::unordered_map<vector<SimplexId>, SimplexId> * const externalTriangleMap) const{
+
+        #ifndef TTK_ENABLE_KAMIKAZE
+          if(nodeId <= 0 || nodeId > nodeNumber_)
+            return -1;
+        #endif
+
+        SimplexId verticesPerCell = cellArray_[0];
+
+        // loop through the external cell list
+        for(SimplexId cid : externalCells_[nodeId]){
+          vector<SimplexId> triangleIds(3);
+          SimplexId cellId = (verticesPerCell + 1) * cid;
+
+          // loop through each triangle of the cell
+          for(SimplexId j = 0; j < verticesPerCell-2; j++){
+            triangleIds[0] = cellArray_[cellId + j + 1];
+            if(triangleIds[0] <= vertexIntervals_[nodeId-1]){
+              for(SimplexId k = j+1; k < verticesPerCell-1; k++){
+                for(SimplexId l = k+1; l < verticesPerCell; l++){
+                  triangleIds[1] = cellArray_[cellId + k + 1];
+                  triangleIds[2] = cellArray_[cellId + l + 1];
+
+                  if(triangleIds[1] > vertexIntervals_[nodeId-1] && triangleIds[1] <= vertexIntervals_[nodeId]){
+                    SimplexId nodeNum = findNodeIndex(triangleIds[0], VERTEX_ID);
+                    (*externalTriangleMap)[triangleIds] = internalTriangleMaps_[nodeNum].at(triangleIds);
+                  }
+                  else if(triangleIds[2] > vertexIntervals_[nodeId-1] && triangleIds[2] <= vertexIntervals_[nodeId]){
+                    SimplexId nodeNum = findNodeIndex(triangleIds[0], VERTEX_ID);
+                    (*externalTriangleMap)[triangleIds] = internalTriangleMaps_[nodeNum].at(triangleIds);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        return 0;
       }
 
       /**
@@ -1727,55 +1514,24 @@ namespace ttk{
         SimplexId edgesPerCell = cellArray_[0]*(cellArray_[0]-1)/2;
         nodePtr->cellEdges_->clear();
         nodePtr->cellEdges_->resize(cellIntervals_[nodePtr->nid]-cellIntervals_[nodePtr->nid-1], vector<SimplexId>(edgesPerCell));
-        boost::unordered_map<SimplexId, vector<vector<SimplexId>>> edgeNodes;
-
-        if(nodePtr->internalEdgeMap_ == nullptr){
-          nodePtr->internalEdgeList_ = new vector<pair_int>();
-          nodePtr->internalEdgeMap_ = new boost::unordered_map<pair_int, SimplexId>();
-          buildInternalEdgeList(nodePtr->nid, nodePtr->internalEdgeList_, nodePtr->internalEdgeMap_, nullptr);
-        }
 
         for(SimplexId i = cellIntervals_[nodePtr->nid-1]+1; i <= cellIntervals_[nodePtr->nid]; i++){
           SimplexId cellId = (cellArray_[0]+1)*i;
           // get the internal edge id from the map
           for(SimplexId k = 1; k < cellArray_[0]; k++){
             pair_int edgePair(cellArray_[cellId+1], cellArray_[cellId+k+1]);
-            (*nodePtr->cellEdges_)[i-cellIntervals_[nodePtr->nid-1]-1][k-1] = nodePtr->internalEdgeMap_->at(edgePair);
+            (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][k-1] = internalEdgeMaps_[nodePtr->nid].at(edgePair);
           }
           for(SimplexId j = 1; j < cellArray_[0]-1; j++){
             for(SimplexId k = j+1; k < cellArray_[0]; k++){
               pair_int edgePair(cellArray_[cellId+j+1], cellArray_[cellId+k+1]);
               if(edgePair.first <= vertexIntervals_[nodePtr->nid]){
-                (*nodePtr->cellEdges_)[i-cellIntervals_[nodePtr->nid-1]-1][j+k] = nodePtr->internalEdgeMap_->at(edgePair);
+                (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][j+k] = internalEdgeMaps_[nodePtr->nid].at(edgePair);
               }
-              // group the external edges by node id
               else{
-                vector<SimplexId> edgeTuple{i, j+k, edgePair.first, edgePair.second};
-                edgeNodes[findNodeIndex(edgePair.first, VERTEX_ID)].push_back(edgeTuple);
+                SimplexId nodeNum = findNodeIndex(edgePair.first, VERTEX_ID);
+                (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][j+k] = internalEdgeMaps_[nodeNum].at(edgePair);
               }
-            }
-          }
-        }
-
-        ExpandedNode *exnode;
-        for(auto iter = edgeNodes.begin(); iter != edgeNodes.end(); iter++){
-          exnode = searchCache(iter->first, nodePtr->nid);
-          if(!exnode){
-            boost::unordered_map<pair_int, SimplexId> localInternalEdgeMap;
-            buildInternalEdgeList(iter->first, nullptr, &localInternalEdgeMap, nullptr);
-            for(vector<SimplexId> edgeTuple : iter->second){
-              pair_int edgePair(edgeTuple[2], edgeTuple[3]);
-              (*nodePtr->cellEdges_)[edgeTuple[0]-cellIntervals_[nodePtr->nid-1]-1][edgeTuple[1]] = localInternalEdgeMap.at(edgePair);
-            }
-          }
-          else{
-            if(exnode->internalEdgeMap_ == nullptr){
-              exnode->internalEdgeMap_ = new boost::unordered_map<pair_int, SimplexId>();
-              buildInternalEdgeList(iter->first, nullptr, exnode->internalEdgeMap_, nullptr);
-            }
-            for(vector<SimplexId> edgeTuple : iter->second){
-              pair_int edgePair(edgeTuple[2], edgeTuple[3]);
-              (*nodePtr->cellEdges_)[edgeTuple[0]-cellIntervals_[nodePtr->nid-1]-1][edgeTuple[1]] = exnode->internalEdgeMap_->at(edgePair);
             }
           }
         }
@@ -1794,16 +1550,8 @@ namespace ttk{
         #endif
 
         SimplexId trianglesPerCell = cellArray_[0] * (cellArray_[0]-1) * (cellArray_[0]-2) / 6;
-        boost::unordered_map<SimplexId, vector<vector<SimplexId>>> triangleNodes;
-
         nodePtr->cellTriangles_->clear();
         nodePtr->cellTriangles_->resize(cellIntervals_[nodePtr->nid]-cellIntervals_[nodePtr->nid-1], vector<SimplexId>(trianglesPerCell));
-
-        if(nodePtr->internalTriangleMap_ == nullptr){
-          nodePtr->internalTriangleList_ = new vector<vector<SimplexId>>();
-          nodePtr->internalTriangleMap_ = new boost::unordered_map<vector<SimplexId>, SimplexId>();
-          buildInternalTriangleList(nodePtr->nid, nodePtr->internalTriangleList_, nodePtr->internalTriangleMap_, nullptr);
-        }
 
         for(SimplexId i = cellIntervals_[nodePtr->nid-1]+1; i <= cellIntervals_[nodePtr->nid]; i++){
           SimplexId cellId = (cellArray_[0]+1)*i;
@@ -1814,7 +1562,7 @@ namespace ttk{
             triangleVec[1] = cellArray_[cellId+1+k];
             for(SimplexId l = k+1; l < cellArray_[0]; l++){
               triangleVec[2] = cellArray_[cellId+1+l];
-              (*(nodePtr->cellTriangles_))[i-cellIntervals_[nodePtr->nid-1]-1][k+l-3] = nodePtr->internalTriangleMap_->at(triangleVec);
+              (*(nodePtr->cellTriangles_))[i-cellIntervals_[nodePtr->nid-1]-1][k+l-3] = internalTriangleMaps_[nodePtr->nid].at(triangleVec);
             }
           }
           // group the external triangles by node id
@@ -1822,34 +1570,11 @@ namespace ttk{
           triangleVec[1] = cellArray_[cellId+3];
           triangleVec[2] = cellArray_[cellId+4];
           if(triangleVec[0] <= vertexIntervals_[nodePtr->nid]){
-            (*(nodePtr->cellTriangles_))[i-cellIntervals_[nodePtr->nid-1]-1].back() = nodePtr->internalTriangleMap_->at(triangleVec);
+            (*(nodePtr->cellTriangles_))[i-cellIntervals_[nodePtr->nid-1]-1].back() = internalTriangleMaps_[nodePtr->nid].at(triangleVec);
           }
           else{
-            vector<SimplexId> triangleTuple{i, triangleVec[0], triangleVec[1], triangleVec[2]};
-            triangleNodes[findNodeIndex(triangleVec[0], VERTEX_ID)].push_back(triangleTuple);
-          }
-        }
-
-        ExpandedNode *exnode;
-        for(auto iter = triangleNodes.begin(); iter != triangleNodes.end(); iter++){
-          exnode = searchCache(iter->first, nodePtr->nid);
-          if(!exnode){
-            boost::unordered_map<vector<SimplexId>, SimplexId> localInternalTriangleMap;
-            buildInternalTriangleList(iter->first, nullptr, &localInternalTriangleMap, nullptr);
-            for(vector<SimplexId> triangleVec : iter->second){
-              vector<SimplexId> triangle(triangleVec.begin()+1, triangleVec.end());
-              (*(nodePtr->cellTriangles_))[triangleVec[0]-cellIntervals_[nodePtr->nid-1]-1].back() = localInternalTriangleMap.at(triangle);
-            }
-          }
-          else{
-            if(exnode->internalTriangleMap_ == nullptr){
-              exnode->internalTriangleMap_ = new boost::unordered_map<vector<SimplexId>, SimplexId>();
-              buildInternalTriangleList(iter->first, nullptr, exnode->internalTriangleMap_, nullptr);
-            }
-            for(vector<SimplexId> triangleVec : iter->second){
-              vector<SimplexId> triangle(triangleVec.begin()+1, triangleVec.end());
-              (*(nodePtr->cellTriangles_))[triangleVec[0]-cellIntervals_[nodePtr->nid-1]-1].back() = exnode->internalTriangleMap_->at(triangle);
-            }
+            SimplexId nodeNum = findNodeIndex(triangleVec[0], VERTEX_ID);
+            (*(nodePtr->cellTriangles_))[i-cellIntervals_[nodePtr->nid-1]-1].back() = internalTriangleMaps_[nodeNum].at(triangleVec);
           }
         }
 
@@ -1869,43 +1594,85 @@ namespace ttk{
         nodePtr->edgeTriangles_->clear();
         nodePtr->edgeTriangles_->resize(edgeIntervals_[nodePtr->nid] - edgeIntervals_[nodePtr->nid-1]);
 
-        if(nodePtr->internalEdgeMap_ == nullptr){
-          nodePtr->internalEdgeList_ = new vector<pair_int>();
-          nodePtr->internalEdgeMap_ = new boost::unordered_map<pair_int, SimplexId>();
-          buildInternalEdgeList(nodePtr->nid, nodePtr->internalEdgeList_, nodePtr->internalEdgeMap_, nullptr);
-        }
-        if(nodePtr->internalTriangleList_ == nullptr){
-          nodePtr->internalTriangleList_ = new vector<vector<SimplexId>>();
-          nodePtr->internalTriangleMap_ = new boost::unordered_map<vector<SimplexId>, SimplexId>();
-          buildInternalTriangleList(nodePtr->nid, nodePtr->internalTriangleList_, nodePtr->internalTriangleMap_, nullptr);
-        }
         if(nodePtr->externalTriangleMap_ == nullptr){
           nodePtr->externalTriangleMap_ = new boost::unordered_map<vector<SimplexId>, SimplexId>();
-          buildExternalTriangleMap(nodePtr);
+          buildExternalTriangleMap(nodePtr->nid, nodePtr->externalTriangleMap_);
         }
 
         // for internal triangles
-        for(SimplexId tid = 0; tid < (SimplexId) nodePtr->internalTriangleList_->size(); tid++){
-          pair_int edge1 = pair_int((*(nodePtr->internalTriangleList_))[tid][0], (*(nodePtr->internalTriangleList_))[tid][1]);
-          pair_int edge2 = pair_int((*(nodePtr->internalTriangleList_))[tid][0], (*(nodePtr->internalTriangleList_))[tid][2]);
+        boost::unordered_map<vector<SimplexId>, SimplexId>::const_iterator iter;
+        for(iter = internalTriangleMaps_[nodePtr->nid].begin(); iter != internalTriangleMaps_[nodePtr->nid].end(); iter++){
+          pair_int edge1(iter->first[0], iter->first[1]);
+          pair_int edge2(iter->first[0], iter->first[2]);
 
-          (*nodePtr->edgeTriangles_)[nodePtr->internalEdgeMap_->at(edge1)-edgeIntervals_[nodePtr->nid-1]-1].push_back(tid + triangleIntervals_[nodePtr->nid-1] + 1);
+          (*(nodePtr->edgeTriangles_))[(internalEdgeMaps_[nodePtr->nid]).at(edge1)-edgeIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
+          (*(nodePtr->edgeTriangles_))[internalEdgeMaps_[nodePtr->nid].at(edge2)-edgeIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
 
-          (*nodePtr->edgeTriangles_)[nodePtr->internalEdgeMap_->at(edge2)-edgeIntervals_[nodePtr->nid-1]-1].push_back(tid + triangleIntervals_[nodePtr->nid-1] + 1);
-
-          if((*(nodePtr->internalTriangleList_))[tid][1] <= vertexIntervals_[nodePtr->nid]){
-            edge1 = pair_int((*(nodePtr->internalTriangleList_))[tid][1], (*(nodePtr->internalTriangleList_))[tid][2]);
-            (*nodePtr->edgeTriangles_)[nodePtr->internalEdgeMap_->at(edge1)-edgeIntervals_[nodePtr->nid-1]-1].push_back(tid + triangleIntervals_[nodePtr->nid-1] + 1);
+          if(iter->first[1] <= vertexIntervals_[nodePtr->nid]){
+            pair_int edge3(iter->first[1], iter->first[2]);
+            (*(nodePtr->edgeTriangles_))[internalEdgeMaps_[nodePtr->nid].at(edge3)-edgeIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
           }
         }
 
         // for external triangles
-        boost::unordered_map<vector<SimplexId>, SimplexId>::iterator iter;
-        // loop through each edge of the cell
         for(iter = nodePtr->externalTriangleMap_->begin(); iter != nodePtr->externalTriangleMap_->end(); iter++){
-          pair_int edge = pair<SimplexId, SimplexId >(iter->first.at(1), iter->first.at(2));
-          if(edge.first > vertexIntervals_[nodePtr->nid-1] && edge.first <= vertexIntervals_[nodePtr->nid]){
-            (*nodePtr->edgeTriangles_)[nodePtr->internalEdgeMap_->at(edge)-edgeIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
+          if(iter->first[1] > vertexIntervals_[nodePtr->nid-1] && iter->first[1] <= vertexIntervals_[nodePtr->nid]){
+            pair_int edge(iter->first[1], iter->first[2]);
+            (*(nodePtr->edgeTriangles_))[internalEdgeMaps_[nodePtr->nid].at(edge)-edgeIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
+          }
+        }
+
+        return 0;
+      }
+
+      /**
+       * Get the edge stars for all the edges in a given node.
+       */
+      int getEdgeStars(ExpandedNode * const nodePtr) const{
+
+        #ifndef TTK_ENABLE_KAMIKAZE
+          if(nodePtr->nid <= 0 || nodePtr->nid > nodeNumber_)
+              return -1;
+        #endif
+
+        nodePtr->edgeStars_->clear();
+        nodePtr->edgeStars_->resize(edgeIntervals_[nodePtr->nid]-edgeIntervals_[nodePtr->nid-1]);
+
+        // loop through the internal cell list
+        for(SimplexId cid = cellIntervals_[nodePtr->nid-1]+1; cid <= cellIntervals_[nodePtr->nid]; cid++){
+          pair_int edgeIds;
+          SimplexId cellId = (cellArray_[0] + 1) * cid;
+
+          // loop through each edge of the cell
+          for(SimplexId j = 0; j < cellArray_[0]-1; j++){
+            edgeIds.first = cellArray_[cellId + j + 1];
+            // the edge does not belong to the current node
+            if(edgeIds.first > vertexIntervals_[nodePtr->nid]){
+              break;
+            }
+            for(SimplexId k = j+1; k < cellArray_[0]; k++){
+              edgeIds.second = cellArray_[cellId + k + 1];
+              (*(nodePtr->edgeStars_))[internalEdgeMaps_[nodePtr->nid].at(edgeIds)-edgeIntervals_[nodePtr->nid-1]].push_back(cid);
+            }
+          }
+        }
+
+        // loop through the external cell list
+        for(SimplexId cid : externalCells_[nodePtr->nid]){
+          pair_int edgeIds;
+          SimplexId cellId = (cellArray_[0] + 1) * cid;
+
+          // loop through each edge of the cell
+          for(SimplexId j = 0; j < cellArray_[0]-1; j++){
+            for(SimplexId k = j+1; k < cellArray_[0]; k++){
+              edgeIds.first = cellArray_[cellId + j + 1];
+              edgeIds.second = cellArray_[cellId + k + 1];
+              
+              // the edge is in the current node
+              if(edgeIds.first > vertexIntervals_[nodePtr->nid-1] && edgeIds.first <= vertexIntervals_[nodePtr->nid]){
+                (*(nodePtr->edgeStars_))[internalEdgeMaps_[nodePtr->nid].at(edgeIds)-edgeIntervals_[nodePtr->nid-1]].push_back(cid);
+              }
+            }
           }
         }
 
@@ -1924,54 +1691,80 @@ namespace ttk{
 
         nodePtr->triangleEdges_->clear();
         nodePtr->triangleEdges_->resize(triangleIntervals_[nodePtr->nid]-triangleIntervals_[nodePtr->nid-1], vector<SimplexId>(3));
-        boost::unordered_map<SimplexId, vector<vector<SimplexId>>> edgeNodes;
 
-        if(nodePtr->internalEdgeMap_ == nullptr){
-          nodePtr->internalEdgeList_ = new vector<pair_int>();
-          nodePtr->internalEdgeMap_ = new boost::unordered_map<pair_int, SimplexId>();
-          buildInternalEdgeList(nodePtr->nid, nodePtr->internalEdgeList_, nodePtr->internalEdgeMap_, nullptr);
-        }
-        if(nodePtr->internalTriangleList_ == nullptr){
-          nodePtr->internalTriangleList_ = new vector<vector<SimplexId>>();
-          nodePtr->internalTriangleMap_ = new boost::unordered_map<vector<SimplexId>, SimplexId>();
-          buildInternalTriangleList(nodePtr->nid, nodePtr->internalTriangleList_, nodePtr->internalTriangleMap_, nullptr);
-        }
-
-        for(SimplexId tid = 0; tid < (SimplexId) nodePtr->internalTriangleList_->size(); tid++){
-          // since the first vertex of the triangle is in the node ...
-          pair_int edgePair((*(nodePtr->internalTriangleList_))[tid][0], (*(nodePtr->internalTriangleList_))[tid][1]);
-          (*nodePtr->triangleEdges_)[tid][0] = nodePtr->internalEdgeMap_->at(edgePair);
-          edgePair.second = (*(nodePtr->internalTriangleList_))[tid][2];
-          (*nodePtr->triangleEdges_)[tid][1] = nodePtr->internalEdgeMap_->at(edgePair);
-          edgePair.first = (*(nodePtr->internalTriangleList_))[tid][1];
+        int tid = 0;
+        boost::unordered_map<vector<SimplexId>, SimplexId>::const_iterator iter;
+        for(iter = internalTriangleMaps_[nodePtr->nid].begin(); iter != internalTriangleMaps_[nodePtr->nid].end(); iter++){
+          pair_int edgePair(iter->first[0], iter->first[1]);
+          (*(nodePtr->triangleEdges_))[tid][0] = internalEdgeMaps_[nodePtr->nid].at(edgePair);
+          edgePair.second = iter->first[2];
+          (*(nodePtr->triangleEdges_))[tid][1] = internalEdgeMaps_[nodePtr->nid].at(edgePair);
+          edgePair.first = iter->first[1];
           if(edgePair.first > vertexIntervals_[nodePtr->nid-1] && edgePair.first <= vertexIntervals_[nodePtr->nid]){
-            (*nodePtr->triangleEdges_)[tid][2] = nodePtr->internalEdgeMap_->at(edgePair);
+            (*(nodePtr->triangleEdges_))[tid][2] = internalEdgeMaps_[nodePtr->nid].at(edgePair);
           }else{
-            vector<SimplexId> edgeTuple{tid, edgePair.first, edgePair.second};
-            SimplexId nid = findNodeIndex(edgePair.first, VERTEX_ID);
-            edgeNodes[nid].push_back(edgeTuple);
+            SimplexId nodeNum = findNodeIndex(edgePair.first, VERTEX_ID);
+            (*(nodePtr->triangleEdges_))[tid][2] = internalEdgeMaps_[nodeNum].at(edgePair);
+          }
+          tid++;
+        }
+
+        return 0;
+      }
+
+      /**
+       * Get the triangle edges for all the triangles in a given node.
+       */
+      int getTriangleStars(ExpandedNode * const nodePtr) const{
+
+        #ifndef TTK_ENABLE_KAMIKAZE
+          if(nodePtr->nid <= 0 || nodePtr->nid > nodeNumber_)
+            return -1;
+        #endif
+
+        nodePtr->triangleStars_->clear();
+        nodePtr->triangleStars_->resize(triangleIntervals_[nodePtr->nid]-triangleIntervals_[nodePtr->nid-1]);
+
+        SimplexId verticesPerCell = cellArray_[0];
+
+         // loop through the internal cell list
+        for(SimplexId cid = cellIntervals_[nodePtr->nid-1]+1; cid <= cellIntervals_[nodePtr->nid]; cid++){
+          vector<SimplexId> triangleIds(3);
+          SimplexId cellId = (verticesPerCell + 1) * cid;
+
+          // loop through each triangle of the cell
+          for(SimplexId j = 0; j < verticesPerCell-2; j++){
+            triangleIds[0] = cellArray_[cellId + j + 1];
+            // the triangle does not belong to the current node
+            if(triangleIds[0] > vertexIntervals_[nodePtr->nid]){
+              break;
+            }
+            for(SimplexId k = j+1; k < verticesPerCell-1; k++){
+              for(SimplexId l = k+1; l < verticesPerCell; l++){
+                triangleIds[1] = cellArray_[cellId + k + 1];
+                triangleIds[2] = cellArray_[cellId + l + 1];
+                (*(nodePtr->triangleStars_))[internalTriangleMaps_[nodePtr->nid].at(triangleIds)-triangleIntervals_[nodePtr->nid-1]-1].push_back(cid);
+              }
+            }
           }
         }
 
-        ExpandedNode *exnode;
-        for(auto iter = edgeNodes.begin(); iter != edgeNodes.end(); iter++){
-          exnode = searchCache(iter->first, nodePtr->nid);
-          if(!exnode){
-            boost::unordered_map<pair_int, SimplexId> localInternalEdgeMap;
-            buildInternalEdgeList(iter->first, nullptr, &localInternalEdgeMap, nullptr);
-            for(vector<SimplexId> edgeTuple : iter->second){
-              pair_int edgePair(edgeTuple[1], edgeTuple[2]);
-              (*nodePtr->triangleEdges_)[edgeTuple[0]][2] = localInternalEdgeMap.at(edgePair);
-            }
-          }
-          else{
-            if(exnode->internalEdgeMap_ == nullptr){
-              exnode->internalEdgeMap_ = new boost::unordered_map<pair_int, SimplexId>();
-              buildInternalEdgeList(iter->first, nullptr, exnode->internalEdgeMap_, nullptr);
-            }
-            for(vector<SimplexId> edgeTuple : iter->second){
-              pair_int edgePair(edgeTuple[1], edgeTuple[2]);
-              (*nodePtr->triangleEdges_)[edgeTuple[0]][2] = exnode->internalEdgeMap_->at(edgePair);
+        // loop through the external cell list
+        for(SimplexId cid : externalCells_[nodePtr->nid]){
+          vector<SimplexId> triangleIds(3);
+          SimplexId cellId = (verticesPerCell + 1) * cid;
+
+          // loop through each triangle of the cell
+          for(SimplexId j = 0; j < verticesPerCell-2; j++){
+            triangleIds[0] = cellArray_[cellId + j + 1];
+            if(triangleIds[0] > vertexIntervals_[nodePtr->nid-1] && triangleIds[0] <= vertexIntervals_[nodePtr->nid]){
+              for(SimplexId k = j+1; k < verticesPerCell-1; k++){
+                for(SimplexId l = k+1; l < verticesPerCell; l++){
+                  triangleIds[1] = cellArray_[cellId + k + 1];
+                  triangleIds[2] = cellArray_[cellId + l + 1];
+                  (*(nodePtr->triangleStars_))[internalTriangleMaps_[nodePtr->nid].at(triangleIds)-triangleIntervals_[nodePtr->nid-1]-1].push_back(cid);
+                }
+              }
             }
           }
         }
@@ -1989,28 +1782,23 @@ namespace ttk{
             return -1;
         #endif
 
-        nodePtr->vertexEdges_->clear();
-        nodePtr->vertexEdges_->resize(vertexIntervals_[nodePtr->nid]-vertexIntervals_[nodePtr->nid-1]);
+        (nodePtr->vertexEdges_)->clear();
+        (nodePtr->vertexEdges_)->resize(vertexIntervals_[nodePtr->nid]-vertexIntervals_[nodePtr->nid-1]);
 
-        if(nodePtr->internalEdgeList_ == nullptr){
-          nodePtr->internalEdgeList_ = new vector<pair_int>();
-          nodePtr->internalEdgeMap_ = new boost::unordered_map<pair_int, SimplexId>();
-          buildInternalEdgeList(nodePtr->nid, nodePtr->internalEdgeList_, nodePtr->internalEdgeMap_, nullptr);
-        }
         if(nodePtr->externalEdgeMap_ == nullptr){
           nodePtr->externalEdgeMap_ = new boost::unordered_map<pair_int, SimplexId>();
-          buildExternalEdgeMap(nodePtr);
+          buildExternalEdgeMap(nodePtr->nid, nodePtr->externalEdgeMap_);
         }
 
-        for(SimplexId i = 0; i < (SimplexId) nodePtr->internalEdgeList_->size(); i++){
-          (*(nodePtr->vertexEdges_))[nodePtr->internalEdgeList_->at(i).first-vertexIntervals_[nodePtr->nid-1]-1].push_back(edgeIntervals_[nodePtr->nid-1]+i+1);
+        boost::unordered_map<pair_int, SimplexId>::const_iterator iter;
+        for(iter = internalEdgeMaps_[nodePtr->nid].begin(); iter != internalEdgeMaps_[nodePtr->nid].end(); iter++){
+          (*(nodePtr->vertexEdges_))[iter->first.first-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
           // the second vertex id of the edge must be greater than the first one
-          if(nodePtr->internalEdgeList_->at(i).second <= vertexIntervals_[nodePtr->nid]){
-            (*(nodePtr->vertexEdges_))[nodePtr->internalEdgeList_->at(i).second-vertexIntervals_[nodePtr->nid-1]-1].push_back(edgeIntervals_[nodePtr->nid-1]+i+1);
+          if(iter->first.second <= vertexIntervals_[nodePtr->nid]){
+            (*(nodePtr->vertexEdges_))[iter->first.second-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
           }
         }
 
-        boost::unordered_map<pair_int, SimplexId>::iterator iter;
         for(iter = nodePtr->externalEdgeMap_->begin(); iter != nodePtr->externalEdgeMap_->end(); iter++){
           (*(nodePtr->vertexEdges_))[iter->first.second-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
         }
@@ -2033,12 +1821,11 @@ namespace ttk{
 
         if(nodePtr->internalEdgeList_ == nullptr){
           nodePtr->internalEdgeList_ = new vector<pair_int>();
-          nodePtr->internalEdgeMap_ = new boost::unordered_map<pair_int, SimplexId>();
-          buildInternalEdgeList(nodePtr->nid, nodePtr->internalEdgeList_, nodePtr->internalEdgeMap_, nullptr);
+          buildInternalEdgeList(nodePtr->nid, nodePtr->internalEdgeList_);
         }
         if(nodePtr->externalEdgeMap_ == nullptr){
           nodePtr->externalEdgeMap_ = new boost::unordered_map<pair_int, SimplexId>();
-          buildExternalEdgeMap(nodePtr);
+          buildExternalEdgeMap(nodePtr->nid, nodePtr->externalEdgeMap_);
         }
 
         for(SimplexId i = 0; i < (SimplexId) nodePtr->internalEdgeList_->size(); i++){
@@ -2105,27 +1892,20 @@ namespace ttk{
         nodePtr->vertexTriangles_->clear();
         nodePtr->vertexTriangles_->resize(vertexIntervals_[nodePtr->nid] - vertexIntervals_[nodePtr->nid-1]);
 
-        if(nodePtr->internalTriangleList_ == nullptr){
-          nodePtr->internalTriangleList_ = new vector<vector<SimplexId>>();
-          nodePtr->internalTriangleMap_ = new boost::unordered_map<vector<SimplexId>, SimplexId>();
-          buildInternalTriangleList(nodePtr->nid, nodePtr->internalTriangleList_, nodePtr->internalTriangleMap_, nullptr);
-        }
-
         if(nodePtr->externalTriangleMap_ == nullptr){
           nodePtr->externalTriangleMap_ = new boost::unordered_map<vector<SimplexId>, SimplexId>();
-          buildExternalTriangleMap(nodePtr);
+          buildExternalTriangleMap(nodePtr->nid, nodePtr->externalTriangleMap_);
         }
 
-        SimplexId triangleId = triangleIntervals_[nodePtr->nid-1]+1;
-        for(SimplexId i = 0; i < (SimplexId) nodePtr->internalTriangleList_->size(); i++){
+        
+        boost::unordered_map<vector<SimplexId>, SimplexId>::const_iterator iter;
+        for(iter = internalTriangleMaps_[nodePtr->nid].begin(); iter != internalTriangleMaps_[nodePtr->nid].end(); iter++){
           for(SimplexId j = 0; j < 3; j++){
-            if(nodePtr->internalTriangleList_->at(i)[j] > vertexIntervals_[nodePtr->nid-1] && nodePtr->internalTriangleList_->at(i)[j] <= vertexIntervals_[nodePtr->nid])
-              (*(nodePtr->vertexTriangles_))[nodePtr->internalTriangleList_->at(i)[j]-vertexIntervals_[nodePtr->nid-1]-1].push_back(triangleId);
+            if(iter->first[j] > vertexIntervals_[nodePtr->nid-1] && iter->first[j] <= vertexIntervals_[nodePtr->nid])
+              (*(nodePtr->vertexTriangles_))[iter->first[j]-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
           }
-          triangleId++;
         }
 
-        boost::unordered_map<vector<SimplexId>, SimplexId>::iterator iter;
         for(iter = nodePtr->externalTriangleMap_->begin(); iter != nodePtr->externalTriangleMap_->end(); iter++){
           for(SimplexId j = 0; j < 3; j++){
             if(iter->first.at(j) > vertexIntervals_[nodePtr->nid-1] && iter->first.at(j) <= vertexIntervals_[nodePtr->nid])
@@ -2150,6 +1930,8 @@ namespace ttk{
       vector<SimplexId>   cellIntervals_;
       const LongSimplexId *cellArray_;
       vector<vector<SimplexId>> externalCells_;
+      vector<boost::unordered_map<pair_int, SimplexId>> internalEdgeMaps_;
+      vector<boost::unordered_map<vector<SimplexId>, SimplexId>> internalTriangleMaps_;
 
       // LRU cache
       size_t cacheSize_;
