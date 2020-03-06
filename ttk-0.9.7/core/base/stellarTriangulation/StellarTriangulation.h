@@ -1229,25 +1229,6 @@ namespace ttk{
         return (*cacheMap_[nodeId]);
       }
 
-      /**
-       * Insert a vector of nodes in the cache.
-       */
-      void insertCache(const vector<ExpandedNode*> nodeVec, const SimplexId reservedId=0) const{
-        for(ExpandedNode *exnode : nodeVec){
-          if(cacheMap_.find(exnode->nid) != cacheMap_.end())
-            continue;
-          if(cache_.size() >= cacheSize_){
-            if(cache_.back()->nid == reservedId)
-              break;
-            cacheMap_.erase(cache_.back()->nid);
-            delete cache_.back();
-            cache_.pop_back();
-          }
-          cache_.push_front(exnode);
-          cacheMap_[exnode->nid] = cache_.begin();
-        }
-      }
-
       /** 
        * Build the internal edge list in the node.
        */
@@ -1261,9 +1242,8 @@ namespace ttk{
 
         internalEdgeList->clear();
         internalEdgeList->resize(internalEdgeMaps_[nodeId].size());
-        int k = 0;
         for(auto iter = internalEdgeMaps_[nodeId].begin(); iter != internalEdgeMaps_[nodeId].end(); iter++){
-          (*internalEdgeList)[k++] = iter->first;
+          (*internalEdgeList)[iter->second - 1] = iter->first;
         }
 
         return 0;
@@ -1301,7 +1281,7 @@ namespace ttk{
               // not found in the edge map - assign new edge id
               if(internalEdgeMap->find(edgeIds) == internalEdgeMap->end()){
                 edgeCount++;
-                (*internalEdgeMap)[edgeIds] = edgeCount+edgeIntervals_[nodeId-1];
+                (*internalEdgeMap)[edgeIds] = edgeCount;
               }
             }
           }
@@ -1322,7 +1302,7 @@ namespace ttk{
               if(edgeIds.first > vertexIntervals_[nodeId-1] && edgeIds.first <= vertexIntervals_[nodeId]){
                 if(internalEdgeMap->find(edgeIds) == internalEdgeMap->end()){
                   edgeCount++;
-                  (*internalEdgeMap)[edgeIds] = edgeCount+edgeIntervals_[nodeId-1];
+                  (*internalEdgeMap)[edgeIds] = edgeCount;
                 }
               }
             }
@@ -1360,7 +1340,7 @@ namespace ttk{
               // check if the edge is an external edge
               if(edgeIds.first <= vertexIntervals_[nodeId-1] && edgeIds.second > vertexIntervals_[nodeId-1] && edgeIds.second <= vertexIntervals_[nodeId]){
                 SimplexId nodeNum = findNodeIndex(edgeIds.first, VERTEX_ID);
-                (*externalEdgeMap)[edgeIds] = internalEdgeMaps_[nodeNum].at(edgeIds);
+                (*externalEdgeMap)[edgeIds] = internalEdgeMaps_[nodeNum].at(edgeIds) + edgeIntervals_[nodeNum-1];
               }
             }
           }
@@ -1382,9 +1362,8 @@ namespace ttk{
 
         internalTriangleList->clear();
         internalTriangleList->resize(internalTriangleMaps_[nodeId].size());
-        int k = 0;
         for(auto iter = internalTriangleMaps_[nodeId].begin(); iter != internalTriangleMaps_[nodeId].end(); iter++){
-          (*internalTriangleList)[k++] = iter->first;
+          (*internalTriangleList)[iter->second - 1] = iter->first;
         }
 
         return 0;
@@ -1423,7 +1402,7 @@ namespace ttk{
                 
                 if(internalTriangleMap->find(triangleIds) == internalTriangleMap->end()){
                   triangleCount++;
-                  (*internalTriangleMap)[triangleIds] = triangleCount + triangleIntervals_[nodeId-1];
+                  (*internalTriangleMap)[triangleIds] = triangleCount;
                 }
               }
             }
@@ -1446,7 +1425,7 @@ namespace ttk{
 
                   if(internalTriangleMap->find(triangleIds) == internalTriangleMap->end()){
                     triangleCount++;
-                    (*internalTriangleMap)[triangleIds] = triangleCount + triangleIntervals_[nodeId-1];
+                    (*internalTriangleMap)[triangleIds] = triangleCount;
                   }
                 }
               }
@@ -1486,11 +1465,11 @@ namespace ttk{
 
                   if(triangleIds[1] > vertexIntervals_[nodeId-1] && triangleIds[1] <= vertexIntervals_[nodeId]){
                     SimplexId nodeNum = findNodeIndex(triangleIds[0], VERTEX_ID);
-                    (*externalTriangleMap)[triangleIds] = internalTriangleMaps_[nodeNum].at(triangleIds);
+                    (*externalTriangleMap)[triangleIds] = internalTriangleMaps_[nodeNum].at(triangleIds) + triangleIntervals_[nodeNum-1];
                   }
                   else if(triangleIds[2] > vertexIntervals_[nodeId-1] && triangleIds[2] <= vertexIntervals_[nodeId]){
                     SimplexId nodeNum = findNodeIndex(triangleIds[0], VERTEX_ID);
-                    (*externalTriangleMap)[triangleIds] = internalTriangleMaps_[nodeNum].at(triangleIds);
+                    (*externalTriangleMap)[triangleIds] = internalTriangleMaps_[nodeNum].at(triangleIds) + triangleIntervals_[nodeNum-1];
                   }
                 }
               }
@@ -1520,17 +1499,17 @@ namespace ttk{
           // get the internal edge id from the map
           for(SimplexId k = 1; k < cellArray_[0]; k++){
             pair_int edgePair(cellArray_[cellId+1], cellArray_[cellId+k+1]);
-            (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][k-1] = internalEdgeMaps_[nodePtr->nid].at(edgePair);
+            (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][k-1] = internalEdgeMaps_[nodePtr->nid].at(edgePair) + edgeIntervals_[nodePtr->nid-1];
           }
           for(SimplexId j = 1; j < cellArray_[0]-1; j++){
             for(SimplexId k = j+1; k < cellArray_[0]; k++){
               pair_int edgePair(cellArray_[cellId+j+1], cellArray_[cellId+k+1]);
               if(edgePair.first <= vertexIntervals_[nodePtr->nid]){
-                (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][j+k] = internalEdgeMaps_[nodePtr->nid].at(edgePair);
+                (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][j+k] = internalEdgeMaps_[nodePtr->nid].at(edgePair) + edgeIntervals_[nodePtr->nid-1];
               }
               else{
                 SimplexId nodeNum = findNodeIndex(edgePair.first, VERTEX_ID);
-                (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][j+k] = internalEdgeMaps_[nodeNum].at(edgePair);
+                (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][j+k] = internalEdgeMaps_[nodeNum].at(edgePair) + edgeIntervals_[nodeNum-1];
               }
             }
           }
@@ -1562,7 +1541,7 @@ namespace ttk{
             triangleVec[1] = cellArray_[cellId+1+k];
             for(SimplexId l = k+1; l < cellArray_[0]; l++){
               triangleVec[2] = cellArray_[cellId+1+l];
-              (*(nodePtr->cellTriangles_))[i-cellIntervals_[nodePtr->nid-1]-1][k+l-3] = internalTriangleMaps_[nodePtr->nid].at(triangleVec);
+              (*(nodePtr->cellTriangles_))[i-cellIntervals_[nodePtr->nid-1]-1][k+l-3] = internalTriangleMaps_[nodePtr->nid].at(triangleVec) + triangleIntervals_[nodePtr->nid-1];
             }
           }
           // group the external triangles by node id
@@ -1570,11 +1549,11 @@ namespace ttk{
           triangleVec[1] = cellArray_[cellId+3];
           triangleVec[2] = cellArray_[cellId+4];
           if(triangleVec[0] <= vertexIntervals_[nodePtr->nid]){
-            (*(nodePtr->cellTriangles_))[i-cellIntervals_[nodePtr->nid-1]-1].back() = internalTriangleMaps_[nodePtr->nid].at(triangleVec);
+            (*(nodePtr->cellTriangles_))[i-cellIntervals_[nodePtr->nid-1]-1].back() = internalTriangleMaps_[nodePtr->nid].at(triangleVec) + triangleIntervals_[nodePtr->nid-1];
           }
           else{
             SimplexId nodeNum = findNodeIndex(triangleVec[0], VERTEX_ID);
-            (*(nodePtr->cellTriangles_))[i-cellIntervals_[nodePtr->nid-1]-1].back() = internalTriangleMaps_[nodeNum].at(triangleVec);
+            (*(nodePtr->cellTriangles_))[i-cellIntervals_[nodePtr->nid-1]-1].back() = internalTriangleMaps_[nodeNum].at(triangleVec) + triangleIntervals_[nodeNum-1];
           }
         }
 
@@ -1599,18 +1578,18 @@ namespace ttk{
           buildExternalTriangleMap(nodePtr->nid, nodePtr->externalTriangleMap_);
         }
 
-        // for internal triangles
+        // for internal triangles'
         boost::unordered_map<vector<SimplexId>, SimplexId>::const_iterator iter;
         for(iter = internalTriangleMaps_[nodePtr->nid].begin(); iter != internalTriangleMaps_[nodePtr->nid].end(); iter++){
           pair_int edge1(iter->first[0], iter->first[1]);
           pair_int edge2(iter->first[0], iter->first[2]);
 
-          (*(nodePtr->edgeTriangles_))[(internalEdgeMaps_[nodePtr->nid]).at(edge1)-edgeIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
-          (*(nodePtr->edgeTriangles_))[internalEdgeMaps_[nodePtr->nid].at(edge2)-edgeIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
+          (*(nodePtr->edgeTriangles_))[internalEdgeMaps_[nodePtr->nid].at(edge1)-1].push_back(iter->second + triangleIntervals_[nodePtr->nid-1]);
+          (*(nodePtr->edgeTriangles_))[internalEdgeMaps_[nodePtr->nid].at(edge2)-1].push_back(iter->second + triangleIntervals_[nodePtr->nid-1]);
 
           if(iter->first[1] <= vertexIntervals_[nodePtr->nid]){
-            pair_int edge3(iter->first[1], iter->first[2]);
-            (*(nodePtr->edgeTriangles_))[internalEdgeMaps_[nodePtr->nid].at(edge3)-edgeIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
+            edge2.first = iter->first[1];
+            (*(nodePtr->edgeTriangles_))[internalEdgeMaps_[nodePtr->nid].at(edge2)-1].push_back(iter->second + triangleIntervals_[nodePtr->nid-1]);
           }
         }
 
@@ -1618,7 +1597,7 @@ namespace ttk{
         for(iter = nodePtr->externalTriangleMap_->begin(); iter != nodePtr->externalTriangleMap_->end(); iter++){
           if(iter->first[1] > vertexIntervals_[nodePtr->nid-1] && iter->first[1] <= vertexIntervals_[nodePtr->nid]){
             pair_int edge(iter->first[1], iter->first[2]);
-            (*(nodePtr->edgeTriangles_))[internalEdgeMaps_[nodePtr->nid].at(edge)-edgeIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
+            (*(nodePtr->edgeTriangles_))[internalEdgeMaps_[nodePtr->nid].at(edge)-1].push_back(iter->second);
           }
         }
 
@@ -1652,7 +1631,7 @@ namespace ttk{
             }
             for(SimplexId k = j+1; k < cellArray_[0]; k++){
               edgeIds.second = cellArray_[cellId + k + 1];
-              (*(nodePtr->edgeStars_))[internalEdgeMaps_[nodePtr->nid].at(edgeIds)-edgeIntervals_[nodePtr->nid-1]].push_back(cid);
+              (*(nodePtr->edgeStars_))[internalEdgeMaps_[nodePtr->nid].at(edgeIds)-1].push_back(cid);
             }
           }
         }
@@ -1670,7 +1649,7 @@ namespace ttk{
               
               // the edge is in the current node
               if(edgeIds.first > vertexIntervals_[nodePtr->nid-1] && edgeIds.first <= vertexIntervals_[nodePtr->nid]){
-                (*(nodePtr->edgeStars_))[internalEdgeMaps_[nodePtr->nid].at(edgeIds)-edgeIntervals_[nodePtr->nid-1]].push_back(cid);
+                (*(nodePtr->edgeStars_))[internalEdgeMaps_[nodePtr->nid].at(edgeIds)-1].push_back(cid);
               }
             }
           }
@@ -1692,21 +1671,19 @@ namespace ttk{
         nodePtr->triangleEdges_->clear();
         nodePtr->triangleEdges_->resize(triangleIntervals_[nodePtr->nid]-triangleIntervals_[nodePtr->nid-1], vector<SimplexId>(3));
 
-        int tid = 0;
         boost::unordered_map<vector<SimplexId>, SimplexId>::const_iterator iter;
         for(iter = internalTriangleMaps_[nodePtr->nid].begin(); iter != internalTriangleMaps_[nodePtr->nid].end(); iter++){
           pair_int edgePair(iter->first[0], iter->first[1]);
-          (*(nodePtr->triangleEdges_))[tid][0] = internalEdgeMaps_[nodePtr->nid].at(edgePair);
+          (*(nodePtr->triangleEdges_))[iter->second-1][0] = internalEdgeMaps_[nodePtr->nid].at(edgePair) + edgeIntervals_[nodePtr->nid-1];
           edgePair.second = iter->first[2];
-          (*(nodePtr->triangleEdges_))[tid][1] = internalEdgeMaps_[nodePtr->nid].at(edgePair);
+          (*(nodePtr->triangleEdges_))[iter->second-1][1] = internalEdgeMaps_[nodePtr->nid].at(edgePair) + edgeIntervals_[nodePtr->nid-1];
           edgePair.first = iter->first[1];
           if(edgePair.first > vertexIntervals_[nodePtr->nid-1] && edgePair.first <= vertexIntervals_[nodePtr->nid]){
-            (*(nodePtr->triangleEdges_))[tid][2] = internalEdgeMaps_[nodePtr->nid].at(edgePair);
+            (*(nodePtr->triangleEdges_))[iter->second-1][2] = internalEdgeMaps_[nodePtr->nid].at(edgePair) + edgeIntervals_[nodePtr->nid-1];
           }else{
             SimplexId nodeNum = findNodeIndex(edgePair.first, VERTEX_ID);
-            (*(nodePtr->triangleEdges_))[tid][2] = internalEdgeMaps_[nodeNum].at(edgePair);
+            (*(nodePtr->triangleEdges_))[iter->second-1][2] = internalEdgeMaps_[nodeNum].at(edgePair) + edgeIntervals_[nodeNum-1];
           }
-          tid++;
         }
 
         return 0;
@@ -1743,7 +1720,7 @@ namespace ttk{
               for(SimplexId l = k+1; l < verticesPerCell; l++){
                 triangleIds[1] = cellArray_[cellId + k + 1];
                 triangleIds[2] = cellArray_[cellId + l + 1];
-                (*(nodePtr->triangleStars_))[internalTriangleMaps_[nodePtr->nid].at(triangleIds)-triangleIntervals_[nodePtr->nid-1]-1].push_back(cid);
+                (*(nodePtr->triangleStars_))[internalTriangleMaps_[nodePtr->nid].at(triangleIds)-1].push_back(cid);
               }
             }
           }
@@ -1762,7 +1739,7 @@ namespace ttk{
                 for(SimplexId l = k+1; l < verticesPerCell; l++){
                   triangleIds[1] = cellArray_[cellId + k + 1];
                   triangleIds[2] = cellArray_[cellId + l + 1];
-                  (*(nodePtr->triangleStars_))[internalTriangleMaps_[nodePtr->nid].at(triangleIds)-triangleIntervals_[nodePtr->nid-1]-1].push_back(cid);
+                  (*(nodePtr->triangleStars_))[internalTriangleMaps_[nodePtr->nid].at(triangleIds)-1].push_back(cid);
                 }
               }
             }
@@ -1792,10 +1769,10 @@ namespace ttk{
 
         boost::unordered_map<pair_int, SimplexId>::const_iterator iter;
         for(iter = internalEdgeMaps_[nodePtr->nid].begin(); iter != internalEdgeMaps_[nodePtr->nid].end(); iter++){
-          (*(nodePtr->vertexEdges_))[iter->first.first-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
+          (*(nodePtr->vertexEdges_))[iter->first.first-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->second + edgeIntervals_[nodePtr->nid-1]);
           // the second vertex id of the edge must be greater than the first one
           if(iter->first.second <= vertexIntervals_[nodePtr->nid]){
-            (*(nodePtr->vertexEdges_))[iter->first.second-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
+            (*(nodePtr->vertexEdges_))[iter->first.second-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->second + edgeIntervals_[nodePtr->nid-1]);
           }
         }
 
@@ -1819,24 +1796,20 @@ namespace ttk{
         nodePtr->vertexNeighbors_->clear();
         nodePtr->vertexNeighbors_->resize(vertexIntervals_[nodePtr->nid]-vertexIntervals_[nodePtr->nid-1]);
 
-        if(nodePtr->internalEdgeList_ == nullptr){
-          nodePtr->internalEdgeList_ = new vector<pair_int>();
-          buildInternalEdgeList(nodePtr->nid, nodePtr->internalEdgeList_);
-        }
         if(nodePtr->externalEdgeMap_ == nullptr){
           nodePtr->externalEdgeMap_ = new boost::unordered_map<pair_int, SimplexId>();
           buildExternalEdgeMap(nodePtr->nid, nodePtr->externalEdgeMap_);
         }
 
-        for(SimplexId i = 0; i < (SimplexId) nodePtr->internalEdgeList_->size(); i++){
-          (*(nodePtr->vertexNeighbors_))[nodePtr->internalEdgeList_->at(i).first-vertexIntervals_[nodePtr->nid-1]-1].push_back(nodePtr->internalEdgeList_->at(i).second);
-          if(nodePtr->internalEdgeList_->at(i).second <= vertexIntervals_[nodePtr->nid])
-            (*(nodePtr->vertexNeighbors_))[nodePtr->internalEdgeList_->at(i).second-vertexIntervals_[nodePtr->nid-1]-1].push_back(i+edgeIntervals_[nodePtr->nid]+1);
+        boost::unordered_map<pair_int, SimplexId>::const_iterator iter;
+        for(iter = internalEdgeMaps_[nodePtr->nid].begin(); iter != internalEdgeMaps_[nodePtr->nid].end(); iter++){
+          (*(nodePtr->vertexNeighbors_))[iter->first.first-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->first.second);
+          if(iter->first.second <= vertexIntervals_[nodePtr->nid])
+            (*(nodePtr->vertexNeighbors_))[iter->first.second-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->first.first);
         }
 
-        boost::unordered_map<pair_int, SimplexId>::iterator iter;
         for(iter = nodePtr->externalEdgeMap_->begin(); iter != nodePtr->externalEdgeMap_->end(); iter++){
-          (*(nodePtr->vertexNeighbors_))[iter->first.second-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
+          (*(nodePtr->vertexNeighbors_))[iter->first.second-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->first.first);
         }
 
         return 0;
@@ -1902,14 +1875,14 @@ namespace ttk{
         for(iter = internalTriangleMaps_[nodePtr->nid].begin(); iter != internalTriangleMaps_[nodePtr->nid].end(); iter++){
           for(SimplexId j = 0; j < 3; j++){
             if(iter->first[j] > vertexIntervals_[nodePtr->nid-1] && iter->first[j] <= vertexIntervals_[nodePtr->nid])
-              (*(nodePtr->vertexTriangles_))[iter->first[j]-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
+              (*(nodePtr->vertexTriangles_))[iter->first[j]-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->second + triangleIntervals_[nodePtr->nid-1]);
           }
         }
 
         for(iter = nodePtr->externalTriangleMap_->begin(); iter != nodePtr->externalTriangleMap_->end(); iter++){
           for(SimplexId j = 0; j < 3; j++){
             if(iter->first.at(j) > vertexIntervals_[nodePtr->nid-1] && iter->first.at(j) <= vertexIntervals_[nodePtr->nid])
-              (*(nodePtr->vertexTriangles_))[iter->first.at(j)-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
+              (*(nodePtr->vertexTriangles_))[iter->first.at(j)-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->second + triangleIntervals_[nodePtr->nid-1]);
           }
         }
         
