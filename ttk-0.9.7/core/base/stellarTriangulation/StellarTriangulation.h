@@ -66,6 +66,7 @@ namespace ttk{
       externalTriangleMap_ = nullptr;
       /* vertex relationships */
       vertexEdges_ = nullptr;
+      vertexNeighbors_ = nullptr;
       vertexTriangles_ = nullptr;
       vertexStars_ = nullptr;
       /* edge relationships */
@@ -84,6 +85,7 @@ namespace ttk{
       delete externalEdgeMap_;
       delete externalTriangleMap_;
       delete vertexEdges_;
+      delete vertexNeighbors_;
       delete vertexTriangles_;
       delete vertexStars_;
       delete edgeTriangles_;
