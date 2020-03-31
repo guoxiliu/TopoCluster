@@ -28,7 +28,7 @@ namespace ttk{
       ~TestStellar();
 
       template <class dataType>
-        int execute() const;
+        int execute(const int&) const;
     
       inline int setInputDataPointer(void *data){
         inputData_ = data;
@@ -77,7 +77,8 @@ namespace ttk{
 }
 
 // template functions
-template <class dataType> int ttk::TestStellar::execute() const{
+template <class dataType> int ttk::TestStellar::execute(
+  const int &argument) const{
 
   Timer t;
   
@@ -98,6 +99,8 @@ template <class dataType> int ttk::TestStellar::execute() const{
   SimplexId edgeNumber = triangulation_->getNumberOfEdges();
   SimplexId triangleNumber = triangulation_->getNumberOfTriangles();
   SimplexId cellNumber = triangulation_->getNumberOfCells();
+
+  triangulation_->setCacheSize(argument);
 
   std::cout << "[TestStellar] vertex num: " << vertexNumber << ", edge num: "
     << edgeNumber << ", triangle num: " << triangleNumber << ", cell num: " << 

@@ -178,7 +178,7 @@ namespace ttk{
         nodeNumber_ = vertexIntervals_.size()-1;
         initCache();
 
-        cout << "[StellarTriangulation] node num: " << nodeNumber_ << ", cache size: " << cacheSize_ << endl;
+        cout << "[StellarTriangulation] node num: " << nodeNumber_ << endl;
 
         return 0;
       }

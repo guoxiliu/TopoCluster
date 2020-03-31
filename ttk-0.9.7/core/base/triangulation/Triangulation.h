@@ -3042,6 +3042,15 @@ namespace ttk{
         return 0;
       }
 
+      // Set the cache size
+      inline int setCacheSize(const int &size){
+        if(abstractTriangulation_ == &stellarTriangulation_){
+          stellarTriangulation_.initCache(size);
+          cout << "[StellarTriangulation] cache size: " << size << endl;
+        }
+        return 0;
+      }
+
       /// Set the input cells for the triangulation.
       ///
       /// Here the notion of cell refers to the simplicices of maximal 

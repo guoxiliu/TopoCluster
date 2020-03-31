@@ -69,6 +69,9 @@ class ttkTestStellar
     
     vtkSetMacro(ScalarField, std::string);
     vtkGetMacro(ScalarField, std::string);
+
+    vtkSetMacro(CacheSize, int);
+    vtkGetMacro(CacheSize, int);
     
     // TODO-2
     // Over-ride the input types.
@@ -134,7 +137,7 @@ class ttkTestStellar
     
     
   private:
-    
+    int                   CacheSize;
     std::string           ScalarField;
     vtkDataArray          *outputScalarField_;
     ttk::TestStellar      testStellar_;
