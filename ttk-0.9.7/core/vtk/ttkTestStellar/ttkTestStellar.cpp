@@ -18,7 +18,7 @@ int ttkTestStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> &out
     return -1;
   
   triangulation->setWrapper(this);
-  testStellar_.setupTriangulation(triangulation);
+  testStellar_.setupTriangulation(triangulation, CacheSize);
   testStellar_.setWrapper(this);
  
   // use a pointer-base copy for the input data -- to adapt if your wrapper does
@@ -88,7 +88,7 @@ int ttkTestStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> &out
   testStellar_.setInputDataPointer(inputScalarField->GetVoidPointer(0));
   testStellar_.setOutputDataPointer(outputScalarField_->GetVoidPointer(0));
   switch(inputScalarField->GetDataType()){
-    ttkTemplateMacro(testStellar_.execute<VTK_TT>(CacheSize));
+    ttkTemplateMacro(testStellar_.execute<VTK_TT>());
   }
   
   {
