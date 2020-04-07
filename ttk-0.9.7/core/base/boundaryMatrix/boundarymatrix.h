@@ -27,17 +27,17 @@ public:
                 }
                 origMatrix[filtration[i]] = vec;
             }
-
-
-
         }
 
-    inline void addValue(int simplex, int boundary, int filtr){
+    inline void addValue(int simplex, int boundary, dataType filtr){
         
         if(matrix.size() <= simplex){
-            matrix.push_back(vector<int>());
-            values.push_back(filtr);
+            for(int i=matrix.size(); i<=simplex; i++){
+                matrix.push_back(vector<int>());
+                values.push_back(0);
+            }
         }
+        values[simplex] = filtr;
 
         if(boundary > -1){
             auto lb = std::lower_bound(matrix[simplex].begin(), matrix[simplex].end(), boundary);
@@ -89,6 +89,8 @@ public:
                                 simplices[j] = s;
                                 break;
                             }
+
+                            
                         }
                         i--;
                     }
@@ -96,7 +98,6 @@ public:
             }
         }
         organize_values.clear();
-
 
         //sort the structure accordingly
         vector<int> newfiltration = filtration;
@@ -161,9 +162,10 @@ public:
     }
 
     inline void getPairs(map<int,int>& pairs){
+
+        pairs = map<int,int>();
         for(int i=0; i<allpivots.size(); i++){
             if(allpivots[i] != -1){
-                if(values[i] != values[allpivots[i]])
                     pairs[filtration[i]]=filtration[allpivots[i]];
             }
         }
