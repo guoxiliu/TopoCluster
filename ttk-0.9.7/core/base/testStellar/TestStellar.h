@@ -109,6 +109,334 @@ template <class dataType> int ttk::TestStellar::execute() const{
   SimplexId edgesPerCell = triangulation_->getCellEdgeNumber(0);
   SimplexId trianglesPerCell = triangulation_->getCellTriangleNumber(0);
 
+  // std::cout << "dimension: " << triangulation_->getDimensionality() << std::endl;
+
+  // const std::vector<std::vector<SimplexId>> *vertexNeighbors = triangulation_->getVertexNeighbors();
+  // for(SimplexId vid = 0; vid < vertexNumber; vid++){
+  //   for(SimplexId neighbor : (*vertexNeighbors)[vid]){
+  //     auto it = find((*vertexNeighbors)[neighbor].begin(), (*vertexNeighbors)[neighbor].end(), vid);
+  //     if(it == (*vertexNeighbors)[neighbor].end()){
+  //       std::cout << "[TestStellar] Cannot find " << vid << " in " << neighbor << "'s neighbors.\n";
+  //       break;
+  //     }
+  //   }
+  // }
+  
+
+  // // VE relation
+  // for(SimplexId vid = 0; vid < vertexNumber; vid++){
+  //   int edgeNum = triangulation_->getVertexEdgeNumber(vid);
+  //   for(int i = 0; i < edgeNum; i++){
+  //     SimplexId edgeId;
+  //     int res = triangulation_->getVertexEdge(vid, i, edgeId);
+  //     if(res){
+  //       std::cout << "[TestStellar] Cannot get vertex edge for vertex id " << vid << ", error code: " << res << "\n";
+  //       return -4;
+  //     }
+  //     bool hasFound = false;
+  //     for(int j = 0; j < 2; j++){
+  //       SimplexId vertexId;
+  //       triangulation_->getEdgeVertex(edgeId, j, vertexId);
+  //       if(vertexId == vid){
+  //         hasFound = true;
+  //         break;
+  //       }
+  //     }
+  //     if(!hasFound){
+  //       std::cout << "[TestStellar] Cannot find vertex " << vid << " in edge " << edgeId << "\n";
+  //       break;
+  //     }
+  //   }
+  // } 
+
+
+  // // VF relation
+  // for(SimplexId vid = 0; vid < vertexNumber; vid++){
+  //   int triangleNum = triangulation_->getVertexTriangleNumber(vid);
+  //   for(int i = 0; i < triangleNum; i++){
+  //     SimplexId triangleId;
+  //     int res = triangulation_->getVertexTriangle(vid, i, triangleId);
+  //     if(res){
+  //       std::cout << "[TestStellar] Cannot get vertex triangle for vertex id " << vid << ", error code: " << res << "\n";
+  //       return -4;
+  //     }
+  //     bool hasFound = false;
+  //     for(int j = 0; j < 3; j++){
+  //       SimplexId vertexId;
+  //       triangulation_->getTriangleVertex(triangleId, j, vertexId);
+  //       if(vertexId == vid){
+  //         hasFound = true;
+  //         break;
+  //       }
+  //     }
+  //     if(!hasFound){
+  //       std::cout << "[TestStellar] Cannot find vertex " << vid << " in triangle " << triangleId << "\n";
+  //       break;
+  //     }
+  //   }
+  // }
+
+  // // VT relation
+  // for(SimplexId vid = 0; vid < vertexNumber; vid++){
+  //   int starNum = triangulation_->getVertexStarNumber(vid);
+  //   for(int i = 0; i < starNum; i++){
+  //     SimplexId cellId;
+  //     int res = triangulation_->getVertexStar(vid, i, cellId);
+  //     if(res){
+  //       std::cout << "[TestStellar] Cannot get vertex edge for vertex id " << vid << ", error code: " << res << "\n";
+  //       return -4;
+  //     }
+  //     bool hasFound = false;
+  //     for(int j = 0; j < 4; j++){
+  //       SimplexId vertexId;
+  //       triangulation_->getCellVertex(cellId, j, vertexId);
+  //       if(vertexId == vid){
+  //         hasFound = true;
+  //         break;
+  //       }
+  //     }
+  //     if(!hasFound){
+  //       std::cout << "[TestStellar] Cannot find vertex " << vid << " in cell " << cellId << "\n";
+  //       break;
+  //     }
+  //   }
+  // }
+
+  // // EV relation
+  // for(SimplexId eid = 0; eid < edgeNumber; eid++){
+  //   for(int i = 0; i < 2; i++){
+  //     SimplexId vid;
+  //     triangulation_->getEdgeVertex(eid, i, vid);
+  //     SimplexId edgeNum = triangulation_->getVertexEdgeNumber(vid);
+  //     bool hasFound = false;
+  //     for(int j = 0; j < edgeNum; j++){
+  //       SimplexId edgeid;
+  //       int res = triangulation_->getVertexEdge(vid, j, edgeid);
+  //       if(res){
+  //         std::cout << "[TestStellar] Cannot get vertex edge for vertex id " << vid << ", error code: " << res << "\n";
+  //         return -4;
+  //       }
+  //       if(edgeid == eid){
+  //         hasFound = true;
+  //         break;
+  //       }
+  //     }
+  //     if(!hasFound){
+  //       std::cout << "[TestStellar] Cannot find edge " << eid << " in vertex " << vid << "\n";
+  //       break;
+  //     }
+  //   }
+  // }
+
+  // // EF relation
+  // for(SimplexId eid = 0; eid < edgeNumber; eid++){
+  //   SimplexId triangleNum = triangulation_->getEdgeTriangleNumber(eid);
+  //   for(int i = 0; i < triangleNum; i++){
+  //     SimplexId triangleId;
+  //     int res = triangulation_->getEdgeTriangle(eid, i, triangleId);
+  //     if(res){
+  //       std::cout << "[TestStellar] Cannot get edge triangle for edge id " << eid << ", error code: " << res << "\n";
+  //       return -4;
+  //     }
+  //     bool findEdge = false;
+  //     SimplexId edgeId;
+  //     for(int i = 0; i < 3; i++){
+  //       triangulation_->getTriangleEdge(triangleId, i, edgeId);
+  //       if(edgeId == eid){
+  //         findEdge = true;
+  //         break;
+  //       }
+  //     }
+  //     if(!findEdge){
+  //       std::cout << "[TestStellar] Cannot find edge " << eid << " in triangle " << triangleId << "\n";
+  //       break;
+  //     }
+  //   }
+  // }
+
+  // // ET relation
+  // for(SimplexId eid = 0; eid < edgeNumber; eid++){
+  //   SimplexId starNum = triangulation_->getEdgeStarNumber(eid);
+  //   for(int i = 0; i < starNum; i++){
+  //     SimplexId cellId;
+  //     int res = triangulation_->getEdgeStar(eid, i, cellId);
+  //     if(res){
+  //       std::cout << "[TestStellar] Cannot get edge star for edge id " << eid << ", error code: " << res << "\n";
+  //       return -4;
+  //     }
+  //     bool findEdge = false;
+  //     SimplexId edgeId;
+  //     for(int i = 0; i < 6; i++){
+  //       triangulation_->getCellEdge(cellId, i, edgeId);
+  //       if(edgeId == eid){
+  //         findEdge = true;
+  //         break;
+  //       }
+  //     }
+  //     if(!findEdge){
+  //       std::cout << "[TestStellar] Cannot find edge " << eid << " in cell " << cellId << "\n";
+  //       break;
+  //     }
+  //   }
+  // }
+
+  // // FV relation
+  // for(SimplexId tid = 0; tid < triangleNumber; tid++){
+  //   for(int i = 0; i < 3; i++){
+  //     SimplexId vid;
+  //     triangulation_->getTriangleVertex(tid, i, vid);
+  //     SimplexId triangleNum = triangulation_->getVertexTriangleNumber(vid);
+  //     bool hasFound = false;
+  //     for(int j = 0; j < triangleNum; j++){
+  //       SimplexId triangleid;
+  //       int res = triangulation_->getVertexTriangle(vid, j, triangleid);
+  //       if(res){
+  //         std::cout << "[TestStellar] Cannot get vertex triangle for vertex id " << vid << ", error code: " << res << "\n";
+  //         return -4;
+  //       }
+  //       if(triangleid == tid){
+  //         hasFound = true;
+  //         break;
+  //       }
+  //     }
+  //     if(!hasFound){
+  //       std::cout << "[TestStellar] Cannot find triangle " << tid << " in vertex " << vid << "\n";
+  //       break;
+  //     }
+  //   }
+  // }
+
+  // // FE relation
+  // for(SimplexId tid = 0; tid < triangleNumber; tid++){
+  //   for(int i = 0; i < 3; i++){
+  //     SimplexId eid;
+  //     triangulation_->getTriangleEdge(tid, i, eid);
+  //     SimplexId triangleNum = triangulation_->getEdgeTriangleNumber(eid);
+  //     bool hasFound = false;
+  //     for(int j = 0; j < triangleNum; j++){
+  //       SimplexId triangleid;
+  //       int res = triangulation_->getEdgeTriangle(eid, j, triangleid);
+  //       if(res){
+  //         std::cout << "[TestStellar] Cannot get edge triangle for edge id " << eid << ", error code: " << res << "\n";
+  //         return -4;
+  //       }
+  //       if(triangleid == tid){
+  //         hasFound = true;
+  //         break;
+  //       }
+  //     }
+  //     if(!hasFound){
+  //       std::cout << "[TestStellar] Cannot find triangle " << tid << " in edge " << eid << "\n";
+  //       break;
+  //     }
+  //   }
+  // }
+
+  // // FT relation
+  // for(SimplexId tid = 0; tid < triangleNumber; tid++){
+  //   SimplexId starNum = triangulation_->getTriangleStarNumber(tid);
+  //   for(int i = 0; i < starNum; i++){
+  //     SimplexId cellId;
+  //     int res = triangulation_->getTriangleStar(tid, i, cellId);
+  //     if(res){
+  //       std::cout << "[TestStellar] Cannot get traingle star for traingle id " << tid << ", error code: " << res << "\n";
+  //       return -4;
+  //     }
+  //     bool findTriangle = false;
+  //     SimplexId triangleid;
+  //     for(int i = 0; i < 4; i++){
+  //       triangulation_->getCellTriangle(cellId, i, triangleid);
+  //       if(triangleid == tid){
+  //         findTriangle = true;
+  //         break;
+  //       }
+  //     }
+  //     if(!findTriangle){
+  //       std::cout << "[TestStellar] Cannot find triangle " << tid << " in cell " << cellId << "\n";
+  //       break;
+  //     }
+  //   }
+  // }
+
+  // // TV relation
+  // for(SimplexId cid = 0; cid < cellNumber; cid++){
+  //   for(int i = 0; i < 4; i++){
+  //     SimplexId vid;
+  //     triangulation_->getCellVertex(cid, i, vid);
+  //     SimplexId starNum = triangulation_->getVertexStarNumber(vid);
+  //     bool hasFound = false;
+  //     for(int j = 0; j < starNum; j++){
+  //       SimplexId starid;
+  //       int res = triangulation_->getVertexStar(vid, j, starid);
+  //       if(res){
+  //         std::cout << "[TestStellar] Cannot get vertex star for vertex id " << vid << ", error code: " << res << "\n";
+  //         return -4;
+  //       }
+  //       if(starid == cid){
+  //         hasFound = true;
+  //         break;
+  //       }
+  //     }
+  //     if(!hasFound){
+  //       std::cout << "[TestStellar] Cannot find cell " << cid << " in vertex " << vid << "\n";
+  //       break;
+  //     }
+  //   }
+  // }
+
+  // // TE relation
+  // for(SimplexId cid = 0; cid < cellNumber; cid++){
+  //   for(int i = 0; i < 6; i++){
+  //     SimplexId eid;
+  //     triangulation_->getCellEdge(cid, i, eid);
+  //     SimplexId starNum = triangulation_->getEdgeStarNumber(eid);
+  //     bool hasFound = false;
+  //     for(int j = 0; j < starNum; j++){
+  //       SimplexId starid;
+  //       int res = triangulation_->getEdgeStar(eid, j, starid);
+  //       if(res){
+  //         std::cout << "[TestStellar] Cannot get edge star for edge id " << eid << ", error code: " << res << "\n";
+  //         return -4;
+  //       }
+  //       if(starid == cid){
+  //         hasFound = true;
+  //         break;
+  //       }
+  //     }
+  //     if(!hasFound){
+  //       std::cout << "[TestStellar] Cannot find cell " << cid << " in edge " << eid << "\n";
+  //       break;
+  //     }
+  //   }
+  // }
+
+  // // TF relation
+  // for(SimplexId cid = 0; cid < cellNumber; cid++){
+  //   for(int i = 0; i < 4; i++){
+  //     SimplexId tid;
+  //     triangulation_->getCellTriangle(cid, i, tid);
+  //     SimplexId starNum = triangulation_->getTriangleStarNumber(tid);
+  //     bool hasFound = false;
+  //     for(int j = 0; j < starNum; j++){
+  //       SimplexId starid;
+  //       int res = triangulation_->getTriangleStar(tid, j, starid);
+  //       if(res){
+  //         std::cout << "[TestStellar] Cannot get traingle star for traingle id " << tid << ", error code: " << res << "\n";
+  //         return -4;
+  //       }
+  //       if(starid == cid){
+  //         hasFound = true;
+  //         break;
+  //       }
+  //     }
+  //     if(!hasFound){
+  //       std::cout << "[TestStellar] Cannot find cell " << cid << " in traingle " << tid << "\n";
+  //       break;
+  //     }
+  //   }
+  // }
+
+
   /* test vertex edge relationship */
   t.reStart();
   for(SimplexId vertexId = 0; vertexId < vertexNumber; vertexId++){

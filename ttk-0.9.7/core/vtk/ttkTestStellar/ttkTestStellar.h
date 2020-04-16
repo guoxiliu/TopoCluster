@@ -129,6 +129,7 @@ class ttkTestStellar
       UseAllCores = true;
       ThreadNumber = 1;
       debugLevel_ = 3;
+      CacheSize = 20;
     }
     
     ~ttkTestStellar(){};

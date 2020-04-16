@@ -732,7 +732,7 @@ namespace ttk{
           exnode->vertexNeighbors_ = new vector<vector<SimplexId>>();
           getVertexNeighbors(exnode);
         }
-        if(localNeighborId < (SimplexId) (*(exnode->vertexNeighbors_))[localVertexId].size())
+        if(localNeighborId >= (SimplexId) (*(exnode->vertexNeighbors_))[localVertexId].size())
           return -2;  
         neighborId = (*(exnode->vertexNeighbors_))[localVertexId][localNeighborId];
         return 0;
@@ -1036,6 +1036,7 @@ namespace ttk{
         #endif
 
         if(!hasPreprocessedEdges_){
+          Timer t;
           edgeIntervals_.resize(nodeNumber_+1);
           edgeIntervals_[0] = -1;
           internalEdgeMaps_.resize(nodeNumber_+1);
@@ -1052,6 +1053,8 @@ namespace ttk{
           }
 
           hasPreprocessedEdges_ = true;
+
+          cout << "[StellarTriangulation] Edges processed in " << t.getElapsedTime() << " s.\n";
         }
 
         return 0;
@@ -1091,6 +1094,7 @@ namespace ttk{
 
         // build triangle interval list
         if(!hasPreprocessedTriangles_){
+          Timer t;
           triangleIntervals_.resize(nodeNumber_+1);
           triangleIntervals_[0] = -1;
           internalTriangleMaps_.resize(nodeNumber_+1);
@@ -1107,6 +1111,8 @@ namespace ttk{
           }
 
           hasPreprocessedTriangles_ = true;
+
+          cout << "[StellarTriangulation] Triangles processed in " << t.getElapsedTime() << " s.\n";
         }
 
         return 0;
@@ -1205,14 +1211,11 @@ namespace ttk{
       /**
        * Search the node in the cache.
        */
-      ExpandedNode* searchCache(const SimplexId &nodeId, const SimplexId reservedId=0) const{
+      ExpandedNode* searchCache(const SimplexId &nodeId) const{
         // cannot find the expanded node in the cache
         if(cacheMap_.find(nodeId) == cacheMap_.end()){
           // missCount_++;
           if(cache_.size() >= cacheSize_){
-            if(cache_.back()->nid == reservedId){
-              return nullptr;
-            }
             cacheMap_.erase(cache_.back()->nid);
             delete cache_.back();
             cache_.pop_back();
@@ -1865,7 +1868,7 @@ namespace ttk{
           buildExternalTriangleMap(nodePtr->nid, nodePtr->externalTriangleMap_);
         }
 
-        
+
         boost::unordered_map<vector<SimplexId>, SimplexId>::const_iterator iter;
         for(iter = internalTriangleMaps_[nodePtr->nid].begin(); iter != internalTriangleMaps_[nodePtr->nid].end(); iter++){
           for(SimplexId j = 0; j < 3; j++){
@@ -1877,7 +1880,7 @@ namespace ttk{
         for(iter = nodePtr->externalTriangleMap_->begin(); iter != nodePtr->externalTriangleMap_->end(); iter++){
           for(SimplexId j = 0; j < 3; j++){
             if(iter->first.at(j) > vertexIntervals_[nodePtr->nid-1] && iter->first.at(j) <= vertexIntervals_[nodePtr->nid])
-              (*(nodePtr->vertexTriangles_))[iter->first.at(j)-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->second + triangleIntervals_[nodePtr->nid-1]);
+              (*(nodePtr->vertexTriangles_))[iter->first.at(j)-vertexIntervals_[nodePtr->nid-1]-1].push_back(iter->second);
           }
         }
         
