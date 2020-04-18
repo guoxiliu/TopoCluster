@@ -16,6 +16,7 @@
 // base code includes
 #include                  <Triangulation.h>
 #include                  <Wrapper.h>
+#include                  <MemoryUsage.h>
 
 namespace ttk{
   

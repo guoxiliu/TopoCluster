@@ -28,7 +28,7 @@
 #include                  <Triangulation.h>
 #include                  <UnionFind.h>
 #include                  <Wrapper.h>
-
+#include                  <MemoryUsage.h>
 
 namespace ttk{
 

@@ -47,7 +47,7 @@
 // ttk baseCode includes
 #include                  <ScalarFieldCriticalPoints.h>
 #include                  <ttkWrapper.h>
-#include                  <Usage.h>
+// #include                  <MemoryUsage.h>
 
 // in this example, this wrapper takes a data-set on the input and produces a 
 // data-set on the output - to adapt.

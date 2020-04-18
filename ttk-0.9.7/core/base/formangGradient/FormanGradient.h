@@ -16,8 +16,8 @@
 // base code includes
 #include  <Triangulation.h>
 #include  <Wrapper.h>
-#include <unordered_set>
-#include <Usage.h>
+#include  <unordered_set>
+#include  <MemoryUsage.h>
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>

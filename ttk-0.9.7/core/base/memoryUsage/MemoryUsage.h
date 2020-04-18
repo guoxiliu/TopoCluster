@@ -1,5 +1,5 @@
-#ifndef USAGE_H
-#define USAGE_H
+#ifndef MEMORY_USAGE_H
+#define MEMORY_USAGE_H
 
 #include "sys/types.h"
 #include "sys/resource.h"
@@ -13,7 +13,9 @@
 
 #include "stdlib.h"
 #include "stdio.h"
+#include "math.h"
 #include "string.h"
+#include <iostream>
 
 class MemoryUsage{
 
@@ -28,28 +30,31 @@ public:
     inline float getValue_in_KB(bool output){
 
          ret=getrusage(who,&usage);
-         if(output) cout << "Memory Usage: " << usage.ru_maxrss/pow(1024.0,UNIT) << " KB" << endl;
+         float memSize = usage.ru_maxrss/pow(1024.0,UNIT);
+         if(output)  std::cout << memSize << " KB\n";
 
-         return usage.ru_maxrss/(1024.0);
+         return memSize;
     }
 
     inline float getValue_in_MB(bool output){
 
          ret=getrusage(who,&usage);
-         if(output) cout << "Memory Usage: " << usage.ru_maxrss/pow(1024.0,UNIT+1) << " MB" << endl;
+         float memSize = usage.ru_maxrss/pow(1024.0,UNIT+1);
+         if(output) std::cout << "Memory Usage: " << memSize << " MB\n";
 
-         return usage.ru_maxrss/(1024.0*1024.0);
+         return memSize;
     }
 
     inline float getValue_in_GB(bool output){
 
          ret=getrusage(who,&usage);
-         if(output) cout << "Memory Usage: " << usage.ru_maxrss/pow(1024.0,UNIT+2) << " GB" << endl;
+         float memSize = usage.ru_maxrss/pow(1024.0,UNIT+1);
+         if(output) std::cout << "Memory Usage: " << memSize << " GB\n";
 
-         return usage.ru_maxrss/(1024.0*1024.0*1024.0);
+         return memSize;
     }
 };
 
 
 
-#endif // USAGE_H
+#endif // MEMORY_USAGE_H
