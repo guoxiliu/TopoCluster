@@ -29,7 +29,7 @@ ttkScalarFieldCriticalPoints::~ttkScalarFieldCriticalPoints(){
 int ttkScalarFieldCriticalPoints::doIt(vector<vtkDataSet *> &inputs, 
   vector<vtkDataSet *> &outputs){
 
-  Memory m;
+  MemoryUsage m;
   Timer t;
 
   vtkDataSet *input = inputs[0];
@@ -318,8 +318,7 @@ int ttkScalarFieldCriticalPoints::doIt(vector<vtkDataSet *> &inputs,
   {
     stringstream msg;
     msg << "[ttkScalarFieldCriticalPoints] Memory usage: " 
-      << m.getElapsedUsage() 
-      << " MB." << endl;
+      << m.getValue_in_MB(false) << " MB." << endl;
     dMsg(cout, msg.str(), 2);
   }
  

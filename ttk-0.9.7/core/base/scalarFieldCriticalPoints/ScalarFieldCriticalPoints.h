@@ -88,8 +88,10 @@ namespace ttk{
         
         // pre-condition functions
         if(triangulation_){
+          Timer t;
           triangulation_->preprocessVertexNeighbors();
           triangulation_->preprocessVertexStars();
+          std::cout << "[ScalarFieldCriticalPoints] Time usage for preprocessing: " << t.getElapsedTime() << " s.\n";
         }
         
         return 0;

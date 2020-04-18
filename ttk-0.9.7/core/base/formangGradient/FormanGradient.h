@@ -17,6 +17,7 @@
 #include  <Triangulation.h>
 #include  <Wrapper.h>
 #include <unordered_set>
+#include <Usage.h>
 
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -48,6 +49,7 @@ namespace ttk{
         triangulation_ = triangulation;
         dimensionality_ = triangulation_->getCellVertexNumber(0) - 1;
 
+        Timer t;
         if(triangulation_){
             triangulation_->preprocessVertexStars();
             triangulation_->preprocessVertexEdges();
@@ -66,6 +68,8 @@ namespace ttk{
             }
 
         }
+
+        std::cout << "[FormanGradient] Time usage for preprocessing: " << t.getElapsedTime() << " s.\n";
         
         return 0;
       }
@@ -103,5 +107,6 @@ namespace ttk{
 
       vector<boost::dynamic_bitset<>* > *gradient_;
       vector<set<SimplexId> > criticalSimplices;
+      vector<double>  elapsedTimes;
   };
 }

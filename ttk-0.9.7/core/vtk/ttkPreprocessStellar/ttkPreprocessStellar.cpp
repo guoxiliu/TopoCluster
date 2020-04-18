@@ -43,7 +43,7 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
   indices->SetName("_index");
 
   // insert the vertices in the output mesh
-  for(size_t i = 0; i < vertexArray->size(); i++){
+  for(size_t i = 0; i < vertexArray->size(); i++){ 
     float x, y, z;
     triangulation->getVertexPoint(vertexArray->at(i), x, y, z);
     points->InsertNextPoint(x, y, z);
@@ -53,7 +53,7 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
   outputMesh->SetPoints(points);
 
   vtkPointData *pointData = outputMesh->GetPointData();
-  pointData->AddArray(indices);
+  // pointData->AddArray(indices);
 
 
 
@@ -116,7 +116,7 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
     }
   }
 
-  scalarFields.clear();
+  // scalarFields.clear();
 
 
   {

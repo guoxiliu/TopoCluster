@@ -1182,7 +1182,7 @@ namespace ttk{
       /**
        * Initialize the cache.
        */
-      void initCache(const size_t size=100){
+      void initCache(const size_t size=10){
         cacheSize_ = size;
       }
 

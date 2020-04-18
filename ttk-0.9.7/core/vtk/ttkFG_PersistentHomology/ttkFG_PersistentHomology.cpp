@@ -44,13 +44,13 @@ int ttkFG_PersistentHomology::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataS
         }
 
         cout << "Gradient computed in " << time.getElapsedTime() << " seconds" << endl;
-        cout << "Memory (gradient): " << m.getValue_in_MB(false) << endl;
+        cout << "Memory (gradient): " << m.getValue_in_MB(false) << " MB.\n";
         //generally the template for this function should agree with the input scalar field. But here we are working on the indexing
         //so we should use integers
         time.reStart();
         fG_PersistentHomology_->computeBoundayMatrix<int>();
         cout << "Persistent homology computed in " << time.getElapsedTime() << " seconds" << endl;
-        cout << "Memory (boundary): " << m.getValue_in_MB(false) << endl;
+        cout << "Memory (boundary): " << m.getValue_in_MB(false) << "MB.\n";
 
       switch(inputScalarField->GetDataType()){
           ttkTemplateMacro(fG_PersistentHomology_->findPersistenceInterval<VTK_TT>(realMinPers, realMaxPers));
@@ -74,13 +74,13 @@ int ttkFG_PersistentHomology::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataS
         time.reStart();
         out1Cycles(inputScalarField, outputs[3]);
         cout << "1-cycles computed in " << time.getElapsedTime() << " seconds" << endl;
-        cout << "Memory (boundary): " << m.getValue_in_MB(false) << endl;
+        cout << "Memory (boundary): " << m.getValue_in_MB(false) << " MB.\n";
     }
     if(cycles2){
         time.reStart();
         out2Cycles(inputScalarField, outputs[4]);
         cout << "2-cycles computed in " << time.getElapsedTime() << " seconds" << endl;
-        cout << "Memory (boundary): " << m.getValue_in_MB(false) << endl;
+        cout << "Memory (boundary): " << m.getValue_in_MB(false) << " MB.\n";
     }
     if(Gradient)
         outGradient(outputs[5]);
