@@ -23,6 +23,7 @@
 
 #include<algorithm>
 #include<set>
+#include<MemoryUsage.h>
 
 namespace ttk{
   namespace dcg{
@@ -754,6 +755,7 @@ according to them.
       inline int setupTriangulation(Triangulation *const data) {
         inputTriangulation_ = data;
         if (inputTriangulation_) {
+          Timer t;
           dimensionality_ = inputTriangulation_->getCellVertexNumber(0) - 1;
           numberOfVertices_ = inputTriangulation_->getNumberOfVertices();
 
@@ -775,6 +777,7 @@ according to them.
             inputTriangulation_->preprocessTriangleStars();
             inputTriangulation_->preprocessCellTriangles();
           }
+          std::cout << "[DiscreteGradient] Time usage for preprocessing: " << t.getElapsedTime() << " s.\n";
         }
 
         return 0;

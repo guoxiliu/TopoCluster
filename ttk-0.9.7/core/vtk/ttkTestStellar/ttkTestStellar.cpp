@@ -94,7 +94,7 @@ int ttkTestStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> &out
   {
     stringstream msg;
     msg << "[ttkTestStellar] Memory usage: " << m.getValue_in_MB(false) 
-      << " MB." << endl;;
+      << " MB." << endl;
     dMsg(cout, msg.str(), memoryMsg);
   }
   

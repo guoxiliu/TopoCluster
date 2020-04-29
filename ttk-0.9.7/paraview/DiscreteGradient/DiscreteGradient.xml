@@ -6,36 +6,14 @@
        that matches your filter and then model your xml on it -->
   <ProxyGroup name="filters">
     <SourceProxy
-      name="PersistenceDiagram"
-      class="ttkPersistenceDiagram"
-      label="TTK PersistenceDiagram">
+      name="DiscreteGradient"
+      class="ttkDiscreteGradient"
+      label="TTK DiscreteGradient">
       <Documentation
-        long_help="TTK plugin for the computation of persistence diagrams."
-        short_help="TTK plugin for the computation of persistence diagrams.">
-        TTK plugin for the computation of persistence diagrams.
-        
-This plugin computes the persistence diagram of the extremum-saddle pairs 
-of an input scalar field. The X-coordinate of each pair corresponds to its
-birth, while its smallest and highest Y-coordinates correspond to its birth
-and death respectively. 
-
-In practice, the diagram is represented by a vtkUnstructuredGrid. Each 
-vertex of this mesh represent a critical point of the input data. It is 
-associated with point data (vertexId, critical type). Each vertical edge
-of this mesh represent a persistence pair. It is associated with cell data
-(persistence of the pair, critical index of the extremum of the pair).
-The diagonal of the diagram can be filtered out by considering its 
-PairIdentifier value (set at -1).
-
-Persistence diagrams are useful and stable concise representations of the 
-topological features of a data-set. It is useful to fine-tune persistence 
-thresholds for topological simplification or for fast similarity 
-estimations for instance. 
-
-See also ContourForests, PersistenceCurve, ScalarFieldCriticalPoints, 
-TopologicalSimplification.
+        long_help="TTK discreteGradient plugin."
+        short_help="TTK discreteGradient plugin.">
+        TTK discreteGradient plugin documentation.
       </Documentation>
-
       <InputProperty
         name="Input"
         command="SetInputConnection">
@@ -76,32 +54,31 @@ TopologicalSimplification.
       </StringVectorProperty>
 
       <IntVectorProperty
-         name="ForceInputOffsetScalarField"
-         command="SetForceInputOffsetScalarField"
-         label="Force Input Offset Field"
-         number_of_elements="1"
-         panel_visibility="advanced"
-         default_values="0">
+        name="ForceInputOffsetScalarField"
+        command="SetForceInputOffsetScalarField"
+        label="Force Input Offset Field"
+        number_of_elements="1"
+        panel_visibility="advanced"
+        default_values="0">
         <BooleanDomain name="bool"/>
-         <Documentation>
+        <Documentation>
           Check this box to force the usage of a specific input scalar field 
           as vertex offset (used to disambiguate flat plateaus).
-         </Documentation>
+        </Documentation>
       </IntVectorProperty>
- 
-       <StringVectorProperty
+
+      <StringVectorProperty
         name="InputOffsetScalarFieldName"
         command="SetInputOffsetScalarFieldName"
         label="Input Offset Field"
-        default_values="OutputOffsetScalarField"
         number_of_elements="1"
         animateable="0"
         panel_visibility="advanced"
         >
         <ArrayListDomain
           name="array_list"
-					default_values="0"
-                    >
+          default_values="0"
+          >
           <RequiredProperties>
             <Property name="Input" function="Input" />
           </RequiredProperties>
@@ -113,31 +90,67 @@ TopologicalSimplification.
             value="1" />
         </Hints>
         <Documentation>
-          Select the input offset field (used to disambiguate flat plateaus).
+          Select the input offset field (to disambiguate flat plateaus).
         </Documentation>
       </StringVectorProperty>
 
-      <IntVectorProperty
-         name="SaddleConnectors"
-         command="SetComputeSaddleConnectors"
-         label="Compute saddle-saddle pairs (SLOW!)"
-         number_of_elements="1"
-         default_values="0" panel_visibility="advanced">
+      <IntVectorProperty name="AllowSecondPass"
+        label="Allow Second Pass"
+        command="SetAllowSecondPass"
+        number_of_elements="1"
+        default_values="1"
+        panel_visibility="advanced">
         <BooleanDomain name="bool"/>
-         <Documentation>
-          Add saddle-saddle pairs in the diagram (SLOW!).
-         </Documentation>
+        <Documentation>
+          Allow a second pass in the gradient reversal algorithm.
+        </Documentation>
       </IntVectorProperty>
 
-      <IntVectorProperty name="ShowInsideDomain"
-        label="Embed in Domain"
-        command="SetShowInsideDomain"
+      <IntVectorProperty name="AllowThirdPass"
+        label="Allow Third Pass"
+        command="SetAllowThirdPass"
         number_of_elements="1"
-        default_values="0"
+        default_values="1"
+        panel_visibility="advanced">
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          Allow a third pass in the gradient reversal algorithm.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty name="ReverseSaddleMaximumConnection"
+        label="PL-compliant extrema"
+        command="SetReverseSaddleMaximumConnection"
+        number_of_elements="1"
+        default_values="1"
         panel_visibility="default">
         <BooleanDomain name="bool"/>
         <Documentation>
-          Embed the persistence pairs in the domain.
+          Documentation.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty name="ReverseSaddleSaddleConnection"
+        label="PL-compliant saddles"
+        command="SetReverseSaddleSaddleConnection"
+        number_of_elements="1"
+        default_values="1"
+        panel_visibility="default">
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          Documentation.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty name="ComputeGradientGlyphs"
+        label="Compute Gradient Glyphs"
+        command="SetComputeGradientGlyphs"
+        number_of_elements="1"
+        default_values="1"
+        panel_visibility="default">
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          Compute the gradient glyphs.
         </Documentation>
       </IntVectorProperty>
 
@@ -184,26 +197,38 @@ TopologicalSimplification.
         </Documentation>
       </IntVectorProperty>
 
-      
+      <IntVectorProperty name="IterationThreshold"
+        label="Iteration Threshold"
+        command="SetIterationThreshold"
+        number_of_elements="1"
+        default_values="-1"
+        panel_visibility="advanced">
+        <IntRangeDomain name="range" min="0" max="100" />
+        <Documentation>
+          Iteration threshold.
+        </Documentation>
+      </IntVectorProperty>
 
       <PropertyGroup panel_widget="Line" label="Input options">
         <Property name="ScalarField" />
-				<Property name="ForceInputOffsetScalarField"/>
-				<Property name="InputOffsetScalarFieldName"/>
+        <Property name="ForceInputOffsetScalarField"/>
+        <Property name="InputOffsetScalarFieldName"/>
+        <Property name="AllowSecondPass"/>
+        <Property name="AllowThirdPass"/>
+        <Property name="ReverseSaddleMaximumConnection"/>
+        <Property name="ReverseSaddleSaddleConnection"/>
+        <Property name="ComputeGradientGlyphs"/>
       </PropertyGroup>
 
-      <PropertyGroup panel_widget="Line" label="Output options">
-        <Property name="SaddleConnectors" />
-        <Property name="ShowInsideDomain" />
-      </PropertyGroup>
-      
       <PropertyGroup panel_widget="Line" label="Testing">
         <Property name="UseAllCores" />
         <Property name="ThreadNumber" />
         <Property name="DebugLevel" />
-        
+        <Property name="IterationThreshold"/>
       </PropertyGroup>
-<!--       <OutputPort name="Persistence Diagram" index="2" id="port2"/> -->
+
+      <OutputPort name="Critical Points" index="0" id="port0"/>
+      <OutputPort name="Gradient Glyphs" index="1" id="port1"/>
 
       <Hints>
         <ShowInMenu category="TTK - Scalar Data" />

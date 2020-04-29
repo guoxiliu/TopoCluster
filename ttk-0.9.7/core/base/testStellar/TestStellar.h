@@ -51,6 +51,10 @@ namespace ttk{
           // build edges and triangles
           triangulation_->preprocessEdges();
           triangulation_->preprocessTriangles();
+          // boundary relationships
+          triangulation_->preprocessBoundaryVertices();
+          triangulation_->preprocessBoundaryEdges();
+          triangulation_->preprocessBoundaryTriangles();
           // vertex related relationships
           triangulation_->preprocessVertexEdges();
           triangulation_->preprocessVertexStars();
@@ -111,6 +115,21 @@ template <class dataType> int ttk::TestStellar::execute() const{
   SimplexId trianglesPerCell = triangulation_->getCellTriangleNumber(0);
 
   // std::cout << "dimension: " << triangulation_->getDimensionality() << std::endl;
+  // t.reStart();
+  // int boundaryVertexNum = 0, boundaryTriangleNum = 0;
+  // for(SimplexId vid = 0; vid < vertexNumber; vid++){
+  //   if(triangulation_->isVertexOnBoundary(vid)){
+  //     boundaryVertexNum++;
+  //   }
+  // }
+  // for(SimplexId tid = 0; tid < triangleNumber; tid++){
+  //   if(triangulation_->isTriangleOnBoundary(tid)){
+  //     boundaryTriangleNum++;
+  //   }
+  // }
+  // std::cout << "[TestStellar] Boundary vertex number: " << boundaryVertexNum << std::endl;
+  // std::cout << "[TestStellar] Boundary triangle number: " << boundaryTriangleNum << std::endl;
+  // std::cout << "[TestStellar] Time usage for getting boundaries: " << t.getElapsedTime() << " s.\n";
 
   // const std::vector<std::vector<SimplexId>> *vertexNeighbors = triangulation_->getVertexNeighbors();
   // for(SimplexId vid = 0; vid < vertexNumber; vid++){
