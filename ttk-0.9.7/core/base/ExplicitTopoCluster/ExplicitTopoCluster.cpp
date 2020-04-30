@@ -1,18 +1,18 @@
-#include                  <StellarTriangulation.h>
+#include                  <ExplicitTopoCluster.h>
 
 
 using namespace std;
 using namespace ttk;
 
-StellarTriangulation::StellarTriangulation(){
+ExplicitTopoCluster::ExplicitTopoCluster(){
     clear();
 }
 
-StellarTriangulation::~StellarTriangulation(){
+ExplicitTopoCluster::~ExplicitTopoCluster(){
   
 }
 
-int StellarTriangulation::clear(){
+int ExplicitTopoCluster::clear(){
   vertexNumber_ = 0;
 
   cellNumber_ = 0;
@@ -20,7 +20,7 @@ int StellarTriangulation::clear(){
 
   {
     stringstream msg;
-    msg << "[StellarTriangulation] Triangulation cleared." << endl;
+    msg << "[ExplicitTopoCluster] Triangulation cleared." << endl;
     dMsg(cout, msg.str(), detailedInfoMsg);
   }
 

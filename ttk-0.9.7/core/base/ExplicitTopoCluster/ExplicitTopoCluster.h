@@ -1,15 +1,15 @@
 /// \ingroup base
-/// \class ttk::StellarTriangulation 
+/// \class ttk::ExplicitTopoCluster 
 /// \author Guoxi Liu <guoxil@g.clemson.edu>
 /// \date Nov. 2019.
 ///
-/// \brief TTK %stellarTriangulation processing package.
+/// \brief TTK %ExplicitTopoCluster processing package.
 ///
-/// %StellarTriangulation is a TTK processing package that takes a scalar field on the input 
+/// %ExplicitTopoCluster is a TTK processing package that takes a scalar field on the input 
 /// and produces a scalar field on the output.
 ///
 /// \sa ttk::Triangulation
-/// \sa ttkStellarTriangulation.cpp %for a usage example.
+/// \sa ttkExplicitTopoCluster.cpp %for a usage example.
 
 #pragma once
 
@@ -105,19 +105,21 @@ namespace ttk{
       delete cellTriangles_;
     }
 
-    friend class StellarTriangulation;
+    friend class ExplicitTopoCluster;
   };
 
   
-  class StellarTriangulation : public AbstractTriangulation{
+  class ExplicitTopoCluster : public AbstractTriangulation{
 
     public:
 
-      StellarTriangulation();
+      ExplicitTopoCluster();
 
-      ~StellarTriangulation();
+      ~ExplicitTopoCluster();
 
-
+      /**
+       * Set up cells from the input.
+       */ 
       int setInputCells(const SimplexId &cellNumber,
                             const LongSimplexId *cellArray){
 
@@ -164,6 +166,9 @@ namespace ttk{
         return 0;
       }
 
+      /**
+       * Set up vertices from the input.
+       */ 
       int setInputPoints(const SimplexId &pointNumber, const void *pointSet, 
         const int *indexArray, const bool &doublePrecision = false){
 
@@ -189,7 +194,7 @@ namespace ttk{
         nodeNumber_ = vertexIntervals_.size()-1;
         initCache();
 
-        cout << "[StellarTriangulation] Node num: " << nodeNumber_ << endl;
+        cout << "[ExplicitTopoCluster] Node num: " << nodeNumber_ << endl;
 
         return 0;
       }
@@ -453,7 +458,6 @@ namespace ttk{
           if(exnode->edgeTriangles_ == nullptr){
             exnode->edgeTriangles_ = new vector<vector<SimplexId>>();
             getEdgeTriangles(exnode);
-
           }
           edgeTriangleList_.insert(edgeTriangleList_.end(), exnode->edgeTriangles_->begin(), exnode->edgeTriangles_->end());
         }
@@ -984,15 +988,16 @@ namespace ttk{
       }
       
       bool isEdgeOnBoundary(const SimplexId &edgeId) const{
-        #ifndef TTK_ENABLE_KAMIKAZE
-          if((edgeId < 0)||(edgeId > edgeIntervals_.back()))
-            return false;
-        #endif
-        SimplexId nid = findNodeIndex(edgeId, EDGE_ID);
-        SimplexId localedgeId = edgeId - edgeIntervals_[nid-1] - 1;
-        ExpandedNode *exnode = searchCache(nid);
-        getBoundaryCells(exnode, 1);
-        return (*(exnode->boundaryEdges))[localedgeId];
+        // #ifndef TTK_ENABLE_KAMIKAZE
+        //   if((edgeId < 0)||(edgeId > edgeIntervals_.back()))
+        //     return false;
+        // #endif
+        // SimplexId nid = findNodeIndex(edgeId, EDGE_ID);
+        // SimplexId localedgeId = edgeId - edgeIntervals_[nid-1] - 1;
+        // ExpandedNode *exnode = searchCache(nid);
+        // getBoundaryCells(exnode, 1);
+        // return (*(exnode->boundaryEdges))[localedgeId];
+        return false;
       }
         
       bool isEmpty() const{
@@ -1000,27 +1005,29 @@ namespace ttk{
       }
       
       bool isTriangleOnBoundary(const SimplexId &triangleId) const{
-        #ifndef TTK_ENABLE_KAMIKAZE
-          if((triangleId < 0)||(triangleId > triangleIntervals_.back()))
-            return false;
-        #endif
-        SimplexId nid = findNodeIndex(triangleId, TRIANGLE_ID);
-        SimplexId localtriangleId = triangleId - triangleIntervals_[nid-1] - 1;
-        ExpandedNode *exnode = searchCache(nid);
-        getBoundaryCells(exnode);
-        return (*(exnode->boundaryTriangles))[localtriangleId];
+        // #ifndef TTK_ENABLE_KAMIKAZE
+        //   if((triangleId < 0)||(triangleId > triangleIntervals_.back()))
+        //     return false;
+        // #endif
+        // SimplexId nid = findNodeIndex(triangleId, TRIANGLE_ID);
+        // SimplexId localtriangleId = triangleId - triangleIntervals_[nid-1] - 1;
+        // ExpandedNode *exnode = searchCache(nid);
+        // getBoundaryCells(exnode);
+        // return (*(exnode->boundaryTriangles))[localtriangleId];
+        return false;
       }
       
       bool isVertexOnBoundary(const SimplexId &vertexId) const{
-        #ifndef TTK_ENABLE_KAMIKAZE
-          if((vertexId < 0)||(vertexId >= vertexNumber_))
-            return false;
-        #endif
-        SimplexId nid = vertexIndices_[vertexId]+1;
-        SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
-        ExpandedNode *exnode = searchCache(nid);
-        getBoundaryCells(exnode, 0);
-        return (*(exnode->boundaryVertices))[localVertexId];
+        // #ifndef TTK_ENABLE_KAMIKAZE
+        //   if((vertexId < 0)||(vertexId >= vertexNumber_))
+        //     return false;
+        // #endif
+        // SimplexId nid = vertexIndices_[vertexId]+1;
+        // SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
+        // ExpandedNode *exnode = searchCache(nid);
+        // getBoundaryCells(exnode, 0);
+        // return (*(exnode->boundaryVertices))[localVertexId];
+        return false;
       }
 
       int preprocessBoundaryEdges(){
@@ -1090,7 +1097,7 @@ namespace ttk{
 
           hasPreprocessedEdges_ = true;
 
-          cout << "[StellarTriangulation] Edges processed in " << t.getElapsedTime() << " s.\n";
+          cout << "[ExplicitTopoCluster] Edges processed in " << t.getElapsedTime() << " s.\n";
         }
 
         return 0;
@@ -1148,7 +1155,7 @@ namespace ttk{
 
           hasPreprocessedTriangles_ = true;
 
-          cout << "[StellarTriangulation] Triangles processed in " << t.getElapsedTime() << " s.\n";
+          cout << "[ExplicitTopoCluster] Triangles processed in " << t.getElapsedTime() << " s.\n";
         }
 
         return 0;
@@ -1220,6 +1227,8 @@ namespace ttk{
        */
       void initCache(const size_t size=10){
         cacheSize_ = size;
+        cache_.clear();
+        cacheMap_.clear();
       }
 
     protected:
@@ -2052,11 +2061,11 @@ namespace ttk{
       vector<boost::unordered_map<pair_int, SimplexId>> internalEdgeMaps_;
       vector<boost::unordered_map<vector<SimplexId>, SimplexId>> internalTriangleMaps_;
 
-      // LRU cache
+      // Cache system
       size_t cacheSize_;
       mutable list<ExpandedNode*> cache_;
       mutable boost::unordered_map<SimplexId, list<ExpandedNode*>::iterator> cacheMap_;
 
-      friend class TestStellar;
+      friend class TestTopoCluster;
   };
 }

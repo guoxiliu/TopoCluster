@@ -1,5 +1,5 @@
 /// \ingroup vtk
-/// \class ttkTestStellar
+/// \class ttkTestTopoCluster
 /// \author Guoxi Liu <guoxil@g.clemson.edu>
 /// \date Jan. 2020.
 ///
@@ -34,7 +34,7 @@
 #include                  <vtkSmartPointer.h>
 
 // ttk code includes
-#include                  <TestStellar.h>
+#include                  <TestTopoCluster.h>
 #include                  <ttkWrapper.h>
 
 // in this example, this wrapper takes a data-set on the input and produces a 
@@ -42,16 +42,16 @@
 // see the documentation of the vtkAlgorithm class to decide from which VTK 
 // class your wrapper should inherit.
 #ifndef TTK_PLUGIN
-class VTKFILTERSCORE_EXPORT ttkTestStellar
+class VTKFILTERSCORE_EXPORT ttkTestTopoCluster
 #else
-class ttkTestStellar
+class ttkTestTopoCluster
 #endif
   : public vtkDataSetAlgorithm, public ttk::Wrapper{
 
   public:
     
-    static ttkTestStellar* New();
-    vtkTypeMacro(ttkTestStellar, vtkDataSetAlgorithm)
+    static ttkTestTopoCluster* New();
+    vtkTypeMacro(ttkTestTopoCluster, vtkDataSetAlgorithm)
     
     // default ttk setters
     vtkSetMacro(debugLevel_, int);
@@ -121,17 +121,17 @@ class ttkTestStellar
     
   protected:
    
-    ttkTestStellar(){
+    ttkTestTopoCluster(){
       
       // init
       outputScalarField_ = NULL;
       UseAllCores = true;
       ThreadNumber = 1;
       debugLevel_ = 3;
-      CacheSize = 20;
+      CacheSize = 100;
     }
     
-    ~ttkTestStellar(){};
+    ~ttkTestTopoCluster(){};
     
     TTK_SETUP();
     

@@ -1,11 +1,11 @@
-#include                  <ttkTestStellar.h>
+#include                  <ttkTestTopoCluster.h>
 
 using namespace std;
 using namespace ttk;
 
-vtkStandardNewMacro(ttkTestStellar)
+vtkStandardNewMacro(ttkTestTopoCluster)
 
-int ttkTestStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> &outputs){
+int ttkTestTopoCluster::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> &outputs){
 
   MemoryUsage m;
   
@@ -66,7 +66,7 @@ int ttkTestStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> &out
         break;
         
       stringstream msg;
-      msg << "[ttkTestStellar] Unsupported data type :(" << endl;
+      msg << "[ttkTestTopoCluster] Unsupported data type :(" << endl;
       dMsg(cerr, msg.str(), fatalMsg);
     }
   }
@@ -93,7 +93,7 @@ int ttkTestStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> &out
   
   {
     stringstream msg;
-    msg << "[ttkTestStellar] Memory usage: " << m.getValue_in_MB(false) 
+    msg << "[ttkTestTopoCluster] Memory usage: " << m.getValue_in_MB(false) 
       << " MB." << endl;
     dMsg(cout, msg.str(), memoryMsg);
   }

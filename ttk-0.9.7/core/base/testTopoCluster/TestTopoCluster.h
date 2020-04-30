@@ -41,13 +41,13 @@ namespace ttk{
         return 0;
       }
      
-      inline int setupTriangulation(Triangulation *triangulation, const int& size){
+      inline int setupTriangulation(Triangulation *triangulation, const int &size){
         triangulation_ = triangulation;
         
         if(triangulation_){
-          triangulation_->setCacheSize(size);
           Timer t;
           t.getStartTime();
+          triangulation_->setCacheSize(size);
           // build edges and triangles
           triangulation_->preprocessEdges();
           triangulation_->preprocessTriangles();
@@ -85,7 +85,7 @@ namespace ttk{
 // template functions
 template <class dataType> int ttk::TestStellar::execute() const{
 
-  Timer t;
+  Timer t, tot;
   
   // check the consistency of the variables -- to adapt
 #ifndef TTK_ENABLE_KAMIKAZE
@@ -114,6 +114,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   SimplexId edgesPerCell = triangulation_->getCellEdgeNumber(0);
   SimplexId trianglesPerCell = triangulation_->getCellTriangleNumber(0);
 
+
   // std::cout << "dimension: " << triangulation_->getDimensionality() << std::endl;
   // t.reStart();
   // int boundaryVertexNum = 0, boundaryEdgeNum = 0, boundaryTriangleNum = 0;
@@ -130,15 +131,15 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //   }
   // }
   // std::cout << "[TestStellar] Boundary edge number: " << boundaryEdgeNum << std::endl;
-  
+
   // for(SimplexId tid = 0; tid < triangleNumber; tid++){
   //   if(triangulation_->isTriangleOnBoundary(tid)){
   //     boundaryTriangleNum++;
   //   }
   // }
-
   // std::cout << "[TestStellar] Boundary triangle number: " << boundaryTriangleNum << std::endl;
   // std::cout << "[TestStellar] Time usage for getting boundaries: " << t.getElapsedTime() << " s.\n";
+
 
   // const std::vector<std::vector<SimplexId>> *vertexNeighbors = triangulation_->getVertexNeighbors();
   // for(SimplexId vid = 0; vid < vertexNumber; vid++){
@@ -638,7 +639,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
     std::stringstream msg;
     msg << "[TestStellar] Data-set (" << vertexNumber
       << " points) processed in "
-      << t.getElapsedTime() << " s. (" << threadNumber_
+      << tot.getElapsedTime() << " s. (" << threadNumber_
       << " thread(s))."
       << std::endl;
     dMsg(std::cout, msg.str(), timeMsg);

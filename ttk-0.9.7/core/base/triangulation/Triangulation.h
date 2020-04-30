@@ -39,7 +39,7 @@
 #include                  <AbstractTriangulation.h>
 #include                  <ExplicitTriangulation.h>
 #include                  <ImplicitTriangulation.h>
-#include                  <StellarTriangulation.h>
+#include                  <ExplicitTopoCluster.h>
 
 namespace ttk{
   
@@ -3037,16 +3037,16 @@ namespace ttk{
       inline int setDebugLevel(const int &debugLevel){
         explicitTriangulation_.setDebugLevel(debugLevel);
         implicitTriangulation_.setDebugLevel(debugLevel);
-        stellarTriangulation_.setDebugLevel(debugLevel);
+        explicitTopoCluster_.setDebugLevel(debugLevel);
         debugLevel_ = debugLevel;
         return 0;
       }
 
       // Set the cache size
       inline int setCacheSize(const int &size){
-        if(abstractTriangulation_ == &stellarTriangulation_){
-          stellarTriangulation_.initCache(size);
-          cout << "[StellarTriangulation] cache size: " << size << endl;
+        if(abstractTriangulation_ == &explicitTopoCluster_){
+          explicitTopoCluster_.initCache(size);
+          cout << "[ExplicitTopoCluster] cache size: " << size << endl;
         }
         return 0;
       }
@@ -3083,10 +3083,10 @@ namespace ttk{
       inline int setStellarInputCells(const SimplexId &cellNumber,
         const LongSimplexId *cellArray){
         
-        abstractTriangulation_ = &stellarTriangulation_;
+        abstractTriangulation_ = &explicitTopoCluster_;
         gridDimensions_[0] = gridDimensions_[1] = gridDimensions_[2] = -1;
         
-        return stellarTriangulation_.setInputCells(cellNumber, cellArray);
+        return explicitTopoCluster_.setInputCells(cellNumber, cellArray);
       }
       
       /// Set the specifications of the input grid to implicitly represent as a
@@ -3155,9 +3155,9 @@ namespace ttk{
       inline int setStellarInputPoints(const SimplexId &pointNumber, const void *pointSet,
         const int *indexArray, const bool &doublePrecision = false){
         
-        abstractTriangulation_ = &stellarTriangulation_;
+        abstractTriangulation_ = &explicitTopoCluster_;
         gridDimensions_[0] = gridDimensions_[1] = gridDimensions_[2] = -1;
-        return stellarTriangulation_.setInputPoints(
+        return explicitTopoCluster_.setInputPoints(
           pointNumber, pointSet, indexArray, doublePrecision);
       }
 
@@ -3165,7 +3165,7 @@ namespace ttk{
       inline int setThreadNumber(const ThreadId &threadNumber){
         explicitTriangulation_.setThreadNumber(threadNumber);
         implicitTriangulation_.setThreadNumber(threadNumber);
-        stellarTriangulation_.setThreadNumber(threadNumber);
+        explicitTopoCluster_.setThreadNumber(threadNumber);
         threadNumber_ = threadNumber;
         return 0;
       }
@@ -3175,7 +3175,7 @@ namespace ttk{
       inline int setWrapper(const Wrapper *wrapper){
         explicitTriangulation_.setWrapper(wrapper);
         implicitTriangulation_.setWrapper(wrapper);
-        stellarTriangulation_.setWrapper(wrapper);
+        explicitTopoCluster_.setWrapper(wrapper);
         return 0;
       }
       
@@ -3200,8 +3200,8 @@ namespace ttk{
                           explicitTriangulation_;
       ImplicitTriangulation
                           implicitTriangulation_;
-      StellarTriangulation
-                          stellarTriangulation_;
+      ExplicitTopoCluster
+                          explicitTopoCluster_;
   
       friend class TestStellar;
   };

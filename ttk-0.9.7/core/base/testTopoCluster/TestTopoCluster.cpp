@@ -1,4 +1,4 @@
-#include                  <TestStellar.h>
+#include                  <TestTopoCluster.h>
 
 using namespace std;
 using namespace ttk;

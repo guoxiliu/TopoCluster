@@ -6,13 +6,13 @@
        that matches your filter and then model your xml on it -->
   <ProxyGroup name="filters">
    <SourceProxy 
-     name="TestStellar" 
-     class="ttkTestStellar" 
-     label="TTK TestStellar">
+     name="TestTopoCluster" 
+     class="ttkTestTopoCluster" 
+     label="TTK TestTopoCluster">
      <Documentation
-        long_help="TTK testStellar plugin."
-        short_help="TTK testStellar plugin.">
-          TTK testStellar plugin documentation.
+        long_help="TTK testTopoCluster plugin."
+        short_help="TTK testTopoCluster plugin.">
+          TTK TestTopoCluster plugin documentation.
      </Documentation>
      <InputProperty
         name="Input"

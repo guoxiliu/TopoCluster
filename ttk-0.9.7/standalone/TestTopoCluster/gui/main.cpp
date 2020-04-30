@@ -3,13 +3,13 @@
 ///
 
 // include the local headers
-#include                  <ttkTestStellar.h>
+#include                  <ttkTestTopoCluster.h>
 #include                  <ttkUserInterfaceBase.h>
 
 using namespace std;
 using namespace ttk;
 
-vtkUserInterface<ttkTestStellar> program;
+vtkUserInterface<ttkTestTopoCluster> program;
 
 class myKeyHandler : public ttkKeyHandler{
   
