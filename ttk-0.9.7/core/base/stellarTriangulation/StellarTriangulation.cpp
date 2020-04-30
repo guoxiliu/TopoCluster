@@ -20,7 +20,7 @@ int StellarTriangulation::clear(){
 
   {
     stringstream msg;
-    msg << "[ExplicitTriangulation] Triangulation cleared." << endl;
+    msg << "[StellarTriangulation] Triangulation cleared." << endl;
     dMsg(cout, msg.str(), detailedInfoMsg);
   }
 

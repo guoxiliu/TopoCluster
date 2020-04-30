@@ -1,5 +1,0 @@
-ttk_add_base_library(fG_PersistentHomology
-	SOURCES FG_PersistentHomology.cpp
-	HEADERS FG_PersistentHomology.h FG_PersistentHomology_template.h
-	LINK memoryUsage triangulation formanGradient boundarymatrix)
-

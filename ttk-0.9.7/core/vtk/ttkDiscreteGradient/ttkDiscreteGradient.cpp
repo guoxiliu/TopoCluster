@@ -304,6 +304,16 @@ int ttkDiscreteGradient::doIt(vector<vtkDataSet *> &inputs,
           }
 #endif
 
+  {
+    stringstream msg;
+    msg << "[ttkDiscreteGradient] Data-set processed in "
+      << t.getElapsedTime() << " s." << std::endl;
+    msg << "[ttkDiscreteGradient] Memory usage: " << m.getValue_in_MB(false) 
+      << " MB." << endl;
+    dMsg(cout, msg.str(), memoryMsg);
+  }
+  
+
           // critical points
           {
             if(inputOffsets_->GetDataType()==VTK_INT)

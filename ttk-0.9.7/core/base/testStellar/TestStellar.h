@@ -116,18 +116,27 @@ template <class dataType> int ttk::TestStellar::execute() const{
 
   // std::cout << "dimension: " << triangulation_->getDimensionality() << std::endl;
   // t.reStart();
-  // int boundaryVertexNum = 0, boundaryTriangleNum = 0;
+  // int boundaryVertexNum = 0, boundaryEdgeNum = 0, boundaryTriangleNum = 0;
   // for(SimplexId vid = 0; vid < vertexNumber; vid++){
   //   if(triangulation_->isVertexOnBoundary(vid)){
   //     boundaryVertexNum++;
   //   }
   // }
+  // std::cout << "[TestStellar] Boundary vertex number: " << boundaryVertexNum << std::endl;
+
+  // for(SimplexId eid = 0; eid < edgeNumber; eid++){
+  //   if(triangulation_->isEdgeOnBoundary(eid)){
+  //     boundaryEdgeNum++;
+  //   }
+  // }
+  // std::cout << "[TestStellar] Boundary edge number: " << boundaryEdgeNum << std::endl;
+  
   // for(SimplexId tid = 0; tid < triangleNumber; tid++){
   //   if(triangulation_->isTriangleOnBoundary(tid)){
   //     boundaryTriangleNum++;
   //   }
   // }
-  // std::cout << "[TestStellar] Boundary vertex number: " << boundaryVertexNum << std::endl;
+
   // std::cout << "[TestStellar] Boundary triangle number: " << boundaryTriangleNum << std::endl;
   // std::cout << "[TestStellar] Time usage for getting boundaries: " << t.getElapsedTime() << " s.\n";
 
