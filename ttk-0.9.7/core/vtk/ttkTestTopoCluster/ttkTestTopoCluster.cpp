@@ -18,8 +18,8 @@ int ttkTestTopoCluster::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> 
     return -1;
   
   triangulation->setWrapper(this);
-  testStellar_.setupTriangulation(triangulation, CacheSize);
-  testStellar_.setWrapper(this);
+  testTopoCluster_.setupTriangulation(triangulation, CacheSize);
+  testTopoCluster_.setWrapper(this);
  
   // use a pointer-base copy for the input data -- to adapt if your wrapper does
   // not produce an output of the type of the input.
@@ -85,10 +85,10 @@ int ttkTestTopoCluster::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> 
   output->GetPointData()->AddArray(outputScalarField_);
   
   // calling the executing package
-  testStellar_.setInputDataPointer(inputScalarField->GetVoidPointer(0));
-  testStellar_.setOutputDataPointer(outputScalarField_->GetVoidPointer(0));
+  testTopoCluster_.setInputDataPointer(inputScalarField->GetVoidPointer(0));
+  testTopoCluster_.setOutputDataPointer(outputScalarField_->GetVoidPointer(0));
   switch(inputScalarField->GetDataType()){
-    ttkTemplateMacro(testStellar_.execute<VTK_TT>());
+    ttkTemplateMacro(testTopoCluster_.execute<VTK_TT>());
   }
   
   {

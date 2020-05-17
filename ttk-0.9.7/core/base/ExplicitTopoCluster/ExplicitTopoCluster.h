@@ -515,21 +515,33 @@ namespace ttk{
       inline SimplexId getNumberOfVertices() const { return vertexNumber_; }
       
       const vector<vector<SimplexId> > *getTriangles(){
-        triangleList_.reserve(edgeIntervals_.back()+1);
-        for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
-          ExpandedNode *exnode = searchCache(nid);
-          if(exnode->internalTriangleList_ == nullptr){
-            exnode->internalTriangleList_ = new vector<vector<SimplexId>>();
-            buildInternalTriangleList(nid, exnode->internalTriangleList_);
+        // if it is a triangle mesh
+        if(getDimensionality() == 2){
+          triangleList_.resize(cellNumber_, vector<SimplexId>(3));
+          for(SimplexId cid = 0; cid < cellNumber_; cid++){
+            SimplexId cellId = (cellArray_[0]+1)*cid;
+            triangleList_[cid][0] = cellArray_[cellId+1];
+            triangleList_[cid][1] = cellArray_[cellId+2];
+            triangleList_[cid][2] = cellArray_[cellId+3];
           }
-          triangleList_.insert(triangleList_.end(), exnode->internalTriangleList_->begin(), exnode->internalTriangleList_->end());
+        }
+        else{
+          triangleList_.reserve(triangleIntervals_.back() + 1);
+          for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
+            ExpandedNode *exnode = searchCache(nid);
+            if(exnode->internalTriangleList_ == nullptr){
+              exnode->internalTriangleList_ = new vector<vector<SimplexId>>();
+              buildInternalTriangleList(nid, exnode->internalTriangleList_);
+            }
+            triangleList_.insert(triangleList_.end(), exnode->internalTriangleList_->begin(), exnode->internalTriangleList_->end());
+          }
         }
         return &triangleList_;
       }
       
       int getTriangleEdge(const SimplexId &triangleId,
         const int &localEdgeId, SimplexId &edgeId) const{
-                    
+
         #ifndef TTK_ENABLE_KAMIKAZE
           if((triangleId < 0)||(triangleId > triangleIntervals_.back()))
             return -1;
@@ -645,7 +657,7 @@ namespace ttk{
       
       int getTriangleVertex(const SimplexId &triangleId,
         const int &localVertexId, SimplexId &vertexId) const{
-
+        
         #ifndef TTK_ENABLE_KAMIKAZE
           if((triangleId < 0)||(triangleId > triangleIntervals_.back()))
             return -1;
@@ -860,7 +872,7 @@ namespace ttk{
 
       int getVertexTriangle(const SimplexId &vertexId, 
         const int &localTriangleId, SimplexId &triangleId) const{
-        
+
         #ifndef TTK_ENABLE_KAMIKAZE
           if((vertexId < 0)||(vertexId >= vertexNumber_))
             return -1;
@@ -988,16 +1000,15 @@ namespace ttk{
       }
       
       bool isEdgeOnBoundary(const SimplexId &edgeId) const{
-        // #ifndef TTK_ENABLE_KAMIKAZE
-        //   if((edgeId < 0)||(edgeId > edgeIntervals_.back()))
-        //     return false;
-        // #endif
-        // SimplexId nid = findNodeIndex(edgeId, EDGE_ID);
-        // SimplexId localedgeId = edgeId - edgeIntervals_[nid-1] - 1;
-        // ExpandedNode *exnode = searchCache(nid);
-        // getBoundaryCells(exnode, 1);
-        // return (*(exnode->boundaryEdges))[localedgeId];
-        return false;
+        #ifndef TTK_ENABLE_KAMIKAZE
+          if((edgeId < 0)||(edgeId > edgeIntervals_.back()))
+            return false;
+        #endif
+        SimplexId nid = findNodeIndex(edgeId, EDGE_ID);
+        SimplexId localedgeId = edgeId - edgeIntervals_[nid-1] - 1;
+        ExpandedNode *exnode = searchCache(nid);
+        getBoundaryCells(exnode, 1);
+        return (*(exnode->boundaryEdges))[localedgeId];
       }
         
       bool isEmpty() const{
@@ -1005,40 +1016,62 @@ namespace ttk{
       }
       
       bool isTriangleOnBoundary(const SimplexId &triangleId) const{
-        // #ifndef TTK_ENABLE_KAMIKAZE
-        //   if((triangleId < 0)||(triangleId > triangleIntervals_.back()))
-        //     return false;
-        // #endif
-        // SimplexId nid = findNodeIndex(triangleId, TRIANGLE_ID);
-        // SimplexId localtriangleId = triangleId - triangleIntervals_[nid-1] - 1;
-        // ExpandedNode *exnode = searchCache(nid);
-        // getBoundaryCells(exnode);
-        // return (*(exnode->boundaryTriangles))[localtriangleId];
-        return false;
+        if(getDimensionality() == 2)
+          return false;
+        
+        #ifndef TTK_ENABLE_KAMIKAZE
+          if((triangleId < 0)||(triangleId > triangleIntervals_.back()))
+            return false;
+        #endif
+        SimplexId nid = findNodeIndex(triangleId, TRIANGLE_ID);
+        SimplexId localtriangleId = triangleId - triangleIntervals_[nid-1] - 1;
+        ExpandedNode *exnode = searchCache(nid);
+        getBoundaryCells(exnode);
+
+        return (*(exnode->boundaryTriangles))[localtriangleId];
       }
       
       bool isVertexOnBoundary(const SimplexId &vertexId) const{
-        // #ifndef TTK_ENABLE_KAMIKAZE
-        //   if((vertexId < 0)||(vertexId >= vertexNumber_))
-        //     return false;
-        // #endif
-        // SimplexId nid = vertexIndices_[vertexId]+1;
-        // SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
-        // ExpandedNode *exnode = searchCache(nid);
-        // getBoundaryCells(exnode, 0);
-        // return (*(exnode->boundaryVertices))[localVertexId];
-        return false;
+        #ifndef TTK_ENABLE_KAMIKAZE
+          if((vertexId < 0)||(vertexId >= vertexNumber_))
+            return false;
+        #endif
+        SimplexId nid = vertexIndices_[vertexId]+1;
+        SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
+        ExpandedNode *exnode = searchCache(nid);
+        getBoundaryCells(exnode, 0);
+        return (*(exnode->boundaryVertices))[localVertexId];
       }
 
       int preprocessBoundaryEdges(){
-        preprocessEdges();
-        hasPreprocessedBoundaryEdges_ = true;
+        if(getDimensionality() == 2 || getDimensionality() == 3){
+          preprocessEdges();
+          hasPreprocessedBoundaryEdges_ = true;
+        }
+        else{
+          // unsupported dimension
+          std::stringstream msg;
+          msg << "[ExplicitTopoCluster] Unsupported dimension for boundary "
+            << "preprocessing." << std::endl;
+          dMsg(std::cerr, msg.str(), infoMsg);
+          return -1;
+        }
         return 0;
       }
       
       int preprocessBoundaryTriangles(){
-        preprocessTriangles();
-        hasPreprocessedBoundaryTriangles_ = true;
+        if(getDimensionality() == 2 || getDimensionality() == 3){
+          preprocessTriangles();
+          hasPreprocessedBoundaryTriangles_ = true;
+        }
+        else{
+          // unsupported dimension
+          std::stringstream msg;
+          msg << "[ExplicitTopoCluster] Unsupported dimension for boundary "
+            << "preprocessing." << std::endl;
+          dMsg(std::cerr, msg.str(), infoMsg);
+          return -1;
+        }
         return 0;
       }
       
@@ -1123,6 +1156,10 @@ namespace ttk{
       }
       
       int preprocessTriangles(){
+        if(getDimensionality() == 2){
+          hasPreprocessedTriangles_ = true;
+          return 0;
+        }
 
         #ifndef TTK_ENABLE_KAMIKAZE
           if(vertexNumber_ <= 0)
@@ -1539,20 +1576,21 @@ namespace ttk{
 
         for(SimplexId i = cellIntervals_[nodePtr->nid-1]+1; i <= cellIntervals_[nodePtr->nid]; i++){
           SimplexId cellId = (cellArray_[0]+1)*i;
+          int cnt = 0;
           // get the internal edge id from the map
           for(SimplexId k = 1; k < cellArray_[0]; k++){
             pair_int edgePair(cellArray_[cellId+1], cellArray_[cellId+k+1]);
-            (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][k-1] = internalEdgeMaps_[nodePtr->nid].at(edgePair) + edgeIntervals_[nodePtr->nid-1];
+            (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][cnt++] = internalEdgeMaps_[nodePtr->nid].at(edgePair) + edgeIntervals_[nodePtr->nid-1];
           }
           for(SimplexId j = 1; j < cellArray_[0]-1; j++){
             for(SimplexId k = j+1; k < cellArray_[0]; k++){
               pair_int edgePair(cellArray_[cellId+j+1], cellArray_[cellId+k+1]);
               if(edgePair.first <= vertexIntervals_[nodePtr->nid]){
-                (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][j+k] = internalEdgeMaps_[nodePtr->nid].at(edgePair) + edgeIntervals_[nodePtr->nid-1];
+                (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][cnt++] = internalEdgeMaps_[nodePtr->nid].at(edgePair) + edgeIntervals_[nodePtr->nid-1];
               }
               else{
                 SimplexId nodeNum = vertexIndices_[edgePair.first]+1;
-                (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][j+k] = internalEdgeMaps_[nodeNum].at(edgePair) + edgeIntervals_[nodeNum-1];
+                (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][cnt++] = internalEdgeMaps_[nodeNum].at(edgePair) + edgeIntervals_[nodeNum-1];
               }
             }
           }
@@ -1941,104 +1979,158 @@ namespace ttk{
           if(nodePtr->nid <= 0 || nodePtr->nid > nodeNumber_)
             return -1;
         #endif
-
-        // get the boundary triangles first
-        SimplexId localTriangleNum = triangleIntervals_[nodePtr->nid]-triangleIntervals_[nodePtr->nid-1];
-        if(nodePtr->boundaryTriangles == nullptr){
-          nodePtr->boundaryTriangles = new vector<bool>(localTriangleNum, false);
-          if(nodePtr->triangleStars_ == nullptr){
-            nodePtr->triangleStars_ = new vector<vector<SimplexId>>();
-            getTriangleStars(nodePtr);
-          }
-          for(SimplexId i = 0; i < localTriangleNum; i++){
-            if((*(nodePtr->triangleStars_))[i].size() == 1){
-              (*(nodePtr->boundaryTriangles))[i] = true;
+        
+        if(getDimensionality() == 2){
+          SimplexId localEdgeNum = edgeIntervals_[nodePtr->nid]-edgeIntervals_[nodePtr->nid-1];
+          if(nodePtr->boundaryEdges == nullptr){
+            nodePtr->boundaryEdges = new vector<bool>(localEdgeNum, false);
+            if(nodePtr->edgeStars_ == nullptr){
+              nodePtr->edgeStars_ = new vector<vector<SimplexId>>();
+              getEdgeStars(nodePtr);
             }
-          }
-        }
-
-        // if the boundary edges are requested
-        if(dim == 1 && nodePtr->boundaryEdges == nullptr){
-          nodePtr->boundaryEdges = new vector<bool>(edgeIntervals_[nodePtr->nid]-edgeIntervals_[nodePtr->nid-1], false);
-          if(nodePtr->externalTriangleMap_ == nullptr){
-            nodePtr->externalTriangleMap_ = new boost::unordered_map<vector<SimplexId>, SimplexId>();
-            buildExternalTriangleMap(nodePtr->nid, nodePtr->externalTriangleMap_);
-          }
-          // internal triangles
-          for(auto iter = internalTriangleMaps_[nodePtr->nid].begin(); iter != internalTriangleMaps_[nodePtr->nid].end(); iter++){
-            if((*(nodePtr->boundaryTriangles))[iter->second-1]){
-              pair_int edgePair(iter->first[0], iter->first[1]);
-              (*(nodePtr->boundaryEdges))[internalEdgeMaps_[nodePtr->nid].at(edgePair)-1] = true;
-              edgePair.second = iter->first[2];
-              (*(nodePtr->boundaryEdges))[internalEdgeMaps_[nodePtr->nid].at(edgePair)-1] = true;
-              if(iter->first[1] <= vertexIntervals_[nodePtr->nid]){
-                edgePair.first = iter->first[1];
-                (*(nodePtr->boundaryEdges))[internalEdgeMaps_[nodePtr->nid].at(edgePair)-1] = true;
+            for(SimplexId i = 0; i < localEdgeNum; i++){
+              if((*(nodePtr->edgeStars_))[i].size() == 1){
+                (*(nodePtr->boundaryEdges))[i] = true;
               }
             }
           }
-          // external triangles
-          boost::unordered_map<SimplexId, ExpandedNode*> nodeMaps;
-          for(auto iter = nodePtr->externalTriangleMap_->begin(); iter != nodePtr->externalTriangleMap_->end(); iter++){
-            SimplexId nodeId = vertexIndices_[iter->first[0]]+1;
-            if(nodeMaps.find(nodeId) == nodeMaps.end()){
-              nodeMaps[nodeId] = new ExpandedNode(nodeId);
-              getBoundaryCells(nodeMaps[nodeId]);
+          // if boundary vertices are requested
+          if(dim == 0 && nodePtr->boundaryVertices == nullptr){
+            nodePtr->boundaryVertices = new vector<bool>(vertexIntervals_[nodePtr->nid]-vertexIntervals_[nodePtr->nid-1], false);
+            if(nodePtr->externalEdgeMap_ == nullptr){
+              nodePtr->externalEdgeMap_ = new boost::unordered_map<pair_int, SimplexId>();
+              buildExternalEdgeMap(nodePtr->nid, nodePtr->externalEdgeMap_);
             }
-            if(nodeMaps[nodeId]->boundaryTriangles->at(iter->second-triangleIntervals_[nodeId-1]-1)){
-              if(iter->first[1] > vertexIntervals_[nodePtr->nid-1] && iter->first[1] <= vertexIntervals_[nodePtr->nid]){
-                pair_int edgePair(iter->first[1], iter->first[2]);
-                (*(nodePtr->boundaryEdges))[internalEdgeMaps_[nodePtr->nid].at(edgePair)-1] = true;
-              }
-            }
-          }
-
-          // release the memory
-          for(auto iter = nodeMaps.begin(); iter != nodeMaps.end(); iter++){
-            delete iter->second;
-          }
-        }
-
-        // if the boundary vertices are requested
-        else if(dim == 0 && nodePtr->boundaryVertices ==  nullptr){
-          nodePtr->boundaryVertices = new vector<bool>(vertexIntervals_[nodePtr->nid]-vertexIntervals_[nodePtr->nid-1], false);
-          if(nodePtr->externalTriangleMap_ == nullptr){
-            nodePtr->externalTriangleMap_ = new boost::unordered_map<vector<SimplexId>, SimplexId>();
-            buildExternalTriangleMap(nodePtr->nid, nodePtr->externalTriangleMap_);
-          }
-          // internal triangles
-          for(auto iter = internalTriangleMaps_[nodePtr->nid].begin(); iter != internalTriangleMaps_[nodePtr->nid].end(); iter++){
-            if((*(nodePtr->boundaryTriangles))[iter->second-1]){
-              for(int j = 0; j < 3; j++){
-                SimplexId vid = iter->first[j];
-                if(vid <= vertexIntervals_[nodePtr->nid]){
-                  (*(nodePtr->boundaryVertices))[vid-vertexIntervals_[nodePtr->nid-1]-1] = true;
+            // internal edges
+            for(auto iter = internalEdgeMaps_[nodePtr->nid].begin(); iter != internalEdgeMaps_[nodePtr->nid].end(); iter++){
+              if((*(nodePtr->boundaryEdges))[iter->second-1]){
+                (*(nodePtr->boundaryVertices))[iter->first.first-vertexIntervals_[nodePtr->nid-1]-1] = true;
+                if(iter->first.second <= vertexIntervals_[nodePtr->nid]){
+                  (*(nodePtr->boundaryVertices))[iter->first.second-vertexIntervals_[nodePtr->nid-1]-1] = true;
                 }
               }
             }
-          }
-          // external triangles
-          boost::unordered_map<SimplexId, ExpandedNode*> nodeMaps;
-          for(auto iter = nodePtr->externalTriangleMap_->begin(); iter != nodePtr->externalTriangleMap_->end(); iter++){
-            SimplexId nodeId = vertexIndices_[iter->first[0]]+1;
-            if(nodeMaps.find(nodeId) == nodeMaps.end()){
-              nodeMaps[nodeId] = new ExpandedNode(nodeId);
-              getBoundaryCells(nodeMaps[nodeId]);
-            }
-            if((*(nodeMaps[nodeId]->boundaryTriangles))[iter->second-triangleIntervals_[nodeId-1]-1]){
-              if(iter->first[1] > vertexIntervals_[nodePtr->nid-1] && iter->first[1] <= vertexIntervals_[nodePtr->nid]){
-                (*(nodePtr->boundaryVertices))[iter->first[1]-vertexIntervals_[nodePtr->nid-1]-1] = true;
+            // external edges
+            boost::unordered_map<SimplexId, ExpandedNode*> nodeMaps;
+            for(auto iter = nodePtr->externalEdgeMap_->begin(); iter != nodePtr->externalEdgeMap_->end(); iter++){
+              SimplexId nodeId = vertexIndices_[iter->first.first]+1;
+              if(nodeMaps.find(nodeId) == nodeMaps.end()){
+                nodeMaps[nodeId] = new ExpandedNode(nodeId);
+                getBoundaryCells(nodeMaps[nodeId]);
               }
-              if(iter->first[2] > vertexIntervals_[nodePtr->nid-1] && iter->first[2] <= vertexIntervals_[nodePtr->nid]){
-                (*(nodePtr->boundaryVertices))[iter->first[2]-vertexIntervals_[nodePtr->nid-1]-1] = true;
+              if((*(nodeMaps[nodeId]->boundaryEdges))[iter->second-edgeIntervals_[nodeId-1]-1]){
+                (*(nodePtr->boundaryVertices))[iter->first.second-vertexIntervals_[nodePtr->nid-1]-1] = true;
+              }
+            }
+
+            // release the memory
+            for(auto iter = nodeMaps.begin(); iter != nodeMaps.end(); iter++){
+              delete iter->second;
+            }
+          }
+        }
+        else if(getDimensionality() == 3){
+          // get the boundary triangles first
+          SimplexId localTriangleNum = triangleIntervals_[nodePtr->nid]-triangleIntervals_[nodePtr->nid-1];
+          if(nodePtr->boundaryTriangles == nullptr){
+            nodePtr->boundaryTriangles = new vector<bool>(localTriangleNum, false);
+            if(nodePtr->triangleStars_ == nullptr){
+              nodePtr->triangleStars_ = new vector<vector<SimplexId>>();
+              getTriangleStars(nodePtr);
+            }
+            for(SimplexId i = 0; i < localTriangleNum; i++){
+              if((*(nodePtr->triangleStars_))[i].size() == 1){
+                (*(nodePtr->boundaryTriangles))[i] = true;
               }
             }
           }
 
-          // release the memory
-          for(auto iter = nodeMaps.begin(); iter != nodeMaps.end(); iter++){
-            delete iter->second;
+          // if the boundary edges are requested
+          if(dim == 1 && nodePtr->boundaryEdges == nullptr){
+            nodePtr->boundaryEdges = new vector<bool>(edgeIntervals_[nodePtr->nid]-edgeIntervals_[nodePtr->nid-1], false);
+            if(nodePtr->externalTriangleMap_ == nullptr){
+              nodePtr->externalTriangleMap_ = new boost::unordered_map<vector<SimplexId>, SimplexId>();
+              buildExternalTriangleMap(nodePtr->nid, nodePtr->externalTriangleMap_);
+            }
+            // internal triangles
+            for(auto iter = internalTriangleMaps_[nodePtr->nid].begin(); iter != internalTriangleMaps_[nodePtr->nid].end(); iter++){
+              if((*(nodePtr->boundaryTriangles))[iter->second-1]){
+                pair_int edgePair(iter->first[0], iter->first[1]);
+                (*(nodePtr->boundaryEdges))[internalEdgeMaps_[nodePtr->nid].at(edgePair)-1] = true;
+                edgePair.second = iter->first[2];
+                (*(nodePtr->boundaryEdges))[internalEdgeMaps_[nodePtr->nid].at(edgePair)-1] = true;
+                if(iter->first[1] <= vertexIntervals_[nodePtr->nid]){
+                  edgePair.first = iter->first[1];
+                  (*(nodePtr->boundaryEdges))[internalEdgeMaps_[nodePtr->nid].at(edgePair)-1] = true;
+                }
+              }
+            }
+            // external triangles
+            boost::unordered_map<SimplexId, ExpandedNode*> nodeMaps;
+            for(auto iter = nodePtr->externalTriangleMap_->begin(); iter != nodePtr->externalTriangleMap_->end(); iter++){
+              SimplexId nodeId = vertexIndices_[iter->first[0]]+1;
+              if(nodeMaps.find(nodeId) == nodeMaps.end()){
+                nodeMaps[nodeId] = new ExpandedNode(nodeId);
+                getBoundaryCells(nodeMaps[nodeId]);
+              }
+              if(nodeMaps[nodeId]->boundaryTriangles->at(iter->second-triangleIntervals_[nodeId-1]-1)){
+                if(iter->first[1] > vertexIntervals_[nodePtr->nid-1] && iter->first[1] <= vertexIntervals_[nodePtr->nid]){
+                  pair_int edgePair(iter->first[1], iter->first[2]);
+                  (*(nodePtr->boundaryEdges))[internalEdgeMaps_[nodePtr->nid].at(edgePair)-1] = true;
+                }
+              }
+            }
+
+            // release the memory
+            for(auto iter = nodeMaps.begin(); iter != nodeMaps.end(); iter++){
+              delete iter->second;
+            }
           }
+
+          // if the boundary vertices are requested
+          else if(dim == 0 && nodePtr->boundaryVertices == nullptr){
+            nodePtr->boundaryVertices = new vector<bool>(vertexIntervals_[nodePtr->nid]-vertexIntervals_[nodePtr->nid-1], false);
+            if(nodePtr->externalTriangleMap_ == nullptr){
+              nodePtr->externalTriangleMap_ = new boost::unordered_map<vector<SimplexId>, SimplexId>();
+              buildExternalTriangleMap(nodePtr->nid, nodePtr->externalTriangleMap_);
+            }
+            // internal triangles
+            for(auto iter = internalTriangleMaps_[nodePtr->nid].begin(); iter != internalTriangleMaps_[nodePtr->nid].end(); iter++){
+              if((*(nodePtr->boundaryTriangles))[iter->second-1]){
+                for(int j = 0; j < 3; j++){
+                  SimplexId vid = iter->first[j];
+                  if(vid <= vertexIntervals_[nodePtr->nid]){
+                    (*(nodePtr->boundaryVertices))[vid-vertexIntervals_[nodePtr->nid-1]-1] = true;
+                  }
+                }
+              }
+            }
+            // external triangles
+            boost::unordered_map<SimplexId, ExpandedNode*> nodeMaps;
+            for(auto iter = nodePtr->externalTriangleMap_->begin(); iter != nodePtr->externalTriangleMap_->end(); iter++){
+              SimplexId nodeId = vertexIndices_[iter->first[0]]+1;
+              if(nodeMaps.find(nodeId) == nodeMaps.end()){
+                nodeMaps[nodeId] = new ExpandedNode(nodeId);
+                getBoundaryCells(nodeMaps[nodeId]);
+              }
+              if((*(nodeMaps[nodeId]->boundaryTriangles))[iter->second-triangleIntervals_[nodeId-1]-1]){
+                if(iter->first[1] > vertexIntervals_[nodePtr->nid-1] && iter->first[1] <= vertexIntervals_[nodePtr->nid]){
+                  (*(nodePtr->boundaryVertices))[iter->first[1]-vertexIntervals_[nodePtr->nid-1]-1] = true;
+                }
+                if(iter->first[2] > vertexIntervals_[nodePtr->nid-1] && iter->first[2] <= vertexIntervals_[nodePtr->nid]){
+                  (*(nodePtr->boundaryVertices))[iter->first[2]-vertexIntervals_[nodePtr->nid-1]-1] = true;
+                }
+              }
+            }
+
+            // release the memory
+            for(auto iter = nodeMaps.begin(); iter != nodeMaps.end(); iter++){
+              delete iter->second;
+            }
+          }
+        }
+        else{
+          return -1;
         }
 
         return 0;

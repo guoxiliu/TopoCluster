@@ -1,15 +1,15 @@
 /// \ingroup base
-/// \class ttk::TestStellar 
+/// \class ttk::TestTopoCluster 
 /// \author Guoxi Liu <guoxil@g.clemson.edu>
 /// \date Jan. 2020.
 ///
-/// \brief TTK %testStellar processing package.
+/// \brief TTK %TestTopoCluster processing package.
 ///
-/// %TestStellar is a TTK processing package that takes a scalar field on the input 
+/// %TestTopoCluster is a TTK processing package that takes a scalar field on the input 
 /// and produces a scalar field on the output.
 ///
 /// \sa ttk::Triangulation
-/// \sa ttkTestStellar.cpp %for a usage example.
+/// \sa ttkTestTopoCluster.cpp %for a usage example.
 
 #pragma once
 
@@ -20,13 +20,13 @@
 
 namespace ttk{
   
-  class TestStellar : public Debug{
+  class TestTopoCluster : public Debug{
 
     public:
         
-      TestStellar();
+      TestTopoCluster();
       
-      ~TestStellar();
+      ~TestTopoCluster();
 
       template <class dataType>
         int execute() const;
@@ -69,7 +69,7 @@ namespace ttk{
           // cell related relationships
           triangulation_->preprocessCellEdges();
           triangulation_->preprocessCellTriangles();
-          std::cout << "[TestStellar] Time usage for preprocessing: " << t.getElapsedTime() << " s.\n";
+          std::cout << "[TestTopoCluster] Time usage for preprocessing: " << t.getElapsedTime() << " s.\n";
         }
         
         return 0;
@@ -83,7 +83,7 @@ namespace ttk{
 }
 
 // template functions
-template <class dataType> int ttk::TestStellar::execute() const{
+template <class dataType> int ttk::TestTopoCluster::execute() const{
 
   Timer t, tot;
   
@@ -105,17 +105,12 @@ template <class dataType> int ttk::TestStellar::execute() const{
   SimplexId triangleNumber = triangulation_->getNumberOfTriangles();
   SimplexId cellNumber = triangulation_->getNumberOfCells();
 
-  std::cout << "[TestStellar] vertex num: " << vertexNumber << ", edge num: "
+  std::cout << "[TestTopoCluster] vertex num: " << vertexNumber << ", edge num: "
     << edgeNumber << ", triangle num: " << triangleNumber << ", cell num: " << 
     cellNumber << std::endl;
 
 
-  SimplexId verticesPerCell = triangulation_->getCellVertexNumber(0);
-  SimplexId edgesPerCell = triangulation_->getCellEdgeNumber(0);
-  SimplexId trianglesPerCell = triangulation_->getCellTriangleNumber(0);
-
-
-  // std::cout << "dimension: " << triangulation_->getDimensionality() << std::endl;
+  std::cout << "[TestTopoCluster] Dimension: " << triangulation_->getDimensionality() << std::endl;
   // t.reStart();
   // int boundaryVertexNum = 0, boundaryEdgeNum = 0, boundaryTriangleNum = 0;
   // for(SimplexId vid = 0; vid < vertexNumber; vid++){
@@ -123,44 +118,43 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //     boundaryVertexNum++;
   //   }
   // }
-  // std::cout << "[TestStellar] Boundary vertex number: " << boundaryVertexNum << std::endl;
+  // std::cout << "[TestTopoCluster] Boundary vertex number: " << boundaryVertexNum << std::endl;
 
   // for(SimplexId eid = 0; eid < edgeNumber; eid++){
   //   if(triangulation_->isEdgeOnBoundary(eid)){
   //     boundaryEdgeNum++;
   //   }
   // }
-  // std::cout << "[TestStellar] Boundary edge number: " << boundaryEdgeNum << std::endl;
+  // std::cout << "[TestTopoCluster] Boundary edge number: " << boundaryEdgeNum << std::endl;
 
   // for(SimplexId tid = 0; tid < triangleNumber; tid++){
   //   if(triangulation_->isTriangleOnBoundary(tid)){
   //     boundaryTriangleNum++;
   //   }
   // }
-  // std::cout << "[TestStellar] Boundary triangle number: " << boundaryTriangleNum << std::endl;
-  // std::cout << "[TestStellar] Time usage for getting boundaries: " << t.getElapsedTime() << " s.\n";
-
+  // std::cout << "[TestTopoCluster] Boundary triangle number: " << boundaryTriangleNum << std::endl;
+  // std::cout << "[TestTopoCluster] Time usage for getting boundaries: " << t.getElapsedTime() << " s.\n";
 
   // const std::vector<std::vector<SimplexId>> *vertexNeighbors = triangulation_->getVertexNeighbors();
   // for(SimplexId vid = 0; vid < vertexNumber; vid++){
   //   for(SimplexId neighbor : (*vertexNeighbors)[vid]){
   //     auto it = find((*vertexNeighbors)[neighbor].begin(), (*vertexNeighbors)[neighbor].end(), vid);
   //     if(it == (*vertexNeighbors)[neighbor].end()){
-  //       std::cout << "[TestStellar] Cannot find " << vid << " in " << neighbor << "'s neighbors.\n";
+  //       std::cout << "[TestTopoCluster] Cannot find " << vid << " in " << neighbor << "'s neighbors.\n";
   //       break;
   //     }
   //   }
   // }
   
 
-  // // VE relation
+  // // // VE relation
   // for(SimplexId vid = 0; vid < vertexNumber; vid++){
   //   int edgeNum = triangulation_->getVertexEdgeNumber(vid);
   //   for(int i = 0; i < edgeNum; i++){
   //     SimplexId edgeId;
   //     int res = triangulation_->getVertexEdge(vid, i, edgeId);
   //     if(res){
-  //       std::cout << "[TestStellar] Cannot get vertex edge for vertex id " << vid << ", error code: " << res << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot get vertex edge for vertex id " << vid << ", error code: " << res << "\n";
   //       return -4;
   //     }
   //     bool hasFound = false;
@@ -173,21 +167,21 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       }
   //     }
   //     if(!hasFound){
-  //       std::cout << "[TestStellar] Cannot find vertex " << vid << " in edge " << edgeId << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot find vertex " << vid << " in edge " << edgeId << "\n";
   //       break;
   //     }
   //   }
   // } 
 
 
-  // // VF relation
+  // // // VF relation
   // for(SimplexId vid = 0; vid < vertexNumber; vid++){
   //   int triangleNum = triangulation_->getVertexTriangleNumber(vid);
   //   for(int i = 0; i < triangleNum; i++){
   //     SimplexId triangleId;
   //     int res = triangulation_->getVertexTriangle(vid, i, triangleId);
   //     if(res){
-  //       std::cout << "[TestStellar] Cannot get vertex triangle for vertex id " << vid << ", error code: " << res << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot get vertex triangle for vertex id " << vid << ", error code: " << res << "\n";
   //       return -4;
   //     }
   //     bool hasFound = false;
@@ -200,7 +194,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       }
   //     }
   //     if(!hasFound){
-  //       std::cout << "[TestStellar] Cannot find vertex " << vid << " in triangle " << triangleId << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot find vertex " << vid << " in triangle " << triangleId << "\n";
   //       break;
   //     }
   //   }
@@ -213,7 +207,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //     SimplexId cellId;
   //     int res = triangulation_->getVertexStar(vid, i, cellId);
   //     if(res){
-  //       std::cout << "[TestStellar] Cannot get vertex edge for vertex id " << vid << ", error code: " << res << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot get vertex edge for vertex id " << vid << ", error code: " << res << "\n";
   //       return -4;
   //     }
   //     bool hasFound = false;
@@ -226,7 +220,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       }
   //     }
   //     if(!hasFound){
-  //       std::cout << "[TestStellar] Cannot find vertex " << vid << " in cell " << cellId << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot find vertex " << vid << " in cell " << cellId << "\n";
   //       break;
   //     }
   //   }
@@ -243,7 +237,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       SimplexId edgeid;
   //       int res = triangulation_->getVertexEdge(vid, j, edgeid);
   //       if(res){
-  //         std::cout << "[TestStellar] Cannot get vertex edge for vertex id " << vid << ", error code: " << res << "\n";
+  //         std::cout << "[TestTopoCluster] Cannot get vertex edge for vertex id " << vid << ", error code: " << res << "\n";
   //         return -4;
   //       }
   //       if(edgeid == eid){
@@ -252,7 +246,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       }
   //     }
   //     if(!hasFound){
-  //       std::cout << "[TestStellar] Cannot find edge " << eid << " in vertex " << vid << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot find edge " << eid << " in vertex " << vid << "\n";
   //       break;
   //     }
   //   }
@@ -265,7 +259,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //     SimplexId triangleId;
   //     int res = triangulation_->getEdgeTriangle(eid, i, triangleId);
   //     if(res){
-  //       std::cout << "[TestStellar] Cannot get edge triangle for edge id " << eid << ", error code: " << res << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot get edge triangle for edge id " << eid << ", error code: " << res << "\n";
   //       return -4;
   //     }
   //     bool findEdge = false;
@@ -278,7 +272,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       }
   //     }
   //     if(!findEdge){
-  //       std::cout << "[TestStellar] Cannot find edge " << eid << " in triangle " << triangleId << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot find edge " << eid << " in triangle " << triangleId << "\n";
   //       break;
   //     }
   //   }
@@ -291,7 +285,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //     SimplexId cellId;
   //     int res = triangulation_->getEdgeStar(eid, i, cellId);
   //     if(res){
-  //       std::cout << "[TestStellar] Cannot get edge star for edge id " << eid << ", error code: " << res << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot get edge star for edge id " << eid << ", error code: " << res << "\n";
   //       return -4;
   //     }
   //     bool findEdge = false;
@@ -304,7 +298,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       }
   //     }
   //     if(!findEdge){
-  //       std::cout << "[TestStellar] Cannot find edge " << eid << " in cell " << cellId << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot find edge " << eid << " in cell " << cellId << "\n";
   //       break;
   //     }
   //   }
@@ -321,7 +315,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       SimplexId triangleid;
   //       int res = triangulation_->getVertexTriangle(vid, j, triangleid);
   //       if(res){
-  //         std::cout << "[TestStellar] Cannot get vertex triangle for vertex id " << vid << ", error code: " << res << "\n";
+  //         std::cout << "[TestTopoCluster] Cannot get vertex triangle for vertex id " << vid << ", error code: " << res << "\n";
   //         return -4;
   //       }
   //       if(triangleid == tid){
@@ -330,7 +324,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       }
   //     }
   //     if(!hasFound){
-  //       std::cout << "[TestStellar] Cannot find triangle " << tid << " in vertex " << vid << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot find triangle " << tid << " in vertex " << vid << "\n";
   //       break;
   //     }
   //   }
@@ -347,7 +341,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       SimplexId triangleid;
   //       int res = triangulation_->getEdgeTriangle(eid, j, triangleid);
   //       if(res){
-  //         std::cout << "[TestStellar] Cannot get edge triangle for edge id " << eid << ", error code: " << res << "\n";
+  //         std::cout << "[TestTopoCluster] Cannot get edge triangle for edge id " << eid << ", error code: " << res << "\n";
   //         return -4;
   //       }
   //       if(triangleid == tid){
@@ -356,7 +350,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       }
   //     }
   //     if(!hasFound){
-  //       std::cout << "[TestStellar] Cannot find triangle " << tid << " in edge " << eid << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot find triangle " << tid << " in edge " << eid << "\n";
   //       break;
   //     }
   //   }
@@ -369,7 +363,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //     SimplexId cellId;
   //     int res = triangulation_->getTriangleStar(tid, i, cellId);
   //     if(res){
-  //       std::cout << "[TestStellar] Cannot get traingle star for traingle id " << tid << ", error code: " << res << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot get traingle star for traingle id " << tid << ", error code: " << res << "\n";
   //       return -4;
   //     }
   //     bool findTriangle = false;
@@ -382,7 +376,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       }
   //     }
   //     if(!findTriangle){
-  //       std::cout << "[TestStellar] Cannot find triangle " << tid << " in cell " << cellId << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot find triangle " << tid << " in cell " << cellId << "\n";
   //       break;
   //     }
   //   }
@@ -399,7 +393,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       SimplexId starid;
   //       int res = triangulation_->getVertexStar(vid, j, starid);
   //       if(res){
-  //         std::cout << "[TestStellar] Cannot get vertex star for vertex id " << vid << ", error code: " << res << "\n";
+  //         std::cout << "[TestTopoCluster] Cannot get vertex star for vertex id " << vid << ", error code: " << res << "\n";
   //         return -4;
   //       }
   //       if(starid == cid){
@@ -408,7 +402,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       }
   //     }
   //     if(!hasFound){
-  //       std::cout << "[TestStellar] Cannot find cell " << cid << " in vertex " << vid << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot find cell " << cid << " in vertex " << vid << "\n";
   //       break;
   //     }
   //   }
@@ -425,7 +419,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       SimplexId starid;
   //       int res = triangulation_->getEdgeStar(eid, j, starid);
   //       if(res){
-  //         std::cout << "[TestStellar] Cannot get edge star for edge id " << eid << ", error code: " << res << "\n";
+  //         std::cout << "[TestTopoCluster] Cannot get edge star for edge id " << eid << ", error code: " << res << "\n";
   //         return -4;
   //       }
   //       if(starid == cid){
@@ -434,7 +428,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       }
   //     }
   //     if(!hasFound){
-  //       std::cout << "[TestStellar] Cannot find cell " << cid << " in edge " << eid << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot find cell " << cid << " in edge " << eid << "\n";
   //       break;
   //     }
   //   }
@@ -451,7 +445,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       SimplexId starid;
   //       int res = triangulation_->getTriangleStar(tid, j, starid);
   //       if(res){
-  //         std::cout << "[TestStellar] Cannot get traingle star for traingle id " << tid << ", error code: " << res << "\n";
+  //         std::cout << "[TestTopoCluster] Cannot get traingle star for traingle id " << tid << ", error code: " << res << "\n";
   //         return -4;
   //       }
   //       if(starid == cid){
@@ -460,12 +454,16 @@ template <class dataType> int ttk::TestStellar::execute() const{
   //       }
   //     }
   //     if(!hasFound){
-  //       std::cout << "[TestStellar] Cannot find cell " << cid << " in traingle " << tid << "\n";
+  //       std::cout << "[TestTopoCluster] Cannot find cell " << cid << " in traingle " << tid << "\n";
   //       break;
   //     }
   //   }
   // }
 
+
+  SimplexId verticesPerCell = triangulation_->getCellVertexNumber(0);
+  SimplexId edgesPerCell = triangulation_->getCellEdgeNumber(0);
+  SimplexId trianglesPerCell = triangulation_->getCellTriangleNumber(0);
 
   /* test vertex edge relationship */
   t.reStart();
@@ -475,11 +473,11 @@ template <class dataType> int ttk::TestStellar::execute() const{
     for(SimplexId j = 0; j < edgeNum; j++){
       int result1 = triangulation_->getVertexEdge(vertexId, j, edgeId);
       if(result1){
-        std::cerr << "[TestStellar] vertexId " << vertexId << " Something wrong in getVertexEdge()! Error code: " << result1 << "\n";
+        std::cerr << "[TestTopoCluster] vertexId " << vertexId << " Something wrong in getVertexEdge()! Error code: " << result1 << "\n";
       }
     }
   }
-  std::cout << "[TestStellar] Time usage for VE: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for VE: " << t.getElapsedTime() << " s.\n";
 
   /* test vertex triangle relationship */
   t.reStart();
@@ -489,11 +487,11 @@ template <class dataType> int ttk::TestStellar::execute() const{
     for(SimplexId j = 0; j < triangleNum; j++){
       int result1 = triangulation_->getVertexTriangle(vertexId, j, triangleId);
       if(result1){
-        std::cerr << "[TestStellar] vertexId " << vertexId << " Something wrong in getVertexTriangle()! Error code: " << result1 << "\n";
+        std::cerr << "[TestTopoCluster] vertexId " << vertexId << " Something wrong in getVertexTriangle()! Error code: " << result1 << "\n";
       }
     }
   }
-  std::cout << "[TestStellar] Time usage for VT: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for VT: " << t.getElapsedTime() << " s.\n";
   
   /* test vertex star relationship */
   t.reStart();
@@ -503,11 +501,11 @@ template <class dataType> int ttk::TestStellar::execute() const{
     for(SimplexId j = 0; j < cellNum; j++){
       int result1 = triangulation_->getVertexStar(vertexId, j, cellId);
       if(result1){
-        std::cout << "[TestStellar] vertexId " << vertexId << " Something wrong in getVertexStar()! Error code: " << result1 << "\n";
+        std::cout << "[TestTopoCluster] vertexId " << vertexId << " Something wrong in getVertexStar()! Error code: " << result1 << "\n";
       }
     }
   }
-  std::cout << "[TestStellar] Time usage for VS: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for VS: " << t.getElapsedTime() << " s.\n";
 
   /* test edge vertex relationship */
   t.reStart();
@@ -516,11 +514,11 @@ template <class dataType> int ttk::TestStellar::execute() const{
     for(SimplexId j = 0; j < 2; j++){
       int result1 = triangulation_->getEdgeVertex(edgeId, j, vertexId);
       if(result1){
-        std::cout << "[TestStellar] edgeId " << edgeId << " Something wrong in getEdgeVertex()! Error code: " << result1 << "\n";
+        std::cout << "[TestTopoCluster] edgeId " << edgeId << " Something wrong in getEdgeVertex()! Error code: " << result1 << "\n";
       }
     }
   }
-  std::cout << "[TestStellar] Time usage for EV: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for EV: " << t.getElapsedTime() << " s.\n";
 
 
   /* test edge triangle relationship */
@@ -531,11 +529,11 @@ template <class dataType> int ttk::TestStellar::execute() const{
     for(SimplexId j = 0; j < triangleNum; j++){
       int result1 = triangulation_->getEdgeTriangle(edgeId, j, triangleId);
       if(result1){
-        std::cout << "[TestStellar] edgeId " << edgeId << " Something wrong in getEdgeTriangle()! Error code: " << result1 << "\n";
+        std::cout << "[TestTopoCluster] edgeId " << edgeId << " Something wrong in getEdgeTriangle()! Error code: " << result1 << "\n";
       }
     }
   }
-  std::cout << "[TestStellar] Time usage for ET: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for ET: " << t.getElapsedTime() << " s.\n";
   
   /* test edge star relationship */
   t.reStart();
@@ -545,11 +543,11 @@ template <class dataType> int ttk::TestStellar::execute() const{
     for(SimplexId j = 0; j < cellNum; j++){
       int result1 = triangulation_->getEdgeStar(edgeId, j, cellId);
       if(result1){
-        std::cout << "[TestStellar] edgeId " << edgeId << " Something wrong in getEdgeStar()! Error code: " << result1 << "\n";
+        std::cout << "[TestTopoCluster] edgeId " << edgeId << " Something wrong in getEdgeStar()! Error code: " << result1 << "\n";
       }
     }
   }
-  std::cout << "[TestStellar] Time usage for ES: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for ES: " << t.getElapsedTime() << " s.\n";
 
   /* test triangle vertex relationship */
   t.reStart();
@@ -558,11 +556,11 @@ template <class dataType> int ttk::TestStellar::execute() const{
     for(SimplexId j = 0; j < 3; j++){
       int result1 = triangulation_->getTriangleVertex(triangleId, j, vertexId);
       if(result1){
-        std::cout << "[TestStellar] triangleId " << triangleId << " Something wrong in getTriangleVertex()! Error code: " << result1 << "\n";
+        std::cout << "[TestTopoCluster] triangleId " << triangleId << " Something wrong in getTriangleVertex()! Error code: " << result1 << "\n";
       }
     }
   }
-  std::cout << "[TestStellar] Time usage for TV: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for TV: " << t.getElapsedTime() << " s.\n";
 
   /* test triangle edge relationship */
   t.reStart();
@@ -571,11 +569,11 @@ template <class dataType> int ttk::TestStellar::execute() const{
     for(SimplexId j = 0; j < 3; j++){
       int result1 = triangulation_->getTriangleEdge(triangleId, j, edgeId);
       if(result1){
-        std::cout << "[TestStellar] triangleId " << triangleId << " Something wrong in getTriangleEdge()! Error code: " << result1 << "\n";
+        std::cout << "[TestTopoCluster] triangleId " << triangleId << " Something wrong in getTriangleEdge()! Error code: " << result1 << "\n";
       }
     }
   }
-  std::cout << "[TestStellar] Time usage for TE: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for TE: " << t.getElapsedTime() << " s.\n";
 
   /* test triangle star relationship */
   t.reStart();
@@ -585,11 +583,11 @@ template <class dataType> int ttk::TestStellar::execute() const{
     for(SimplexId j = 0; j < cellNum; j++){
       int result1 = triangulation_->getTriangleStar(triangleId, j, cellId);
       if(result1){
-        std::cout << "[TestStellar] triangleId " << triangleId << " Something wrong in getTriangleStar()! Error code: " << result1 << "\n";
+        std::cout << "[TestTopoCluster] triangleId " << triangleId << " Something wrong in getTriangleStar()! Error code: " << result1 << "\n";
       }
     }
   }
-  std::cout << "[TestStellar] Time usage for TS: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for TS: " << t.getElapsedTime() << " s.\n";
 
   /* test cell vertex relationship */
   t.reStart();
@@ -598,11 +596,11 @@ template <class dataType> int ttk::TestStellar::execute() const{
     for(SimplexId j = 0; j < verticesPerCell; j++){
       int result1 = triangulation_->getCellVertex(cellId, j, vertexId);
       if(result1){
-        std::cout << "[TestStellar] cellId " << cellId << " Something wrong in getCellVertex()! Error code: " << result1 << "\n";
+        std::cout << "[TestTopoCluster] cellId " << cellId << " Something wrong in getCellVertex()! Error code: " << result1 << "\n";
       }
     }
   }
-  std::cout << "[TestStellar] Time usage for CV: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for CV: " << t.getElapsedTime() << " s.\n";
 
   /* test cell edge relationship */
   t.reStart();
@@ -611,11 +609,11 @@ template <class dataType> int ttk::TestStellar::execute() const{
     for(SimplexId j = 0; j < edgesPerCell; j++){
       int result1 = triangulation_->getCellEdge(cellId, j, edgeId);
       if(result1){
-        std::cout << "[TestStellar] cellId " << cellId << " Something wrong in getCellEdge()! Error code: " << result1 << "\n";
+        std::cout << "[TestTopoCluster] cellId " << cellId << " Something wrong in getCellEdge()! Error code: " << result1 << "\n";
       }
     }
   }
-  std::cout << "[TestStellar] Time usage for CE: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for CE: " << t.getElapsedTime() << " s.\n";
 
   /* test cell triangle relationship */
   t.reStart();
@@ -624,11 +622,11 @@ template <class dataType> int ttk::TestStellar::execute() const{
     for(SimplexId j = 0; j < trianglesPerCell; j++){
       int result1 = triangulation_->getCellTriangle(cellId, j, triangleId);
       if(result1){
-        std::cout << "[TestStellar] cellId " << cellId << " Something wrong in getCellTriangle()! Error code: " << result1 << "\n";
+        std::cout << "[TestTopoCluster] cellId " << cellId << " Something wrong in getCellTriangle()! Error code: " << result1 << "\n";
       }
     }
   }
-  std::cout << "[TestStellar] Time usage for CT: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for CT: " << t.getElapsedTime() << " s.\n";
 
   // init the output -- to adapt
   for(SimplexId i = 0; i < vertexNumber; i++){
@@ -637,7 +635,7 @@ template <class dataType> int ttk::TestStellar::execute() const{
   
   {
     std::stringstream msg;
-    msg << "[TestStellar] Data-set (" << vertexNumber
+    msg << "[TestTopoCluster] Data-set (" << vertexNumber
       << " points) processed in "
       << tot.getElapsedTime() << " s. (" << threadNumber_
       << " thread(s))."

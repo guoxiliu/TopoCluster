@@ -53,7 +53,7 @@ int ttkPreprocessStellar::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *
   outputMesh->SetPoints(points);
 
   vtkPointData *pointData = outputMesh->GetPointData();
-  // pointData->AddArray(indices);
+  pointData->AddArray(indices);
 
 
 

@@ -3,13 +3,13 @@
 using namespace std;
 using namespace ttk;
 
-TestStellar::TestStellar(){
+TestTopoCluster::TestTopoCluster(){
 
   inputData_ = NULL;
   outputData_ = NULL;
   triangulation_ = NULL;
 }
 
-TestStellar::~TestStellar(){
+TestTopoCluster::~TestTopoCluster(){
   
 }

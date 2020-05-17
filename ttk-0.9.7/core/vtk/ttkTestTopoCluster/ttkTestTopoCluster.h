@@ -3,9 +3,9 @@
 /// \author Guoxi Liu <guoxil@g.clemson.edu>
 /// \date Jan. 2020.
 ///
-/// \brief TTK VTK-filter that wraps the testStellar processing package.
+/// \brief TTK VTK-filter that wraps the testTopoCluster processing package.
 ///
-/// VTK wrapping code for the @TestStellar package.
+/// VTK wrapping code for the @TestTopoCluster package.
 /// 
 /// \param Input Input scalar field (vtkDataSet)
 /// \param Output Output scalar field (vtkDataSet)
@@ -16,7 +16,7 @@
 /// See the related ParaView example state files for usage examples within a 
 /// VTK pipeline.
 ///
-/// \sa ttk::TestStellar
+/// \sa ttk::TestTopoCluster
 #pragma once
 
 // VTK includes -- to adapt
@@ -128,7 +128,7 @@ class ttkTestTopoCluster
       UseAllCores = true;
       ThreadNumber = 1;
       debugLevel_ = 3;
-      CacheSize = 100;
+      CacheSize = 10;
     }
     
     ~ttkTestTopoCluster(){};
@@ -140,5 +140,5 @@ class ttkTestTopoCluster
     int                   CacheSize;
     std::string           ScalarField;
     vtkDataArray          *outputScalarField_;
-    ttk::TestStellar      testStellar_;
+    ttk::TestTopoCluster      testTopoCluster_;
 };
