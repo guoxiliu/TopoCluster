@@ -51,24 +51,30 @@ namespace ttk{
           // build edges and triangles
           triangulation_->preprocessEdges();
           triangulation_->preprocessTriangles();
-          // boundary relationships
+          // boundary relations
           triangulation_->preprocessBoundaryVertices();
           triangulation_->preprocessBoundaryEdges();
           triangulation_->preprocessBoundaryTriangles();
-          // vertex related relationships
+          // vertex related relations
           triangulation_->preprocessVertexEdges();
           triangulation_->preprocessVertexStars();
           triangulation_->preprocessVertexNeighbors();
           triangulation_->preprocessVertexTriangles();
-          // edge related relationships
+          // edge related relations
           triangulation_->preprocessEdgeStars();
           triangulation_->preprocessEdgeTriangles();
-          // triangle related relationships
+          // triangle related relations
           triangulation_->preprocessTriangleEdges();
           triangulation_->preprocessTriangleStars();
-          // cell related relationships
+          // cell related relations
           triangulation_->preprocessCellEdges();
+          triangulation_->preprocessCellNeighbors();
           triangulation_->preprocessCellTriangles();
+          // links
+          triangulation_->preprocessVertexLinks();
+          triangulation_->preprocessEdgeLinks();
+          triangulation_->preprocessTriangleLinks();
+
           std::cout << "[TestTopoCluster] Time usage for preprocessing: " << t.getElapsedTime() << " s.\n";
         }
         
@@ -111,6 +117,143 @@ template <class dataType> int ttk::TestTopoCluster::execute() const{
 
 
   std::cout << "[TestTopoCluster] Dimension: " << triangulation_->getDimensionality() << std::endl;
+
+  // for(SimplexId vid = 0; vid < vertexNumber; vid++){
+  //   std::cout << vid << ": " << triangulation_->getVertexLinkNumber(vid) << std::endl;
+  // }
+  
+  // // VL relation
+  // if(triangulation_->getDimensionality() == 2){
+  //   for(SimplexId vid = 0; vid < vertexNumber; vid++){
+  //     int linkNum = triangulation_->getVertexLinkNumber(vid);
+  //     for(int i = 0; i < linkNum; i++){
+  //       SimplexId linkId;
+  //       int res = triangulation_->getVertexLink(vid, i, linkId);
+  //       if(res){
+  //         std::cout << "[TestTopoCluster] Cannot get vertex link for vertex id " << vid << ", error code: " << res << "\n";
+  //         return -4;
+  //       }
+  //       for(int j = 0; j < 2; j++){
+  //         SimplexId vertexId;
+  //         triangulation_->getEdgeVertex(linkId, j, vertexId);
+  //         if(vertexId == vid){
+  //           std::cout << "[TestTopoCluster] Find vertex " << vid << " in link " << linkId << "\n";
+  //           return -4;
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+  // else if(triangulation_->getDimensionality() == 3){
+  //   for(SimplexId vid = 0; vid < vertexNumber; vid++){
+  //     int linkNum = triangulation_->getVertexLinkNumber(vid);
+  //     for(int i = 0; i < linkNum; i++){
+  //       SimplexId linkId;
+  //       int res = triangulation_->getVertexLink(vid, i, linkId);
+  //       if(res){
+  //         std::cout << "[TestTopoCluster] Cannot get vertex link for vertex id " << vid << ", error code: " << res << "\n";
+  //         return -4;
+  //       }
+  //       for(int j = 0; j < 3; j++){
+  //         SimplexId vertexId;
+  //         triangulation_->getTriangleVertex(linkId, j, vertexId);
+  //         if(vertexId == vid){
+  //           std::cout << "[TestTopoCluster] Find vertex " << vid << " in link " << linkId << "\n";
+  //           return -4;
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+  
+  // // EL relation
+  // if(triangulation_->getDimensionality() == 2){
+  //   for(SimplexId eid = 0; eid < edgeNumber; eid++){
+  //     int linkNum = triangulation_->getEdgeLinkNumber(eid);
+  //     for(int i = 0; i < linkNum; i++){
+  //       SimplexId linkId;
+  //       int res = triangulation_->getEdgeLink(eid, i, linkId);
+  //       if(res){
+  //         std::cout << "[TestTopoCluster] Cannot get edge link for edge id " << eid << ", error code: " << res << "\n";
+  //         return -4;
+  //       }
+  //       for(int j = 0; j < 2; j++){
+  //         SimplexId vertexId;
+  //         triangulation_->getEdgeVertex(eid, j, vertexId);
+  //         if(vertexId == linkId){
+  //           std::cout << "[TestTopoCluster] Find vertex " << vertexId << " as link " << linkId << "\n";
+  //           return -4;
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+  // else if(triangulation_->getDimensionality() == 3){
+  //   for(SimplexId eid = 0; eid < edgeNumber; eid++){
+  //     int linkNum = triangulation_->getEdgeLinkNumber(eid);
+  //     for(int i = 0; i < linkNum; i++){
+  //       SimplexId linkId;
+  //       int res = triangulation_->getEdgeLink(eid, i, linkId);
+  //       if(res){
+  //         std::cout << "[TestTopoCluster] Cannot get edge link for edge id " << eid << ", error code: " << res << "\n";
+  //         return -4;
+  //       }
+  //       if(eid == linkId){
+  //         std::cout << "[TestTopoCluster] Find edge " << eid << " as link " << linkId << "\n";
+  //         break;
+  //       }
+  //     }
+  //   }
+  // }
+
+  // // TL relation
+  // if(triangulation_->getDimensionality() == 3){ 
+  //   for(SimplexId tid = 0; tid < triangleNumber; tid++){
+  //     int linkNum = triangulation_->getTriangleLinkNumber(tid);
+  //     for(int i = 0; i < linkNum; i++){
+  //       SimplexId linkId;
+  //       int res = triangulation_->getTriangleLink(tid, i, linkId);
+  //       if(res){
+  //         std::cout << "[TestTopoCluster] Cannot get triangle link for triangle id " << tid << ", error code: " << res << "\n";
+  //         return -4;
+  //       }
+  //       for(int j = 0; j < 3; j++){
+  //         SimplexId vertexId;
+  //         triangulation_->getTriangleVertex(tid, j, vertexId);
+  //         if(vertexId == linkId){
+  //           std::cout << "[TestTopoCluster] Find vertex " << vertexId << " as link " << linkId << "\n";
+  //           break;
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+
+
+  // // Vertex neighbor relation
+  // const std::vector<std::vector<SimplexId>> *vertexNeighbors = triangulation_->getVertexNeighbors();
+  // for(SimplexId vid = 0; vid < vertexNumber; vid++){
+  //   for(SimplexId neighbor : (*vertexNeighbors)[vid]){
+  //     auto it = find((*vertexNeighbors)[neighbor].begin(), (*vertexNeighbors)[neighbor].end(), vid);
+  //     if(it == (*vertexNeighbors)[neighbor].end()){
+  //       std::cout << "[TestTopoCluster] Cannot find " << vid << " in " << neighbor << "'s neighbors.\n";
+  //       break;
+  //     }
+  //   }
+  // }
+
+  // Cell neighbor relation
+  // const std::vector<std::vector<SimplexId>> *cellNeighbors = triangulation_->getCellNeighbors();
+  // for(SimplexId cid = 0; cid < cellNumber; cid++){
+  //   std::cout << "cell " << cid << ": [ ";
+  //   for(SimplexId neighbor : (*cellNeighbors)[cid]){
+  //     std::cout << neighbor << " ";
+  //   }
+  //   std::cout << "]\n";
+  // }
+
+
+  // // Boundary relations
   // t.reStart();
   // int boundaryVertexNum = 0, boundaryEdgeNum = 0, boundaryTriangleNum = 0;
   // for(SimplexId vid = 0; vid < vertexNumber; vid++){
@@ -135,19 +278,8 @@ template <class dataType> int ttk::TestTopoCluster::execute() const{
   // std::cout << "[TestTopoCluster] Boundary triangle number: " << boundaryTriangleNum << std::endl;
   // std::cout << "[TestTopoCluster] Time usage for getting boundaries: " << t.getElapsedTime() << " s.\n";
 
-  // const std::vector<std::vector<SimplexId>> *vertexNeighbors = triangulation_->getVertexNeighbors();
-  // for(SimplexId vid = 0; vid < vertexNumber; vid++){
-  //   for(SimplexId neighbor : (*vertexNeighbors)[vid]){
-  //     auto it = find((*vertexNeighbors)[neighbor].begin(), (*vertexNeighbors)[neighbor].end(), vid);
-  //     if(it == (*vertexNeighbors)[neighbor].end()){
-  //       std::cout << "[TestTopoCluster] Cannot find " << vid << " in " << neighbor << "'s neighbors.\n";
-  //       break;
-  //     }
-  //   }
-  // }
-  
 
-  // // // VE relation
+  // // VE relation
   // for(SimplexId vid = 0; vid < vertexNumber; vid++){
   //   int edgeNum = triangulation_->getVertexEdgeNumber(vid);
   //   for(int i = 0; i < edgeNum; i++){
@@ -174,7 +306,7 @@ template <class dataType> int ttk::TestTopoCluster::execute() const{
   // } 
 
 
-  // // // VF relation
+  // // VF relation
   // for(SimplexId vid = 0; vid < vertexNumber; vid++){
   //   int triangleNum = triangulation_->getVertexTriangleNumber(vid);
   //   for(int i = 0; i < triangleNum; i++){
