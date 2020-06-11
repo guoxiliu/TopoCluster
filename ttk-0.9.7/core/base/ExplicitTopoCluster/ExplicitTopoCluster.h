@@ -130,55 +130,6 @@ namespace ttk{
       ~ExplicitTopoCluster();
 
       /**
-       * Set up cells from the input.
-       */ 
-      int setInputCells(const SimplexId &cellNumber,
-                            const LongSimplexId *cellArray){
-
-        if(cellNumber_)
-          clear();
-
-        cellNumber_ = cellNumber;
-        cellArray_ = cellArray;
-
-        if((!cellArray_)||(!cellNumber_))
-          return -1;
-        
-        // initialize the array of cell intervals
-        cellIntervals_.resize(nodeNumber_+1);
-        externalCells_.resize(nodeNumber_+1);
-        cellIntervals_[0] = -1;
-
-        SimplexId nodeNum = 1, cid = 0;
-        vector<SimplexId> cell;
-
-        while(nodeNum <= nodeNumber_){
-          SimplexId startPos = (cellArray[0]+1)*cid+1;
-          cell = vector<SimplexId>(cellArray+startPos, cellArray+startPos+cellArray[0]);
-
-          if(cell[0] > vertexIntervals_[nodeNum] || cid >= cellNumber){
-            cellIntervals_[nodeNum++] = cid - 1;
-            continue;
-          }
-          // create external cell list 
-          for(size_t i = 1; i < cell.size(); i++){
-            if(cell[i] > vertexIntervals_[nodeNum]){
-            SimplexId nid = vertexIndices_[cell[i]]+1;
-              if(externalCells_[nid].empty()){
-                externalCells_[nid].push_back(cid);
-              }else if(externalCells_[nid].back() != cid){
-                externalCells_[nid].push_back(cid);
-              }
-            }
-          }
-          if(cid < cellNumber)
-            cid++;
-        }
-
-        return 0;
-      }
-
-      /**
        * Set up vertices from the input.
        */ 
       int setInputPoints(const SimplexId &pointNumber, const void *pointSet, 
@@ -192,25 +143,149 @@ namespace ttk{
         vertexIndices_ = indexArray;
         doublePrecision_ = doublePrecision;
 
-        // initialize the array of vertex intervals
-        // add a dummy node at the beginning
-        vertexIntervals_.push_back(-1);
-
-        SimplexId vid = 1;
-        for(; vid < pointNumber; vid++){
-          if(indexArray[vid] != indexArray[vid-1]){
-            vertexIntervals_.push_back(vid-1);
-          }
-        }
-        vertexIntervals_.push_back(vid-1);
-        nodeNumber_ = vertexIntervals_.size()-1;
-        initCache();
-
-        cout << "[ExplicitTopoCluster] Node num: " << nodeNumber_ << endl;
-
         return 0;
       }
 
+      /**
+       * Set up cells from the input.
+       */ 
+      int setInputCells(const SimplexId &cellNumber,
+        const LongSimplexId *cellArray){
+
+        if(cellNumber_)
+          clear();
+
+        if((!cellArray)||(!cellNumber))
+          return -1;
+        
+        cellNumber_ = cellNumber;
+        cellArray_ = cellArray;
+
+        vector<SimplexId> vertexMap(vertexNumber_);
+        reorderVertices(vertexMap);
+        reorderCells(vertexMap);
+
+        return 0;
+      }
+      
+      /**
+       * Reorder the input vertices.
+       */
+      int reorderVertices(vector<SimplexId>& vertexMap){
+        // get the number of nodes (the max value in the array)
+        for(SimplexId vid = 0; vid < vertexNumber_; vid++){
+          if(vertexIndices_[vid] > nodeNumber_){
+            nodeNumber_ = vertexIndices_[vid];
+          }
+        }
+        nodeNumber_++;  // since the index starts from 0
+        vector<vector<SimplexId>> nodeVertices(nodeNumber_);
+        for(SimplexId vid = 0; vid < vertexNumber_; vid++){
+          nodeVertices[vertexIndices_[vid]].push_back(vid);
+        }
+
+        // update the vertex intervals
+        vertexIntervals_.resize(nodeNumber_+1);
+        vertexIntervals_[0] = -1;
+        SimplexId vertexCount = 0;
+        for(SimplexId nid = 0; nid < nodeNumber_; nid++){
+          for(SimplexId vid : nodeVertices[nid]){
+            vertexMap[vid] = vertexCount++;
+          }
+          vertexIntervals_[nid+1] = vertexCount - 1;
+        }
+
+        // rearange the vertex coordinate values
+        if(doublePrecision_){
+          double *newPointSet = new double[3*vertexNumber_];
+          for(SimplexId vid = 0; vid < vertexNumber_; vid++){
+            for(int j = 0; j < 3; j++){
+              newPointSet[3*vertexMap[vid]+j] = ((double*) pointSet_)[3*vid+j];
+            }
+          }
+          for(SimplexId vid = 0; vid < vertexNumber_; vid++){
+            for(int j = 0; j < 3; j++){
+              ((double*) pointSet_)[3*vid+j] = newPointSet[3*vid+j];
+            }
+          }
+          delete[] newPointSet;
+        }
+        else{
+          float *newPointSet = new float[3*vertexNumber_];
+          for(SimplexId vid = 0; vid < vertexNumber_; vid++){
+            for(int j = 0; j < 3; j++){
+              newPointSet[3*vertexMap[vid]+j] = ((float*) pointSet_)[3*vid+j];
+            }
+          }
+          for(SimplexId vid = 0; vid < vertexNumber_; vid++){
+            for(int j = 0; j < 3; j++){
+              ((float*) pointSet_)[3*vid+j] = newPointSet[3*vid+j];
+            }
+          }
+          delete[] newPointSet;
+        }
+
+        // change the vertex indices
+        for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
+          for(SimplexId vid = vertexIntervals_[nid-1]+1; vid <= vertexIntervals_[nid]; vid++){
+            ((int*)vertexIndices_)[vid] = nid;
+          }
+        }
+
+        return 0;
+      }
+      
+      /**
+       * Reorder the input cells.
+       */
+      int reorderCells(const vector<SimplexId>& vertexMap){
+        // change the indices in cell array
+        SimplexId cellCount = 0, verticesPerCell = cellArray_[0];
+        vector<vector<SimplexId>> nodeCells(nodeNumber_+1);
+        ttk::LongSimplexId *cellArr = ((ttk::LongSimplexId *)cellArray_);
+
+        for(SimplexId cid = 0; cid < cellNumber_; cid++){
+          SimplexId cellId = (verticesPerCell+1) * cid;
+          for(int j = 1; j <= verticesPerCell; j++){
+            cellArr[cellId+j] = vertexMap[cellArr[cellId+j]];
+          }
+          sort(cellArr+cellId+1, cellArr+cellId+1+verticesPerCell);
+          nodeCells[vertexIndices_[cellArr[cellId+1]]].push_back(cid);
+        }
+        
+        // rearange the cell array
+        cellIntervals_.resize(nodeNumber_+1);
+        externalCells_.resize(nodeNumber_+1);
+        cellIntervals_[0] = -1;
+        ttk::LongSimplexId *newCellArray = new ttk::LongSimplexId[(verticesPerCell+1)*cellNumber_];
+        for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
+          for(SimplexId cid : nodeCells[nid]){
+            SimplexId cellId = (verticesPerCell+1)*cid;
+            SimplexId newCellId = (verticesPerCell+1)*cellCount;
+            newCellArray[newCellId] = verticesPerCell;
+            for(int j = 1; j <= verticesPerCell; j++){
+              newCellArray[newCellId+j] = cellArray_[cellId+j];
+              if(newCellArray[newCellId+j] > vertexIntervals_[nid]){
+                SimplexId nodeNum = vertexIndices_[newCellArray[newCellId+j]];
+                if(externalCells_[nodeNum].empty() || externalCells_[nodeNum].back() != cid){
+                  externalCells_[nodeNum].push_back(cid);
+                }
+              }
+            }
+            cellCount++;
+          }
+          cellIntervals_[nid] = cellCount - 1;
+        }
+
+        // copy the new cell array back to original one
+        for(SimplexId i = 0; i < (verticesPerCell+1)*cellNumber_; i++){
+          ((ttk::LongSimplexId*)cellArray_)[i] = newCellArray[i];
+        }
+        delete[] newCellArray;
+
+        return 0;
+      }
+      
       int getCellEdge(const SimplexId &cellId, 
         const int &localEdgeId, SimplexId &edgeId) const{
 
@@ -221,7 +296,7 @@ namespace ttk{
             return -2;
         #endif
 
-        SimplexId nid = vertexIndices_[cellArray_[(cellArray_[0]+1)*cellId+1]] + 1;
+        SimplexId nid = vertexIndices_[cellArray_[(cellArray_[0]+1)*cellId+1]];
         SimplexId localCellId = cellId - cellIntervals_[nid-1] - 1;
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->cellEdges_ == nullptr){
@@ -268,7 +343,7 @@ namespace ttk{
             return -2;
         #endif
 
-        SimplexId nid = vertexIndices_[cellArray_[(cellArray_[0]+1)*cellId+1]] + 1;
+        SimplexId nid = vertexIndices_[cellArray_[(cellArray_[0]+1)*cellId+1]];
         SimplexId localCellId = cellId - cellIntervals_[nid-1] - 1;
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->cellNeighbors_ == nullptr){
@@ -289,7 +364,7 @@ namespace ttk{
             return -1;
         #endif
 
-        SimplexId nid = vertexIndices_[cellArray_[(cellArray_[0]+1)*cellId+1]] + 1;
+        SimplexId nid = vertexIndices_[cellArray_[(cellArray_[0]+1)*cellId+1]];
         SimplexId localCellId = cellId - cellIntervals_[nid-1] - 1;
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->cellNeighbors_ == nullptr){
@@ -322,7 +397,7 @@ namespace ttk{
           return -2;
         #endif
 
-        SimplexId nid = vertexIndices_[cellArray_[(cellArray_[0]+1)*cellId+1]] + 1;
+        SimplexId nid = vertexIndices_[cellArray_[(cellArray_[0]+1)*cellId+1]];
         SimplexId localCellId = cellId-cellIntervals_[nid-1]-1;
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->cellTriangles_ == nullptr){
@@ -815,7 +890,7 @@ namespace ttk{
             return -2;
         #endif
         
-        SimplexId nid = vertexIndices_[vertexId]+1;
+        SimplexId nid = vertexIndices_[vertexId];
         SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->vertexEdges_ == nullptr){
@@ -835,7 +910,7 @@ namespace ttk{
             return -1;
         #endif
 
-        SimplexId nid = vertexIndices_[vertexId]+1;
+        SimplexId nid = vertexIndices_[vertexId];
         SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->vertexEdges_ == nullptr){
@@ -869,7 +944,7 @@ namespace ttk{
             return -2;
         #endif
 
-        SimplexId nid = vertexIndices_[vertexId] + 1;
+        SimplexId nid = vertexIndices_[vertexId];
         SimplexId localVertexId = vertexId-vertexIntervals_[nid-1]-1;
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->vertexLinks_ == nullptr){
@@ -890,7 +965,7 @@ namespace ttk{
             return -1;
         #endif
 
-        SimplexId nid = vertexIndices_[vertexId] + 1;
+        SimplexId nid = vertexIndices_[vertexId];
         SimplexId localVertexId = vertexId-vertexIntervals_[nid-1]-1;
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->vertexLinks_ == nullptr){
@@ -922,7 +997,7 @@ namespace ttk{
             return -2;
         #endif
         
-        SimplexId nid = vertexIndices_[vertexId]+1;
+        SimplexId nid = vertexIndices_[vertexId];
         SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->vertexNeighbors_ == nullptr){
@@ -942,7 +1017,7 @@ namespace ttk{
             return -1;
         #endif
 
-        SimplexId nid = vertexIndices_[vertexId]+1;
+        SimplexId nid = vertexIndices_[vertexId];
         SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->vertexNeighbors_ == nullptr){
@@ -997,7 +1072,7 @@ namespace ttk{
             return -2;
         #endif
 
-        SimplexId nid = vertexIndices_[vertexId]+1;
+        SimplexId nid = vertexIndices_[vertexId];
         SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->vertexStars_ == nullptr){
@@ -1017,7 +1092,7 @@ namespace ttk{
             return -1;
         #endif
 
-        SimplexId nid = vertexIndices_[vertexId]+1;
+        SimplexId nid = vertexIndices_[vertexId];
         SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->vertexStars_ == nullptr){
@@ -1050,7 +1125,7 @@ namespace ttk{
             return -2;
         #endif
 
-        SimplexId nid = vertexIndices_[vertexId]+1;
+        SimplexId nid = vertexIndices_[vertexId];
         SimplexId localVertexId = vertexId-vertexIntervals_[nid-1]-1;
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->vertexTriangles_ == nullptr){
@@ -1071,7 +1146,7 @@ namespace ttk{
             return -1;
         #endif
 
-        SimplexId nid = vertexIndices_[vertexId]+1;
+        SimplexId nid = vertexIndices_[vertexId];
         ExpandedNode *exnode = searchCache(nid);
         if(exnode->vertexTriangles_ == nullptr){
           exnode->vertexTriangles_ = new vector<vector<SimplexId>>();
@@ -1206,7 +1281,7 @@ namespace ttk{
           if((vertexId < 0)||(vertexId >= vertexNumber_))
             return false;
         #endif
-        SimplexId nid = vertexIndices_[vertexId]+1;
+        SimplexId nid = vertexIndices_[vertexId];
         SimplexId localVertexId = vertexId - vertexIntervals_[nid-1] - 1;
         ExpandedNode *exnode = searchCache(nid);
         getBoundaryCells(exnode, 0);
@@ -1287,9 +1362,6 @@ namespace ttk{
           edgeIntervals_[0] = -1;
           internalEdgeMaps_.resize(nodeNumber_+1);
           vector<SimplexId> edgeCount(nodeNumber_+1);
-          #ifdef TTK_ENABLE_OPENMP
-          #pragma omp parallel for num_threads(threadNumber_)
-          #endif
           for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
             edgeCount[nid] = buildInternalEdgeMap(nid, &internalEdgeMaps_[nid]);
           }
@@ -1360,9 +1432,6 @@ namespace ttk{
           triangleIntervals_[0] = -1;
           internalTriangleMaps_.resize(nodeNumber_+1);
           vector<SimplexId> triangleCount(nodeNumber_+1);
-          #ifdef TTK_ENABLE_OPENMP
-          #pragma omp parallel for num_threads(threadNumber_)
-          #endif
           for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
             triangleCount[nid] = buildInternalTriangleMap(nid, &internalTriangleMaps_[nid]);
           }
@@ -1615,7 +1684,7 @@ namespace ttk{
               
               // check if the edge is an external edge
               if(edgeIds.first <= vertexIntervals_[nodeId-1] && edgeIds.second > vertexIntervals_[nodeId-1] && edgeIds.second <= vertexIntervals_[nodeId]){
-                SimplexId nodeNum = vertexIndices_[edgeIds.first]+1;
+                SimplexId nodeNum = vertexIndices_[edgeIds.first];
                 (*externalEdgeMap)[edgeIds] = internalEdgeMaps_[nodeNum].at(edgeIds) + edgeIntervals_[nodeNum-1];
               }
             }
@@ -1740,11 +1809,11 @@ namespace ttk{
                   triangleIds[2] = cellArray_[cellId + l + 1];
 
                   if(triangleIds[1] > vertexIntervals_[nodeId-1] && triangleIds[1] <= vertexIntervals_[nodeId]){
-                    SimplexId nodeNum = vertexIndices_[triangleIds[0]]+1;
+                    SimplexId nodeNum = vertexIndices_[triangleIds[0]];
                     (*externalTriangleMap)[triangleIds] = internalTriangleMaps_[nodeNum].at(triangleIds) + triangleIntervals_[nodeNum-1];
                   }
                   else if(triangleIds[2] > vertexIntervals_[nodeId-1] && triangleIds[2] <= vertexIntervals_[nodeId]){
-                    SimplexId nodeNum = vertexIndices_[triangleIds[0]]+1;
+                    SimplexId nodeNum = vertexIndices_[triangleIds[0]];
                     (*externalTriangleMap)[triangleIds] = internalTriangleMaps_[nodeNum].at(triangleIds) + triangleIntervals_[nodeNum-1];
                   }
                 }
@@ -1785,7 +1854,7 @@ namespace ttk{
                 (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][cnt++] = internalEdgeMaps_[nodePtr->nid].at(edgePair) + edgeIntervals_[nodePtr->nid-1];
               }
               else{
-                SimplexId nodeNum = vertexIndices_[edgePair.first]+1;
+                SimplexId nodeNum = vertexIndices_[edgePair.first];
                 (*(nodePtr->cellEdges_))[i-cellIntervals_[nodePtr->nid-1]-1][cnt++] = internalEdgeMaps_[nodeNum].at(edgePair) + edgeIntervals_[nodeNum-1];
               }
             }
@@ -1821,7 +1890,7 @@ namespace ttk{
           SimplexId cellId = (cellArray_[0] + 1) * cid;
           for(SimplexId j = 1; j < cellArray_[0]; j++){
             if(cellArray_[cellId+j+1] > vertexIntervals_[nodePtr->nid]){
-              SimplexId nodeId = vertexIndices_[cellArray_[cellId+j+1]] + 1;
+              SimplexId nodeId = vertexIndices_[cellArray_[cellId+j+1]];
               if(nodeMaps.find(nodeId) == nodeMaps.end()){
                 ExpandedNode *newNode = new ExpandedNode(nodeId);
                 newNode->vertexStars_ = new vector<vector<SimplexId>>();
@@ -1847,14 +1916,14 @@ namespace ttk{
                 star0 = (*(nodePtr->vertexStars_))[v0-vertexIntervals_[nodePtr->nid-1]-1];
               }
               else{
-                SimplexId nid = vertexIndices_[v0] + 1;
+                SimplexId nid = vertexIndices_[v0];
                 star0 = (*(nodeMaps[nid]->vertexStars_))[v0-vertexIntervals_[nid-1]-1];
               }
               if(v1 <= vertexIntervals_[nodePtr->nid]){
                 star1 = (*(nodePtr->vertexStars_))[v1-vertexIntervals_[nodePtr->nid-1]-1];
               }
               else{
-                SimplexId nid = vertexIndices_[v1] + 1;
+                SimplexId nid = vertexIndices_[v1];
                 star1 = (*(nodeMaps[nid]->vertexStars_))[v1-vertexIntervals_[nid-1]-1];
               }
               
@@ -1920,21 +1989,21 @@ namespace ttk{
                 star0 = (*(nodePtr->vertexStars_))[v0-vertexIntervals_[nodePtr->nid-1]-1];
               }
               else{
-                SimplexId nid = vertexIndices_[v0] + 1;
+                SimplexId nid = vertexIndices_[v0];
                 star0 = (*(nodeMaps[nid]->vertexStars_))[v0-vertexIntervals_[nid-1]-1];
               }
               if(v1 <= vertexIntervals_[nodePtr->nid]){
                 star1 = (*(nodePtr->vertexStars_))[v1-vertexIntervals_[nodePtr->nid-1]-1];
               }
               else{
-                SimplexId nid = vertexIndices_[v1] + 1;
+                SimplexId nid = vertexIndices_[v1];
                 star1 = (*(nodeMaps[nid]->vertexStars_))[v1-vertexIntervals_[nid-1]-1];
               }
               if(v2 <= vertexIntervals_[nodePtr->nid]){
                 star2 = (*(nodePtr->vertexStars_))[v2-vertexIntervals_[nodePtr->nid-1]-1];
               }
               else{
-                SimplexId nid = vertexIndices_[v2] + 1;
+                SimplexId nid = vertexIndices_[v2];
                 star2 = (*(nodeMaps[nid]->vertexStars_))[v2-vertexIntervals_[nid-1]-1];
               }
               
@@ -2042,7 +2111,7 @@ namespace ttk{
             (*(nodePtr->cellTriangles_))[i-cellIntervals_[nodePtr->nid-1]-1].back() = internalTriangleMaps_[nodePtr->nid].at(triangleVec) + triangleIntervals_[nodePtr->nid-1];
           }
           else{
-            SimplexId nodeNum = vertexIndices_[triangleVec[0]]+1;
+            SimplexId nodeNum = vertexIndices_[triangleVec[0]];
             (*(nodePtr->cellTriangles_))[i-cellIntervals_[nodePtr->nid-1]-1].back() = internalTriangleMaps_[nodeNum].at(triangleVec) + triangleIntervals_[nodeNum-1];
           }
         }
@@ -2137,7 +2206,7 @@ namespace ttk{
                       }
                     }
                   }
-                  SimplexId nodeId = vertexIndices_[otherEdge.first]+1;
+                  SimplexId nodeId = vertexIndices_[otherEdge.first];
                   (*(nodePtr->edgeLinks_))[internalEdgeMaps_[nodePtr->nid].at(edgeIds)-1].push_back(internalEdgeMaps_[nodeId].at(otherEdge));
                 }
               }
@@ -2269,7 +2338,7 @@ namespace ttk{
           if(edgePair.first > vertexIntervals_[nodePtr->nid-1] && edgePair.first <= vertexIntervals_[nodePtr->nid]){
             (*(nodePtr->triangleEdges_))[iter->second-1][2] = internalEdgeMaps_[nodePtr->nid].at(edgePair) + edgeIntervals_[nodePtr->nid-1];
           }else{
-            SimplexId nodeNum = vertexIndices_[edgePair.first]+1;
+            SimplexId nodeNum = vertexIndices_[edgePair.first];
             (*(nodePtr->triangleEdges_))[iter->second-1][2] = internalEdgeMaps_[nodeNum].at(edgePair) + edgeIntervals_[nodeNum-1];
           }
         }
@@ -2424,7 +2493,7 @@ namespace ttk{
 
             // the first vertex of the cell must be in the cluster
             pair_int edgePair(cellArray_[cellId+2], cellArray_[cellId+3]);
-            SimplexId nodeId = vertexIndices_[cellArray_[cellId+2]] + 1;
+            SimplexId nodeId = vertexIndices_[cellArray_[cellId+2]];
             (*(nodePtr->vertexLinks_))[cellArray_[cellId+1]-vertexIntervals_[nodePtr->nid-1]-1].push_back(
               internalEdgeMaps_[nodeId].at(edgePair) + edgeIntervals_[nodeId-1]);
             if(cellArray_[cellId+2] <= vertexIntervals_[nodePtr->nid]){
@@ -2443,7 +2512,7 @@ namespace ttk{
           for(SimplexId cid : externalCells_[nodePtr->nid]){
             SimplexId cellId = 4 * cid;
             pair_int edgePair(cellArray_[cellId+1], cellArray_[cellId+3]);
-            SimplexId nodeId = vertexIndices_[edgePair.first] + 1;
+            SimplexId nodeId = vertexIndices_[edgePair.first];
             if(cellArray_[cellId+2] > vertexIntervals_[nodePtr->nid-1] && cellArray_[cellId+2] <= vertexIntervals_[nodePtr->nid]){
               (*(nodePtr->vertexLinks_))[cellArray_[cellId+2]-vertexIntervals_[nodePtr->nid-1]-1].push_back(
                 internalEdgeMaps_[nodeId].at(edgePair)+edgeIntervals_[nodeId-1]);
@@ -2464,7 +2533,7 @@ namespace ttk{
             triangleVec[0] = cellArray_[cellId+2];
             triangleVec[1] = cellArray_[cellId+3];
             triangleVec[2] = cellArray_[cellId+4];
-            SimplexId nodeId = vertexIndices_[cellArray_[cellId+2]] + 1;
+            SimplexId nodeId = vertexIndices_[cellArray_[cellId+2]];
             (*(nodePtr->vertexLinks_))[cellArray_[cellId+1]-vertexIntervals_[nodePtr->nid-1]-1].push_back(
               internalTriangleMaps_[nodeId].at(triangleVec) + triangleIntervals_[nodeId-1]);
             // v2: (v1, v3, v4)
@@ -2495,7 +2564,7 @@ namespace ttk{
             triangleVec[0] = cellArray_[cellId+1];
             triangleVec[1] = cellArray_[cellId+3];
             triangleVec[2] = cellArray_[cellId+4];
-            SimplexId nodeId = vertexIndices_[triangleVec[0]] + 1;
+            SimplexId nodeId = vertexIndices_[triangleVec[0]];
             if(cellArray_[cellId+2] > vertexIntervals_[nodePtr->nid-1] && cellArray_[cellId+2] <= vertexIntervals_[nodePtr->nid]){
               (*(nodePtr->vertexLinks_))[cellArray_[cellId+2]-vertexIntervals_[nodePtr->nid-1]-1].push_back(
                 internalTriangleMaps_[nodeId].at(triangleVec) + triangleIntervals_[nodeId-1]);
@@ -2666,7 +2735,7 @@ namespace ttk{
             // external edges
             boost::unordered_map<SimplexId, ExpandedNode*> nodeMaps;
             for(auto iter = nodePtr->externalEdgeMap_->begin(); iter != nodePtr->externalEdgeMap_->end(); iter++){
-              SimplexId nodeId = vertexIndices_[iter->first.first]+1;
+              SimplexId nodeId = vertexIndices_[iter->first.first];
               if(nodeMaps.find(nodeId) == nodeMaps.end()){
                 nodeMaps[nodeId] = new ExpandedNode(nodeId);
                 getBoundaryCells(nodeMaps[nodeId]);
@@ -2721,7 +2790,7 @@ namespace ttk{
             // external triangles
             boost::unordered_map<SimplexId, ExpandedNode*> nodeMaps;
             for(auto iter = nodePtr->externalTriangleMap_->begin(); iter != nodePtr->externalTriangleMap_->end(); iter++){
-              SimplexId nodeId = vertexIndices_[iter->first[0]]+1;
+              SimplexId nodeId = vertexIndices_[iter->first[0]];
               if(nodeMaps.find(nodeId) == nodeMaps.end()){
                 nodeMaps[nodeId] = new ExpandedNode(nodeId);
                 getBoundaryCells(nodeMaps[nodeId]);
@@ -2761,7 +2830,7 @@ namespace ttk{
             // external triangles
             boost::unordered_map<SimplexId, ExpandedNode*> nodeMaps;
             for(auto iter = nodePtr->externalTriangleMap_->begin(); iter != nodePtr->externalTriangleMap_->end(); iter++){
-              SimplexId nodeId = vertexIndices_[iter->first[0]]+1;
+              SimplexId nodeId = vertexIndices_[iter->first[0]];
               if(nodeMaps.find(nodeId) == nodeMaps.end()){
                 nodeMaps[nodeId] = new ExpandedNode(nodeId);
                 getBoundaryCells(nodeMaps[nodeId]);
