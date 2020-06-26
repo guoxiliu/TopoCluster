@@ -1506,13 +1506,6 @@ namespace ttk{
             return -1;
         #endif
         
-        vertexStarList_.resize(vertexNumber_);
-        for(SimplexId i = 0; i < cellNumber_; i++){
-          for(SimplexId j = 0; j < cellArray_[0];j++){
-            vertexStarList_[cellArray_[(cellArray_[0] + 1)*i + 1 + j]].push_back(i);
-          }
-        }
-
         hasPreprocessedVertexStars_ = true;
         return 0;
       }
