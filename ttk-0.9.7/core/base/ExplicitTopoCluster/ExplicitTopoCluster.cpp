@@ -5,7 +5,13 @@ using namespace std;
 using namespace ttk;
 
 ExplicitTopoCluster::ExplicitTopoCluster(){
-    clear();
+  clear();
+  caches_.resize(1);
+  cacheMaps_.resize(1);
+  #ifdef TTK_ENABLE_OPENMP
+  caches_.resize(threadNumber_);
+  cacheMaps_.resize(threadNumber_);
+  #endif
 }
 
 ExplicitTopoCluster::~ExplicitTopoCluster(){

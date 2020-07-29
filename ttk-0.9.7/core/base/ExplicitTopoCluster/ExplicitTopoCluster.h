@@ -1362,6 +1362,9 @@ namespace ttk{
           edgeIntervals_[0] = -1;
           internalEdgeMaps_.resize(nodeNumber_+1);
           vector<SimplexId> edgeCount(nodeNumber_+1);
+          #ifdef TTK_ENABLE_OPENMP
+          #pragma omp parallel for num_threads(threadNumber_)
+          #endif
           for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
             edgeCount[nid] = buildInternalEdgeMap(nid, &internalEdgeMaps_[nid]);
           }
@@ -1432,6 +1435,9 @@ namespace ttk{
           triangleIntervals_[0] = -1;
           internalTriangleMaps_.resize(nodeNumber_+1);
           vector<SimplexId> triangleCount(nodeNumber_+1);
+          #ifdef TTK_ENABLE_OPENMP
+          #pragma omp parallel for num_threads(threadNumber_)
+          #endif
           for(SimplexId nid = 1; nid <= nodeNumber_; nid++){
             triangleCount[nid] = buildInternalTriangleMap(nid, &internalTriangleMaps_[nid]);
           }
@@ -1522,8 +1528,12 @@ namespace ttk{
        */
       void initCache(const size_t size=10){
         cacheSize_ = size;
-        cache_.clear();
-        cacheMap_.clear();
+        ThreadId threadId = 0;
+        #ifdef TTK_ENABLE_OPENMP
+        threadId = omp_get_thread_num();
+        #endif
+        caches_[threadId].clear();
+        cacheMaps_[threadId].clear();
       }
 
     protected:
@@ -1552,19 +1562,24 @@ namespace ttk{
        * Search the node in the cache.
        */
       ExpandedNode* searchCache(const SimplexId &nodeId) const{
+        ThreadId threadId = 0;
+        #ifdef TTK_ENABLE_OPENMP
+        threadId = omp_get_thread_num();
+        #endif
+
         // cannot find the expanded node in the cache
-        if(cacheMap_.find(nodeId) == cacheMap_.end()){
+        if(cacheMaps_[threadId].find(nodeId) == cacheMaps_[threadId].end()){
           // missCount_++;
-          if(cache_.size() >= cacheSize_){
-            cacheMap_.erase(cache_.back()->nid);
-            delete cache_.back();
-            cache_.pop_back();
+          if(caches_[threadId].size() >= cacheSize_){
+            cacheMaps_[threadId].erase(caches_[threadId].back()->nid);
+            delete caches_[threadId].back();
+            caches_[threadId].pop_back();
           }
-          cache_.push_front(new ExpandedNode(nodeId));
-          cacheMap_[nodeId] = cache_.begin();
-          return cache_.front();
+          caches_[threadId].push_front(new ExpandedNode(nodeId));
+          cacheMaps_[threadId][nodeId] = caches_[threadId].begin();
+          return caches_[threadId].front();
         }
-        return (*cacheMap_[nodeId]);
+        return (*cacheMaps_[threadId][nodeId]);
       }
 
       /** 
@@ -2870,8 +2885,8 @@ namespace ttk{
 
       // Cache system
       size_t cacheSize_;
-      mutable list<ExpandedNode*> cache_;
-      mutable boost::unordered_map<SimplexId, list<ExpandedNode*>::iterator> cacheMap_;
+      mutable vector<list<ExpandedNode*>> caches_;
+      mutable vector<boost::unordered_map<SimplexId, list<ExpandedNode*>::iterator>> cacheMaps_;
 
       friend class TestTopoCluster;
   };
