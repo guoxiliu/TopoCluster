@@ -14,22 +14,22 @@
 #pragma once
 
 // base code includes
-#include                  <algorithm>
-#include                  <list>
-#include                  <boost/unordered_map.hpp>
-#include                  <boost/unordered_set.hpp>
-#include                  <AbstractTriangulation.h>
-#include                  <boost/functional/hash.hpp>
+#include <list>
+#include <algorithm>
+#include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
+#include <AbstractTriangulation.h>
+#include <boost/functional/hash.hpp>
 
 #define EDGE_ID 1
 #define TRIANGLE_ID 2
 #define pair_int std::pair<ttk::SimplexId, ttk::SimplexId>
 
+
 using namespace std;
 namespace ttk{
 
-  class ExpandedNode
-  {
+  class ExpandedNode{
   private:
     /* components */
     SimplexId nid;
@@ -164,7 +164,7 @@ namespace ttk{
         vector<SimplexId> vertexMap(vertexNumber_);
         reorderVertices(vertexMap);
         reorderCells(vertexMap);
-
+        cout << "[ExplicitTopoCluster] Node number: " << nodeNumber_ << endl;
         return 0;
       }
       
@@ -1526,14 +1526,8 @@ namespace ttk{
       /**
        * Initialize the cache.
        */
-      void initCache(const size_t size=10){
+      void initCache(const size_t size=100){
         cacheSize_ = size;
-        ThreadId threadId = 0;
-        #ifdef TTK_ENABLE_OPENMP
-        threadId = omp_get_thread_num();
-        #endif
-        caches_[threadId].clear();
-        cacheMaps_[threadId].clear();
       }
 
     protected:
@@ -1559,7 +1553,31 @@ namespace ttk{
       }
 
       /**
-       * Search the node in the cache.
+       * Search the node in the FIFO cache.
+       */
+      // ExpandedNode* searchCache(const SimplexId &nodeId) const{
+      //   ThreadId threadId = 0;
+      //   #ifdef TTK_ENABLE_OPENMP
+      //   threadId = omp_get_thread_num();
+      //   #endif
+
+      //   // cannot find the expanded node in the cache
+      //   if(cacheMaps_[threadId].find(nodeId) == cacheMaps_[threadId].end()){
+      //     missCount_++;
+      //     if(caches_[threadId].size() >= cacheSize_){
+      //       cacheMaps_[threadId].erase(caches_[threadId].back()->nid);
+      //       delete caches_[threadId].back();
+      //       caches_[threadId].pop_back();
+      //     }
+      //     caches_[threadId].push_front(new ExpandedNode(nodeId));
+      //     cacheMaps_[threadId][nodeId] = caches_[threadId].begin();
+      //     return caches_[threadId].front();
+      //   }
+      //   return (*cacheMaps_[threadId][nodeId]);
+      // }
+
+      /**
+       * Search the node in the LRU cache.
        */
       ExpandedNode* searchCache(const SimplexId &nodeId) const{
         ThreadId threadId = 0;
@@ -1569,7 +1587,7 @@ namespace ttk{
 
         // cannot find the expanded node in the cache
         if(cacheMaps_[threadId].find(nodeId) == cacheMaps_[threadId].end()){
-          // missCount_++;
+          missCount_++;
           if(caches_[threadId].size() >= cacheSize_){
             cacheMaps_[threadId].erase(caches_[threadId].back()->nid);
             delete caches_[threadId].back();
@@ -1577,10 +1595,55 @@ namespace ttk{
           }
           caches_[threadId].push_front(new ExpandedNode(nodeId));
           cacheMaps_[threadId][nodeId] = caches_[threadId].begin();
-          return caches_[threadId].front();
         }
-        return (*cacheMaps_[threadId][nodeId]);
+        // find the expanded node in the cache
+        else{
+          caches_[threadId].splice(caches_[threadId].begin(), caches_[threadId], cacheMaps_[threadId][nodeId]);
+          cacheMaps_[threadId][nodeId] = caches_[threadId].begin();
+        }
+        return caches_[threadId].front();
       }
+
+
+      /**
+       * Search the node in the LFU cache.
+       */
+      // ExpandedNode* searchCache(const SimplexId &nodeId) const{
+      //   ThreadId threadId = 0;
+      //   #ifdef TTK_ENABLE_OPENMP
+      //   threadId = omp_get_thread_num();
+      //   #endif
+
+      //   auto it = caches_[threadId].find(nodeId);
+      //   if(it != caches_[threadId].cend()){
+      //     // step 1: update the frequency
+      //     const int prevFreq = it->second.frequency;
+      //     const int freq = ++(it->second.frequency);
+      //     // step 2: remove the entry from old frequency list
+      //     freqMaps_[threadId][prevFreq].erase(it->second.iter);
+      //     // step 3: remove the frequency list if it is empty
+      //     if(freqMaps_[threadId][prevFreq].empty() && prevFreq == minFrequency_[threadId]){
+      //       freqMaps_[threadId].erase(prevFreq);
+      //       ++minFrequency_[threadId];
+      //     }
+      //     // step 4: insert the key into the front of the new frequency list
+      //     freqMaps_[threadId][freq].push_front(it->second.value->nid);
+      //     // step 5: update the pointer
+      //     it->second.iter = freqMaps_[threadId][freq].cbegin();
+      //     return it->second.value;
+      //   }
+      //   missCount_++;
+      //   if(caches_[threadId].size() >= cacheSize_){
+      //     const int keyToRemove = freqMaps_[threadId][minFrequency_[threadId]].back();
+      //     freqMaps_[threadId][minFrequency_[threadId]].pop_back();
+      //     caches_[threadId].erase(keyToRemove);
+      //   }
+      //   const int freq = 1;
+      //   minFrequency_[threadId] = freq;
+      //   freqMaps_[threadId][freq].push_front(nodeId);
+      //   caches_[threadId][nodeId] = {new ExpandedNode(nodeId), freq, freqMaps_[threadId][freq].cbegin()};
+      //   return caches_[threadId][nodeId].value;
+      // }
 
       /** 
        * Build the internal edge list in the node.
@@ -2866,7 +2929,16 @@ namespace ttk{
         return 0;
       }
 
-      
+      /**
+       * Protected structure for LFU cache.
+       */ 
+      struct CacheNode{
+        ExpandedNode *value;
+        int frequency;
+        list<int>::const_iterator iter;
+        ~CacheNode() {delete value;}
+      };
+
       /**
        * Protected class variables.
        */ 
@@ -2884,9 +2956,18 @@ namespace ttk{
       vector<boost::unordered_map<vector<SimplexId>, SimplexId>> internalTriangleMaps_;
 
       // Cache system
+      // common attributes
       size_t cacheSize_;
+      mutable int missCount_;
+
+      // LRU cache
       mutable vector<list<ExpandedNode*>> caches_;
       mutable vector<boost::unordered_map<SimplexId, list<ExpandedNode*>::iterator>> cacheMaps_;
+
+      // // LFU cache
+      // mutable vector<int> minFrequency_;
+      // mutable vector<boost::unordered_map<SimplexId, CacheNode>> caches_;
+      // mutable vector<boost::unordered_map<SimplexId, list<int>>> freqMaps_;
 
       friend class TestTopoCluster;
   };

@@ -19,6 +19,7 @@
 #include<Wrapper.h>
 #include<DiscreteGradient.h>
 #include<Triangulation.h>
+#include<MemoryUsage.h>
 
 #include<queue>
 
@@ -244,7 +245,21 @@ namespace ttk{
       inline int setupTriangulation(Triangulation* const data){
         inputTriangulation_=data;
         discreteGradient_.setupTriangulation(inputTriangulation_);
+        
+        inputTriangulation_->preprocessCellEdges();
+        inputTriangulation_->preprocessCellNeighbors();
+        return 0;
+      }
 
+      /**
+       * Set the input triangulation and preprocess the needed
+       * mesh traversal queries.
+       */
+      inline int setupTriangulation(Triangulation* const data, const int &size){
+        inputTriangulation_=data;
+        discreteGradient_.setupTriangulation(inputTriangulation_);
+        
+        inputTriangulation_->setCacheSize(size);
         inputTriangulation_->preprocessCellEdges();
         inputTriangulation_->preprocessCellNeighbors();
         return 0;
