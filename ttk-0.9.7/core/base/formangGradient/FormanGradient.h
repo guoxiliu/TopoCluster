@@ -72,6 +72,36 @@ namespace ttk{
         return 0;
       }
 
+      inline int setupTriangulation(Triangulation *triangulation, const int &size){
+        triangulation_ = triangulation;
+        dimensionality_ = triangulation_->getCellVertexNumber(0) - 1;
+
+        if(triangulation_){
+            Timer t;
+            triangulation_->setCacheSize(size);
+            triangulation_->preprocessVertexStars();
+            triangulation_->preprocessVertexEdges();
+            triangulation_->preprocessEdges();
+            triangulation_->preprocessEdgeStars();
+
+            if (dimensionality_ >= 2) {
+              triangulation_->preprocessTriangles();
+              triangulation_->preprocessEdgeTriangles();
+              triangulation_->preprocessTriangleEdges();
+            }
+
+            if (dimensionality_ == 3) {
+              triangulation_->preprocessCellTriangles();
+              triangulation_->preprocessTriangleStars();
+
+              triangulation_->preprocessVertexTriangles();
+            }
+          cout << "Preprocess in " << t.getElapsedTime() << " s." << endl;
+        }
+        
+        return 0;
+      }
+
       SimplexId extractBoundary(const Simplex& simpl,int dimension_b, int index_b);
       SimplexId extractCoboundary(const Simplex& simpl, int dimension_cb, int index_cb);
       SimplexId sizeCofacets(const Simplex& simpl, int dimension_cb);

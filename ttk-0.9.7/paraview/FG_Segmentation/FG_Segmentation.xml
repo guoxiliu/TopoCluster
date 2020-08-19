@@ -51,6 +51,16 @@
         </Documentation>
       </StringVectorProperty>
       
+      <IntVectorProperty
+        name="CacheSize"
+        command="SetCacheSize"
+        lable="SetCacheSize"
+        number_of_elements="1"
+        default_values="100">
+        <Documentation>
+        Set the size for the cache in TopoCluster (if used).
+        </Documentation>
+      </IntVectorProperty>
       
       <PropertyGroup panel_widget="Line" label="Input options">
         <Property name="ScalarField" />

@@ -17,8 +17,8 @@ int ttkFG_Segmentation::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> 
     return -1;
   
   triangulation->setWrapper(this);
-  fG_Segmentation_.setupTriangulation(triangulation);
-  fG_Segmentation_.setWrapper(this);
+  fG_Segmentation_->setupTriangulation(triangulation, CacheSize);
+  fG_Segmentation_->setWrapper(this);
   
 
   vtkDataArray *inputScalarField = NULL;
@@ -35,20 +35,20 @@ int ttkFG_Segmentation::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> 
   if(!inputScalarField)
     return -2;
 
-    fG_Segmentation_.setInputDataPointer(inputScalarField->GetVoidPointer(0));
+    fG_Segmentation_->setInputDataPointer(inputScalarField->GetVoidPointer(0));
 
     cout << "Start computing gradient " << endl;
     Timer t;
     t.reStart();
     switch(inputScalarField->GetDataType()){
-        ttkTemplateMacro(fG_Segmentation_.computeIndexing<VTK_TT>());
+        ttkTemplateMacro(fG_Segmentation_->computeIndexing<VTK_TT>());
     }
     cout << "Done computing gradient " << t.getElapsedTime() << endl;
 
     cout << "Start computing MS " << endl;
     t.reStart();
-    fG_Segmentation_.computeMorseSmale();
-    cout << "Start computing MS " << t.getElapsedTime() << endl;
+    fG_Segmentation_->computeMorseSmale();
+    cout << "Done computing MS " << t.getElapsedTime() << endl;
 
 
 //  outputCriticalCells(outputs, triangulation);
@@ -65,7 +65,7 @@ void ttkFG_Segmentation::outputCriticalCells(vector<vtkDataSet *> outputs, Trian
   vector<char> criticalPointsCellDimension;
   vector<vector<int> > indexes;
 
-  fG_Segmentation_.readCriticalPoints(criticalPoints, criticalPointsCellDimension, indexes);
+  fG_Segmentation_->readCriticalPoints(criticalPoints, criticalPointsCellDimension, indexes);
   
   vtkSmartPointer<vtkPoints> points=vtkSmartPointer<vtkPoints>::New();
   //prepare array of critical points dimension
@@ -109,7 +109,7 @@ void ttkFG_Segmentation::outputCriticalCells(vector<vtkDataSet *> outputs, Trian
   int last_size=0;
   for(int d=1; d<indexes.size(); d++){
     for(int i=0; i<indexes[d].size(); i++){
-      fG_Segmentation_.extractDescendingCell(Simplex(d,indexes[d][i]), simplices, vertices);
+      fG_Segmentation_->extractDescendingCell(Simplex(d,indexes[d][i]), simplices, vertices);
 
       simplicesPerCell.push_back(simplices.size()-last_size);
       last_size = simplices.size();
@@ -132,7 +132,7 @@ void ttkFG_Segmentation::outputCriticalCells(vector<vtkDataSet *> outputs, Trian
   outputDescendingCells->Allocate(simplices.size());
   for(auto simplex : simplices){
     vector<SimplexId> vSimplex;
-    fG_Segmentation_.simplexToVertices(simplex,vSimplex);
+    fG_Segmentation_->simplexToVertices(simplex,vSimplex);
     vtkIdType simpl[vSimplex.size()];
 
     for(int i=0; i<vSimplex.size(); i++){
@@ -177,7 +177,7 @@ void ttkFG_Segmentation::outputCriticalCells(vector<vtkDataSet *> outputs, Trian
   last_size=0;
   for(int d=0; d<indexes.size()-1; d++){
     for(int i=0; i<indexes[d].size(); i++){
-      fG_Segmentation_.extractAscendingCell(Simplex(d,indexes[d][i]), simplices, vertices);
+      fG_Segmentation_->extractAscendingCell(Simplex(d,indexes[d][i]), simplices, vertices);
 
       simplicesPerCell.push_back(simplices.size()-last_size);
       last_size = simplices.size();
@@ -200,7 +200,7 @@ void ttkFG_Segmentation::outputCriticalCells(vector<vtkDataSet *> outputs, Trian
   outputAscendingCells->Allocate(simplices.size());
   for(auto simplex : simplices){
     vector<SimplexId> vSimplex;
-    fG_Segmentation_.simplexToVertices(simplex,vSimplex);
+    fG_Segmentation_->simplexToVertices(simplex,vSimplex);
     vtkIdType simpl[vSimplex.size()];
 
     for(int i=0; i<vSimplex.size(); i++){

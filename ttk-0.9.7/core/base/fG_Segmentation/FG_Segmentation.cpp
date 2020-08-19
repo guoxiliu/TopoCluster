@@ -139,14 +139,15 @@ void FG_Segmentation::extractAscendingCell(Simplex simpl, list<Simplex>& ascendi
 
 void FG_Segmentation::computeMorseSmale() {
 
-    boost::dynamic_bitset<> ascending1Cells(triangulation_->getNumberOfVertices());
+    boost::dynamic_bitset<> ascending1Cells(triangulation_->getNumberOfTriangles());
     boost::dynamic_bitset<> ascending2Cells(triangulation_->getNumberOfEdges());
-    boost::dynamic_bitset<> ascending3Cells(triangulation_->getNumberOfTriangles());
+    boost::dynamic_bitset<> ascending3Cells(triangulation_->getNumberOfVertices());
     boost::dynamic_bitset<> descending1Cells(triangulation_->getNumberOfEdges());
     boost::dynamic_bitset<> descending2Cells(triangulation_->getNumberOfTriangles());
     boost::dynamic_bitset<> descending3Cells(triangulation_->getNumberOfCells());
 
     for(int i=0; i<criticalSimplices.size(); i++){
+        cout << "Dimension " << i << endl;
         for(auto simpl_id : criticalSimplices[i]){
 
             Simplex simpl(i,simpl_id);

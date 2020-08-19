@@ -35,7 +35,7 @@ void FormanGradient::computeGradient(vector<int>* indexing){
     //compute indexing on the data
     SimplexId vertexNumber = triangulation_->getNumberOfVertices();
 
-    cout << "Current memory usage with gradient" << m.getInstantUsage() << endl;
+    cout << "Current memory usage with gradient " << m.getInstantUsage() << endl;
     cout << "Start computing homotopy expansion " << endl;
 
     #ifdef TTK_ENABLE_OPENMP

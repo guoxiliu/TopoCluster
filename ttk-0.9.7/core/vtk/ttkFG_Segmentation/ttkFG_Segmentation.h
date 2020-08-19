@@ -58,6 +58,9 @@ class ttkFG_Segmentation
     vtkSetMacro(ScalarField, std::string);
     vtkGetMacro(ScalarField, std::string);
 
+    vtkSetMacro(CacheSize, int);
+    vtkGetMacro(CacheSize, int);
+
     int FillInputPortInformation(int port, vtkInformation *info) override {
       
       switch(port){
@@ -92,6 +95,8 @@ class ttkFG_Segmentation
     
       SetNumberOfInputPorts(1);
       SetNumberOfOutputPorts(3);
+
+      fG_Segmentation_ = new ttk::FG_Segmentation();
     }
 
     ~ttkFG_Segmentation(){};
@@ -105,7 +110,8 @@ class ttkFG_Segmentation
     
   private:
     
-    std::string           ScalarField;
-    ttk::FG_Segmentation            fG_Segmentation_;
+    std::string ScalarField;
+    ttk::FG_Segmentation* fG_Segmentation_;
+    int CacheSize;
     
 };

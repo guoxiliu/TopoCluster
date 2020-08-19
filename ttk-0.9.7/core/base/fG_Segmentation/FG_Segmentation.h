@@ -45,6 +45,7 @@ namespace ttk{
         void markDescendingCell(Simplex simpl, boost::dynamic_bitset<>& descending3Cells);
         void markAscendingCell(Simplex simpl, boost::dynamic_bitset<>& descending3Cells);
 
+  private:
         const void* inputData_;
 
   };
