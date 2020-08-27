@@ -285,7 +285,7 @@ namespace ttk{
         return abstractMorseSmaleComplex_->setPrioritizeSpeedOverMemory(state);
       }
 
-      int setupTriangulation(Triangulation* const data, const int &size){
+      int setupTriangulation(Triangulation* const data, const float &ratio){
         dimensionality_=data->getCellVertexNumber(0)-1;
 
         switch(dimensionality_){
@@ -298,7 +298,7 @@ namespace ttk{
             break;
         }
 
-        abstractMorseSmaleComplex_->setupTriangulation(data, size);
+        abstractMorseSmaleComplex_->setupTriangulation(data, ratio);
         return 0;
       }
 

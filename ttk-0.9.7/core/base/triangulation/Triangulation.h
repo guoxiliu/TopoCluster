@@ -3045,8 +3045,17 @@ namespace ttk{
       // Set the cache size
       inline int setCacheSize(const int &size){
         if(abstractTriangulation_ == &explicitTopoCluster_){
-          explicitTopoCluster_.initCache(size);
-          cout << "[ExplicitTopoCluster] Cache size: " << size << endl;
+          explicitTopoCluster_.initCache((size_t)size);
+          cout << "[ExplicitTopoCluster] Cache size: " << explicitTopoCluster_.getCacheSize() << endl;
+        }
+        return 0;
+      }
+
+      // Set the cache size
+      inline int setCacheSize(const float &ratio){
+        if(abstractTriangulation_ == &explicitTopoCluster_){
+          explicitTopoCluster_.initCache(ratio);
+          cout << "[ExplicitTopoCluster] Cache size: " << explicitTopoCluster_.getCacheSize() << endl;
         }
         return 0;
       }

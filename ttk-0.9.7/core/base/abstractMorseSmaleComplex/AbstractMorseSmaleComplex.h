@@ -255,11 +255,11 @@ namespace ttk{
        * Set the input triangulation and preprocess the needed
        * mesh traversal queries.
        */
-      inline int setupTriangulation(Triangulation* const data, const int &size){
+      inline int setupTriangulation(Triangulation* const data, const float &ratio){
         inputTriangulation_=data;
         discreteGradient_.setupTriangulation(inputTriangulation_);
         
-        inputTriangulation_->setCacheSize(size);
+        inputTriangulation_->setCacheSize(ratio);
         inputTriangulation_->preprocessCellEdges();
         inputTriangulation_->preprocessCellNeighbors();
         return 0;

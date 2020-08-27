@@ -62,16 +62,16 @@ Computer Graphics Forum, 2012.
         </Documentation>
       </StringVectorProperty>
 
-      <IntVectorProperty
+      <DoubleVectorProperty
         name="CacheSize"
         command="SetCacheSize"
         lable="SetCacheSize"
         number_of_elements="1"
-        default_values="100">
+        default_values="0.1">
         <Documentation>
         Set the size for the cache in TopoCluster (if used).
         </Documentation>
-      </IntVectorProperty>
+      </DoubleVectorProperty>
 
       <IntVectorProperty
         name="ForceInputOffsetScalarField"

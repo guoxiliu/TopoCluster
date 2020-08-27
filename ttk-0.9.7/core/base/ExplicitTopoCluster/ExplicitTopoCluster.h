@@ -1522,12 +1522,25 @@ namespace ttk{
         return 0;
       }
 
-
       /**
-       * Initialize the cache.
+       * Initialize the cache with the size.
        */
       void initCache(const size_t size=100){
         cacheSize_ = size;
+      }
+
+      /**
+       * Initialize the cache with a ratio.
+       */
+      void initCache(const float ratio=0.2){
+        cacheSize_ = (nodeNumber_ * ratio + 0.5);
+      }
+
+      /**
+       * Get the size of cache.
+       */
+      size_t getCacheSize() const{
+        return cacheSize_;
       }
 
     protected:
