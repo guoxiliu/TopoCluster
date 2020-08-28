@@ -69,8 +69,8 @@ class ttkTestTopoCluster
     vtkSetMacro(ScalarField, std::string);
     vtkGetMacro(ScalarField, std::string);
 
-    vtkSetMacro(CacheSize, int);
-    vtkGetMacro(CacheSize, int);
+    vtkSetMacro(CacheRatio, float);
+    vtkGetMacro(CacheRatio, float);
     
     // TODO-2
     // Over-ride the input types.
@@ -128,7 +128,7 @@ class ttkTestTopoCluster
       UseAllCores = true;
       ThreadNumber = 1;
       debugLevel_ = 3;
-      CacheSize = 10;
+      CacheRatio = 0.1;
     }
     
     ~ttkTestTopoCluster(){};
@@ -137,7 +137,7 @@ class ttkTestTopoCluster
     
     
   private:
-    int                   CacheSize;
+    float                   CacheRatio;
     std::string           ScalarField;
     vtkDataArray          *outputScalarField_;
     ttk::TestTopoCluster      testTopoCluster_;

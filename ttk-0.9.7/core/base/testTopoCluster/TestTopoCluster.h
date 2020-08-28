@@ -41,13 +41,13 @@ namespace ttk{
         return 0;
       }
      
-      inline int setupTriangulation(Triangulation *triangulation, const int &size){
+      inline int setupTriangulation(Triangulation *triangulation, const float &ratio){
         triangulation_ = triangulation;
         
         if(triangulation_){
           Timer t;
           t.getStartTime();
-          triangulation_->setCacheSize(size);
+          triangulation_->setCacheSize(ratio);
           // build edges and triangles
           triangulation_->preprocessEdges();
           triangulation_->preprocessTriangles();

@@ -18,7 +18,7 @@ int ttkTestTopoCluster::doIt(vector<vtkDataSet *> &inputs, vector<vtkDataSet *> 
     return -1;
   
   triangulation->setWrapper(this);
-  testTopoCluster_.setupTriangulation(triangulation, CacheSize);
+  testTopoCluster_.setupTriangulation(triangulation, CacheRatio);
   testTopoCluster_.setWrapper(this);
  
   // use a pointer-base copy for the input data -- to adapt if your wrapper does

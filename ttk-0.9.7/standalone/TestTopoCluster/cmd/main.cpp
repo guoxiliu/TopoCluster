@@ -13,8 +13,8 @@ int main(int argc, char **argv) {
 
   vtkProgram<ttkTestTopoCluster> program;
 
-  int size = 100;
-  program.parser_.setArgument("s", &size, "Cache size", true);
+  double ratio = 0.1;
+  program.parser_.setArgument("r", &ratio, "Cache ratio", true);
   
   int ret = 0;
   ret = program.init(argc, argv);
@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 
   // execute data processing
 
-  program.ttkObject_->SetCacheSize(size);
+  program.ttkObject_->SetCacheRatio(ratio);
   ret = program.run();
   
   if(ret != 0)
