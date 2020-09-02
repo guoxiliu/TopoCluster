@@ -97,6 +97,22 @@ namespace ttk{
         return 0;
       }
       
+      int setupTriangulation(Triangulation *triangulation, const float &ratio){
+        
+        triangulation_ = triangulation;
+        
+        // pre-condition functions
+        if(triangulation_){
+          Timer t;
+          triangulation_->setCacheSize(ratio);
+          triangulation_->preprocessVertexNeighbors();
+          triangulation_->preprocessVertexStars();
+          std::cout << "[ScalarFieldCriticalPoints] Time usage for preprocessing: " << t.getElapsedTime() << " s.\n";
+        }
+        
+        return 0;
+      }
+      
       int setScalarValues(const void *data){
         
         scalarValues_ = (const dataType *) data;

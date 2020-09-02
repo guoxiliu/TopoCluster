@@ -12,7 +12,7 @@ ttkScalarFieldCriticalPoints::ttkScalarFieldCriticalPoints(){
   VertexBoundary = true;
   VertexIds = true;
   VertexScalars = true;
-
+  
   ScalarFieldId = 0;
   OffsetFieldId = -1;
   OffsetField = ttk::OffsetScalarFieldName;
@@ -105,7 +105,7 @@ int ttkScalarFieldCriticalPoints::doIt(vector<vtkDataSet *> &inputs,
     vtkTemplateMacro(
     {
       ScalarFieldCriticalPoints<VTK_TT> criticalPoints;
-      criticalPoints.setupTriangulation(triangulation);
+      criticalPoints.setupTriangulation(triangulation, CacheRatio);
     });
   }
     
@@ -128,7 +128,7 @@ int ttkScalarFieldCriticalPoints::doIt(vector<vtkDataSet *> &inputs,
       criticalPoints.setSosOffsets(&sosOffsets_);
 
       // 3 -- set the connectivity
-      criticalPoints.setupTriangulation(triangulation);
+      criticalPoints.setupTriangulation(triangulation, CacheRatio);
 
       // set up output
       criticalPoints.setOutput(&criticalPoints_);

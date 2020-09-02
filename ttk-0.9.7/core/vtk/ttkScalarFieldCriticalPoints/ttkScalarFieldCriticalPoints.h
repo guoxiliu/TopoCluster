@@ -83,6 +83,9 @@ class ttkScalarFieldCriticalPoints
     vtkSetMacro(ScalarField, std::string);
     vtkGetMacro(ScalarField, std::string);
 
+    vtkSetMacro(CacheRatio, float);
+    vtkGetMacro(CacheRatio, float);
+
     vtkSetMacro(ScalarFieldId, int);
     vtkGetMacro(ScalarFieldId, int);
 
@@ -123,6 +126,7 @@ class ttkScalarFieldCriticalPoints
     bool                  ForceInputOffsetScalarField;
     int                   ScalarFieldId, OffsetFieldId;
     bool                  VertexIds, VertexScalars, VertexBoundary;
+    float                 CacheRatio;
     std::string                ScalarField, OffsetField;
     std::vector<std::vector<std::pair<ttk::SimplexId, ttk::SimplexId> > > vertexLinkEdgeList_;
     std::vector<std::pair<ttk::SimplexId, char> > criticalPoints_;
