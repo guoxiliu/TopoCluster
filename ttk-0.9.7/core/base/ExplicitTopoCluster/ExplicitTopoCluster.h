@@ -1533,7 +1533,7 @@ namespace ttk{
        * Initialize the cache with a ratio.
        */
       void initCache(const float ratio=0.2){
-        cacheSize_ = (nodeNumber_ * ratio + 0.5);
+        cacheSize_ = nodeNumber_ * ratio + 1;
       }
 
       /**
