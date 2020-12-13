@@ -1527,20 +1527,50 @@ namespace ttk{
        */
       void initCache(const size_t size=100){
         cacheSize_ = size;
+        for(int i = 0; i < threadNumber_; i++){
+          caches_[i].clear();
+          cacheMaps_[i].clear();
+        }
       }
 
       /**
-       * Initialize the cache with a ratio.
+       * Initialize the cache with the ratio.
        */
       void initCache(const float ratio=0.2){
+        // cacheSize_ = size;
         cacheSize_ = nodeNumber_ * ratio + 1;
+        for(int i = 0; i < threadNumber_; i++){
+          caches_[i].clear();
+          cacheMaps_[i].clear();
+        }
       }
 
       /**
-       * Get the size of cache.
+       * Get the size of the cache.
        */
       size_t getCacheSize() const{
         return cacheSize_;
+      }
+
+      /**
+       * Reset the cache size to better fit in the parallel or sequential algorithms.
+       */
+      int resetCache(int option){
+        for(int i = 0; i < threadNumber_; i++){
+          caches_[i].clear();
+          cacheMaps_[i].clear();
+        }
+        if(option){
+          caches_.resize(1);
+          cacheMaps_.resize(1);
+          cacheSize_ *= threadNumber_;
+        }
+        else{
+          caches_.resize(threadNumber_);
+          cacheMaps_.resize(threadNumber_);
+          cacheSize_ /= threadNumber_;
+        }
+        return 0;
       }
 
     protected:

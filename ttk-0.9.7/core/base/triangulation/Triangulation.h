@@ -3059,6 +3059,21 @@ namespace ttk{
         }
         return 0;
       }
+// Set the cache size
+      inline size_t getCacheSize(){
+        if(abstractTriangulation_ == &explicitTopoCluster_){
+          return explicitTopoCluster_.getCacheSize();
+        }
+        return 0;
+      }
+
+      // Set the cache size
+      inline int resetCache(int option){
+        if(abstractTriangulation_ == &explicitTopoCluster_){
+          explicitTopoCluster_.resetCache(option);
+        }
+        return 0;
+      }
 
       /// Set the input cells for the triangulation.
       ///

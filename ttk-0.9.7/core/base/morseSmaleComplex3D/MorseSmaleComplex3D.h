@@ -1056,6 +1056,7 @@ int ttk::MorseSmaleComplex3D::execute(){
   }
 #endif
   Timer t;
+  MemoryUsage m;
 
   // nullptr_t is implicitly convertible and comparable to any pointer type
   // or pointer-to-member type.
@@ -1076,6 +1077,8 @@ int ttk::MorseSmaleComplex3D::execute(){
       msg << "[MorseSmaleComplex3D] Discrete gradient overall computed in "
         << tmp.getElapsedTime() << " s."
         << std::endl;
+      msg << "[MorseSmaleComplex3D] Discrete gradient overall uses "
+        << m.getValue_in_MB(false) << " MB.\n";
       dMsg(std::cout, msg.str(), timeMsg);
     }
   }
@@ -1097,6 +1100,8 @@ int ttk::MorseSmaleComplex3D::execute(){
       msg << "[MorseSmaleComplex3D] Descending 1-separatrices computed in "
         << tmp.getElapsedTime() << " s."
         << std::endl;
+      msg << "[MorseSmaleComplex3D] Descending 1-separatrices uses "
+        << m.getValue_in_MB(false) << " MB.\n";
       dMsg(std::cout, msg.str(), timeMsg);
     }
   }
@@ -1113,23 +1118,31 @@ int ttk::MorseSmaleComplex3D::execute(){
       msg << "[MorseSmaleComplex3D] Ascending 1-separatrices computed in "
         << tmp.getElapsedTime() << " s."
         << std::endl;
+      msg << "[MorseSmaleComplex3D] Ascending 1-separatrices uses "
+        << m.getValue_in_MB(false) << " MB.\n";
       dMsg(std::cout, msg.str(), timeMsg);
     }
   }
 
   // saddle-connectors
   if(ComputeSaddleConnectors){
+    inputTriangulation_->resetCache(1);
+    cout << "[MorseSmaleComplex3D] Reset the cache size to " << inputTriangulation_->getCacheSize() << " in computing saddle-connectors\n";
     Timer tmp;
     std::vector<Separatrix> separatrices;
     std::vector<std::vector<dcg::Cell>> separatricesGeometry;
     getSaddleConnectors(criticalPoints, separatrices, separatricesGeometry);
     setSaddleConnectors<dataType>(separatrices, separatricesGeometry);
+    inputTriangulation_->resetCache(0);
+    cout << "[MorseSmaleComplex3D] Reset the cache size to " << inputTriangulation_->getCacheSize() << " after computing saddle-connectors\n";
 
     {
       std::stringstream msg;
       msg << "[MorseSmaleComplex3D] Saddle connectors computed in "
         << tmp.getElapsedTime() << " s."
         << std::endl;
+      msg << "[MorseSmaleComplex3D] Saddle connectors uses "
+        << m.getValue_in_MB(false) << " MB.\n";
       dMsg(std::cout, msg.str(), timeMsg);
     }
   }
@@ -1153,6 +1166,8 @@ int ttk::MorseSmaleComplex3D::execute(){
       msg << "[MorseSmaleComplex3D] Descending 2-separatrices computed in "
         << tmp.getElapsedTime() << " s."
         << std::endl;
+      msg << "[MorseSmaleComplex3D] Descending 2-separatrices uses "
+        << m.getValue_in_MB(false) << " MB.\n";
       dMsg(std::cout, msg.str(), timeMsg);
     }
   }
@@ -1175,6 +1190,8 @@ int ttk::MorseSmaleComplex3D::execute(){
       msg << "[MorseSmaleComplex3D] Ascending 2-separatrices computed in "
         << tmp.getElapsedTime() << " s."
         << std::endl;
+      msg << "[MorseSmaleComplex3D] Ascending 2-separatrices uses "
+        << m.getValue_in_MB(false) << " MB.\n";
       dMsg(std::cout, msg.str(), timeMsg);
     }
   }
@@ -1200,11 +1217,16 @@ int ttk::MorseSmaleComplex3D::execute(){
       msg << "[MorseSmaleComplex3D] Segmentation computed in "
         << tmp.getElapsedTime() << " s."
         << std::endl;
+      msg << "[MorseSmaleComplex3D] Segmentation uses "
+        << m.getValue_in_MB(false) << " MB.\n";
       dMsg(std::cout, msg.str(), timeMsg);
     }
   }
 
   if(outputCriticalPoints_numberOfPoints_ and outputSeparatrices1_points_){
+    Timer tmp;
+    inputTriangulation_->resetCache(1);
+    cout << "[MorseSmaleComplex3D] Reset the cache size to " << inputTriangulation_->getCacheSize() << " in computing augmented critical points\n";
     if(ascendingManifold and descendingManifold)
       discreteGradient_.setAugmentedCriticalPoints<dataType,idType>(criticalPoints,
           maxSeeds,
@@ -1212,6 +1234,17 @@ int ttk::MorseSmaleComplex3D::execute(){
           descendingManifold);
     else
       discreteGradient_.setCriticalPoints<dataType,idType>(criticalPoints);
+    {
+      std::stringstream msg;
+      msg << "[MorseSmaleComplex3D] Augmented critical points computed in "
+        << tmp.getElapsedTime() << " s."
+        << std::endl;
+      msg << "[MorseSmaleComplex3D] Augmented critical points uses "
+        << m.getValue_in_MB(false) << " MB.\n";
+      dMsg(std::cout, msg.str(), timeMsg);
+    }
+
+    inputTriangulation_->resetCache(0);
   }
 
   {
