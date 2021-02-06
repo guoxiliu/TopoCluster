@@ -259,7 +259,11 @@ namespace ttk{
         inputTriangulation_=data;
         discreteGradient_.setupTriangulation(inputTriangulation_);
         
-        inputTriangulation_->setCacheSize(ratio);
+        if(ratio == 0.0)
+          inputTriangulation_->setCacheSize(1);
+        else
+          inputTriangulation_->setCacheSize(ratio);
+
         inputTriangulation_->preprocessCellEdges();
         inputTriangulation_->preprocessCellNeighbors();
         return 0;

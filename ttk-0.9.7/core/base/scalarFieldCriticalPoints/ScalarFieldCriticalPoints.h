@@ -104,7 +104,10 @@ namespace ttk{
         // pre-condition functions
         if(triangulation_){
           Timer t;
-          triangulation_->setCacheSize(ratio);
+          if(ratio == 0.0)
+            triangulation_->setCacheSize(1);
+          else
+            triangulation_->setCacheSize(ratio);
           triangulation_->preprocessVertexNeighbors();
           triangulation_->preprocessVertexStars();
           std::cout << "[ScalarFieldCriticalPoints] Time usage for preprocessing: " << t.getElapsedTime() << " s.\n";

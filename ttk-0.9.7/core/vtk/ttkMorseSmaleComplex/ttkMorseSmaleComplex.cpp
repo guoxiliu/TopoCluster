@@ -27,7 +27,7 @@ vtkStandardNewMacro(ttkMorseSmaleComplex)
     ReturnSaddleConnectors{false},
     SaddleConnectorsPersistenceThreshold{0},
     PrioritizeSpeedOverMemory{false},
-    CacheSize{100},
+    CacheRatio{0.1},
 
     triangulation_{},
     defaultOffsets_{},
@@ -88,7 +88,7 @@ int ttkMorseSmaleComplex::setupTriangulation(vtkDataSet* input){
 
   triangulation_->setWrapper(this);
   // setupTriangulation() is called first to select the correct algorithm (2D or 3D)
-  morseSmaleComplex_.setupTriangulation(triangulation_, CacheSize);
+  morseSmaleComplex_.setupTriangulation(triangulation_, CacheRatio);
   morseSmaleComplex_.setWrapper(this);
 
   if(triangulation_->isEmpty() or ttkTriangulation::hasChangedConnectivity(triangulation_, input, this)){

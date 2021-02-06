@@ -63,9 +63,9 @@ Computer Graphics Forum, 2012.
       </StringVectorProperty>
 
       <DoubleVectorProperty
-        name="CacheSize"
-        command="SetCacheSize"
-        lable="SetCacheSize"
+        name="CacheRatio"
+        command="SetCacheRatio"
+        lable="SetCacheRatio"
         number_of_elements="1"
         default_values="0.1">
         <Documentation>
