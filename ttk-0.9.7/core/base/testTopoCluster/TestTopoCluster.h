@@ -51,10 +51,10 @@ namespace ttk{
           // build edges and triangles
           triangulation_->preprocessEdges();
           triangulation_->preprocessTriangles();
-          // boundary relations
-          triangulation_->preprocessBoundaryVertices();
-          triangulation_->preprocessBoundaryEdges();
-          triangulation_->preprocessBoundaryTriangles();
+          // // boundary relations
+          // triangulation_->preprocessBoundaryVertices();
+          // triangulation_->preprocessBoundaryEdges();
+          // triangulation_->preprocessBoundaryTriangles();
           // vertex related relations
           triangulation_->preprocessVertexEdges();
           triangulation_->preprocessVertexStars();
@@ -637,9 +637,9 @@ template <class dataType> int ttk::TestTopoCluster::execute() const{
       }
     }
   }
-  std::cout << "[TestTopoCluster] Time usage for VT: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for VF: " << t.getElapsedTime() << " s.\n";
   
-  /* test vertex star relationship */
+  /* test vertex tetrahedron relationship */
   t.reStart();
   #ifdef TTK_ENABLE_OPENMP
   #pragma omp parallel for num_threads(threadNumber_)
@@ -654,7 +654,7 @@ template <class dataType> int ttk::TestTopoCluster::execute() const{
       }
     }
   }
-  std::cout << "[TestTopoCluster] Time usage for VS: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for VT: " << t.getElapsedTime() << " s.\n";
 
   /* test edge vertex relationship */
   t.reStart();
@@ -688,9 +688,9 @@ template <class dataType> int ttk::TestTopoCluster::execute() const{
       }
     }
   }
-  std::cout << "[TestTopoCluster] Time usage for ET: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for EF: " << t.getElapsedTime() << " s.\n";
   
-  /* test edge star relationship */
+  /* test edge tetrahedron relationship */
   t.reStart();
   #ifdef TTK_ENABLE_OPENMP
   #pragma omp parallel for num_threads(threadNumber_)
@@ -705,7 +705,7 @@ template <class dataType> int ttk::TestTopoCluster::execute() const{
       }
     }
   }
-  std::cout << "[TestTopoCluster] Time usage for ES: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for ET: " << t.getElapsedTime() << " s.\n";
 
   /* test triangle vertex relationship */
   t.reStart();
@@ -721,7 +721,7 @@ template <class dataType> int ttk::TestTopoCluster::execute() const{
       }
     }
   }
-  std::cout << "[TestTopoCluster] Time usage for TV: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for FV: " << t.getElapsedTime() << " s.\n";
 
   /* test triangle edge relationship */
   t.reStart();
@@ -737,9 +737,9 @@ template <class dataType> int ttk::TestTopoCluster::execute() const{
       }
     }
   }
-  std::cout << "[TestTopoCluster] Time usage for TE: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for FE: " << t.getElapsedTime() << " s.\n";
 
-  /* test triangle star relationship */
+  /* test triangle tetrahedron relationship */
   t.reStart();
   #ifdef TTK_ENABLE_OPENMP
   #pragma omp parallel for num_threads(threadNumber_)
@@ -754,9 +754,9 @@ template <class dataType> int ttk::TestTopoCluster::execute() const{
       }
     }
   }
-  std::cout << "[TestTopoCluster] Time usage for TS: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for FT: " << t.getElapsedTime() << " s.\n";
 
-  /* test cell vertex relationship */
+  /* test tetrahedron vertex relationship */
   t.reStart();
   #ifdef TTK_ENABLE_OPENMP
   #pragma omp parallel for num_threads(threadNumber_)
@@ -770,9 +770,9 @@ template <class dataType> int ttk::TestTopoCluster::execute() const{
       }
     }
   }
-  std::cout << "[TestTopoCluster] Time usage for CV: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for TV: " << t.getElapsedTime() << " s.\n";
 
-  /* test cell edge relationship */
+  /* test tetrahedron edge relationship */
   t.reStart();
   #ifdef TTK_ENABLE_OPENMP
   #pragma omp parallel for num_threads(threadNumber_)
@@ -786,9 +786,9 @@ template <class dataType> int ttk::TestTopoCluster::execute() const{
       }
     }
   }
-  std::cout << "[TestTopoCluster] Time usage for CE: " << t.getElapsedTime() << " s.\n";
+  std::cout << "[TestTopoCluster] Time usage for TE: " << t.getElapsedTime() << " s.\n";
 
-  /* test cell triangle relationship */
+  /* test tetrahedron triangle relationship */
   if(triangulation_->getDimensionality() == 3){
     t.reStart();
     #ifdef TTK_ENABLE_OPENMP
@@ -803,7 +803,7 @@ template <class dataType> int ttk::TestTopoCluster::execute() const{
         }
       }
     }
-    std::cout << "[TestTopoCluster] Time usage for CT: " << t.getElapsedTime() << " s.\n";
+    std::cout << "[TestTopoCluster] Time usage for TF: " << t.getElapsedTime() << " s.\n";
   }
 
   // init the output -- to adapt

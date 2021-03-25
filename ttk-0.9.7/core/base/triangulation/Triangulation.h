@@ -40,8 +40,17 @@
 #include                  <ExplicitTriangulation.h>
 #include                  <ImplicitTriangulation.h>
 #include                  <ExplicitTopoCluster.h>
+#include                  <ImplicitTopoCluster.h>
 
 namespace ttk{
+
+
+#ifdef ENABLE_IMPLICIT_TOPOCLUSTER
+  typedef ImplicitTopoCluster TopoCluster;
+#else 
+  typedef ExplicitTopoCluster TopoCluster;
+#endif
+
   
   class Triangulation : public AbstractTriangulation{
 
@@ -3037,40 +3046,40 @@ namespace ttk{
       inline int setDebugLevel(const int &debugLevel){
         explicitTriangulation_.setDebugLevel(debugLevel);
         implicitTriangulation_.setDebugLevel(debugLevel);
-        explicitTopoCluster_.setDebugLevel(debugLevel);
+        topoCluster.setDebugLevel(debugLevel);
         debugLevel_ = debugLevel;
         return 0;
       }
 
       // Set the cache size
       inline int setCacheSize(const int &size){
-        if(abstractTriangulation_ == &explicitTopoCluster_){
-          explicitTopoCluster_.initCache((size_t)size);
-          cout << "[ExplicitTopoCluster] Cache size: " << explicitTopoCluster_.getCacheSize() << endl;
+        if(abstractTriangulation_ == &topoCluster){
+          topoCluster.initCache((size_t)size);
+          cout << "[ExplicitTopoCluster] Cache size: " << topoCluster.getCacheSize() << endl;
         }
         return 0;
       }
 
       // Set the cache size
       inline int setCacheSize(const float &ratio){
-        if(abstractTriangulation_ == &explicitTopoCluster_){
-          explicitTopoCluster_.initCache(ratio);
-          cout << "[ExplicitTopoCluster] Cache size: " << explicitTopoCluster_.getCacheSize() << endl;
+        if(abstractTriangulation_ == &topoCluster){
+          topoCluster.initCache(ratio);
+          cout << "[ExplicitTopoCluster] Cache size: " << topoCluster.getCacheSize() << endl;
         }
         return 0;
       }
 // Set the cache size
       inline size_t getCacheSize(){
-        if(abstractTriangulation_ == &explicitTopoCluster_){
-          return explicitTopoCluster_.getCacheSize();
+        if(abstractTriangulation_ == &topoCluster){
+          return topoCluster.getCacheSize();
         }
         return 0;
       }
 
       // Set the cache size
       inline int resetCache(int option){
-        if(abstractTriangulation_ == &explicitTopoCluster_){
-          explicitTopoCluster_.resetCache(option);
+        if(abstractTriangulation_ == &topoCluster){
+          topoCluster.resetCache(option);
         }
         return 0;
       }
@@ -3107,10 +3116,10 @@ namespace ttk{
       inline int setStellarInputCells(const SimplexId &cellNumber,
         const LongSimplexId *cellArray){
         
-        abstractTriangulation_ = &explicitTopoCluster_;
+        abstractTriangulation_ = &topoCluster;
         gridDimensions_[0] = gridDimensions_[1] = gridDimensions_[2] = -1;
         
-        return explicitTopoCluster_.setInputCells(cellNumber, cellArray);
+        return topoCluster.setInputCells(cellNumber, cellArray);
       }
       
       /// Set the specifications of the input grid to implicitly represent as a
@@ -3179,9 +3188,9 @@ namespace ttk{
       inline int setStellarInputPoints(const SimplexId &pointNumber, const void *pointSet,
         const int *indexArray, const bool &doublePrecision = false){
         
-        abstractTriangulation_ = &explicitTopoCluster_;
+        abstractTriangulation_ = &topoCluster;
         gridDimensions_[0] = gridDimensions_[1] = gridDimensions_[2] = -1;
-        return explicitTopoCluster_.setInputPoints(
+        return topoCluster.setInputPoints(
           pointNumber, pointSet, indexArray, doublePrecision);
       }
 
@@ -3189,7 +3198,7 @@ namespace ttk{
       inline int setThreadNumber(const ThreadId &threadNumber){
         explicitTriangulation_.setThreadNumber(threadNumber);
         implicitTriangulation_.setThreadNumber(threadNumber);
-        explicitTopoCluster_.setThreadNumber(threadNumber);
+        topoCluster.setThreadNumber(threadNumber);
         threadNumber_ = threadNumber;
         return 0;
       }
@@ -3199,7 +3208,7 @@ namespace ttk{
       inline int setWrapper(const Wrapper *wrapper){
         explicitTriangulation_.setWrapper(wrapper);
         implicitTriangulation_.setWrapper(wrapper);
-        explicitTopoCluster_.setWrapper(wrapper);
+        topoCluster.setWrapper(wrapper);
         return 0;
       }
       
@@ -3224,10 +3233,8 @@ namespace ttk{
                           explicitTriangulation_;
       ImplicitTriangulation
                           implicitTriangulation_;
-      ExplicitTopoCluster
-                          explicitTopoCluster_;
-  
-      friend class TestStellar;
+      TopoCluster
+                          topoCluster;
   };
 
 }

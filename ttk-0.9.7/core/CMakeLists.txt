@@ -12,6 +12,10 @@ function(ttk_set_compile_options library)
     target_link_libraries(${library} PUBLIC ${Boost_LIBRARIES})
     endif()
 
+    if (ENABLE_IMPLICIT_TOPOCLUSTER) 
+      target_compile_definitions(${library} PUBLIC ENABLE_IMPLICIT_TOPOCLUSTER)
+    endif()
+
     if (TTK_ENABLE_KAMIKAZE)
         target_compile_definitions(${library} PUBLIC TTK_ENABLE_KAMIKAZE)
     endif()
@@ -70,6 +74,7 @@ function(ttk_set_compile_options library)
 endfunction()
 
 function(ttk_print_summary)
+    message(STATUS "ENABLE_IMPLICIT_TOPOCLUSTER: ${ENABLE_IMPLICIT_TOPOCLUSTER}")
     message(STATUS "ttk options -----------------------------------------------------------------")
     message(STATUS "TTK_ENABLE_CPU_OPTIMIZATION: ${TTK_ENABLE_CPU_OPTIMIZATION}")
     message(STATUS "TTK_ENABLE_KAMIKAZE: ${TTK_ENABLE_KAMIKAZE}")
@@ -156,6 +161,8 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
 endif()
+
+option(ENABLE_IMPLICIT_TOPOCLUSTER "Enable the use of implicit TopoCluster" OFF)
 
 option(TTK_ENABLE_64BIT_IDS "Enable processing on large datasets" OFF)
 
