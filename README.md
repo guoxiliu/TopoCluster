@@ -1,23 +1,23 @@
 # TopoCluster
 
-TopoCluster is a new localized data structure for tetrahedral meshes, which provides efficient computation of the connectivity of the mesh elements with a low memory footprint. 
+This repository contains the implementation of TopoCluster, a new localized data structure for tetrahedral meshes, which provides efficient computation of the connectivity of the mesh elements with a low memory footprint. 
 
+The data structure is discussed in the paper *TopoCluster: A Localized Data Structure for Topology-based Visualization* currently submitted for publication to *IEEE Transactions on Visualization and Computer Graphics*.
 
-## Introduction
+## Structure of repository
 
-The data structure is proposed in the paper *TopoCluster: A Localized Data Structure for Topology-based Visualization* that was submitted to *IEEE Transactions on Visualization and Computer Graphics*.
+TopoCluster is developed on top of the [Topology Toolkit](https://topology-tool-kit.github.io/index.html) (TTK) framework which is integrated with [ParaView](https://www.paraview.org/) 
 
-The purposes of some folders in the repository are explained here.
-- Folder `Datasets` contains some example datasets to try TopoCluster data structure.
-- Folder `ParaView-v5.6.0` folder contains [ParaView](https://www.paraview.org/) version 5.6.0, and it can be downloaded from [here](https://www.paraview.org/download/).
-- Folder `ttk-0.9.7` contains the [Topology Toolkit](https://topology-tool-kit.github.io/index.html) 0.9.7 with only necessary plugins to run TopoCluster. The full package of TTK can be downloaded from [here](https://topology-tool-kit.github.io/downloads.html).
+The repository contains the code used for the experimental section of our paper includeing the versions of Paraview and TTK.
+
+- Folder `ParaView-v5.6.0` contains [ParaView](https://www.paraview.org/) version 5.6.0. The original source code can be downloaded from [here](https://www.paraview.org/download/).
+- Folder `ttk-0.9.7` contains the [Topology Toolkit](https://topology-tool-kit.github.io/index.html) version 0.9.7 with only the plugins used in our experiments. The original version of TTK can be downloaded from [here](https://topology-tool-kit.github.io/downloads.html).
+- Folder `Datasets` contains simple datasets that can be used to test TopoCluster.
 
 
 ## Installation
 
-TopoCluster is developed under Topology Toolkit (TTK) framework. To use TopoCluster, TTK and ParaView need to be installed.
-
-The following installation steps are based on [TTK offical installation guide](https://topology-tool-kit.github.io/installation-0.9.7.html) under Ubuntu Linux distribution.
+The following installation steps are based on [TTK offical installation guide](https://topology-tool-kit.github.io/installation-0.9.7.html) under Ubuntu Linux distribution. TopoCluster has been tested under Ubuntu and MacOS.
 
 
 ### 1. Downloads
@@ -73,7 +73,7 @@ $ cmake-gui ../
 
 Click on the "Configure" button to proceed. Then, click on the "Generate" button. Once the generation is completed, close the configuration window.
 
-As introduced in the paper, TopoCluster provides two instances. Explicit TopoCluster prioritizes time efficiency and provides only a modest savings in memory usage, while Implicit TopoCluster drastically reduces memory consumption up to an order of magnitude with the cost of time efficiency. 
+As discussed in the paper, TopoCluster provides two instances. Explicit TopoCluster prioritizes time efficiency and provides only a modest savings in memory usage, while Implicit TopoCluster drastically reduces memory consumption up to an order of magnitude at the cost of time efficiency. 
 
 Note: You can choose to build Explicit TopoCluster by setting `ENABLE_IMPLICIT_TOPOCLUSTER` to `OFF` (default) and to build Implicit TopoCluster by setting `ENABLE_IMPLICIT_TOPOCLUSTER` to `ON`. The parallel version can be built by selecting `TTK_ENABLE_OPENMP` checkbox.
 
@@ -83,17 +83,19 @@ Use `make -jN` command to start the compilation process, when `N` is the number 
 #### Installation
 Once the build is finished, use `sudo make install` to install your build of TTK on your system. After this, you have successfully installed TopoCluster.
 
-## How to Use
 
-### Overview
 
-Explicit and Implicit TopoCluster are implemented in `ttk-0.9.7/core/base/explicitTopoCluster` and `ttk-0.9.7/core/base/implicitTopoCluster` respectively. To use TopoCluster structure, the input dataset needs to contain an array named "**_index**" which denotes the cluster index of each point in the dataset. 
+## Quick start
 
-In this repository, we provide a plugin called `ttkPreprocessStellar` that uses a clustering technique based on Point Region (PR) octree. The clustering results are saved into the "_index" array. 
+To use TopoCluster structure, the input dataset needs to contain a scalar field named "**_index**" which denotes the cluster index of each point in the dataset. 
 
-In `Datasets` folder, we have the original tetrahedral mesh of a lobster (`Lobster.vtu`) and the one with the indexing field (`Lobster_1000.vtu` where 1000 denotes the bucket threshold of the PR octree). 
+If the scalar field "**_index**" is found, TopoCluster will be automatically used at runtime.  You can define "**_index**" based on any application dependent criterion. 
 
-### Step-by-step Guide
+In this repository, we provide a plugin called `ttkPreprocessStellar` that will originate "**_index**" based on Point Region (PR) octree. The only input parameter required by `ttkPreprocessStellar` is the maximum number of vertices per leaf node which will be used to build the Point Region (PR) octree.
+
+In `Datasets` folder, we provide the original tetrahedral mesh of the lobster dataset (`Lobster.vtu`) and the one with the indexing field computed (`Lobster_1000.vtu`).
+
+### Step-by-step example
 
 1. Open ParaView in the terminal by using `paraview` command. Load the lobster dataset by selecting `File -> Open` and choosing `Lobster.vtu` in `Datasets`.
 ![](Figures/step_1.png)
@@ -101,9 +103,10 @@ In `Datasets` folder, we have the original tetrahedral mesh of a lobster (`Lobst
 2. Select `Lobster.vtu` in `Pipeline Browser`, use shortcut `Ctrl + Space` to search the plugin `TTK PreprocessStellar` and press `Enter` to select. (Another option is through `Filters -> TTK - Misc -> TTK PreprocessStellar`.) The bucket threshold for the PR octree can be configured in the Properties panel of the plugin.
 ![](Figures/step_2.png)
 
-3. After preprocessing the dataset, select `TTKPreprocessStellar1` in `Pipeline Browser`, and apply the plugin `TTK TestTopoCluster` using the same approach mentioned in the last step. In the Properties panel, make sure the `Scalar Field` is the desired scalar field other than `_index`. The cache ratio can be set from 0 to 1.
+3. After preprocessing the dataset, you can select `TTKPreprocessStellar1` in `Pipeline Browser`, and apply any plugin provided by TTK. 
+   
+4. The plugin `TTK TestTopoCluster` is the one we used in our paper to test the performance of TopoCluster in extracting relational operators in bulk. To run the plugin, make sure the `Scalar Field` selected in the property panel is the desired scalar field other than `_index`. The `cache ratio` parameter defines the percentage of cluster that will be stored in cache at runtime; 0 corresponds to saving no cluster in cache; 1 corresponds to saving all clusters in cache.
 ![](Figures/step_3.png)
 
-4. Check the output from the terminal. The plugin should print out the time usage for each relational operator and the memory usage for the computation.
+1. Check the output from the terminal. The plugin should print out the time usage for each relational operator and the memory usage for the computation.
 ![](Figures/step_4.png)
-
