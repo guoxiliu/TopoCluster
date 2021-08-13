@@ -1,5 +1,7 @@
 # TopoCluster
 
+**Update**: TopoCluster is currently being integrated into the new version of TTK. Please check out the [new repository](https://github.com/guoxiliu/ttk) for development progress. 
+
 This repository contains the implementation of TopoCluster, a new localized data structure for tetrahedral meshes, which provides efficient computation of the connectivity of the mesh elements with a low memory footprint. 
 
 The data structure is discussed in the paper *TopoCluster: A Localized Data Structure for Topology-based Visualization* currently submitted for publication to *IEEE Transactions on Visualization and Computer Graphics*.
