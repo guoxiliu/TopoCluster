@@ -15,7 +15,7 @@ The repository contains the code used for the experimental section of our paper 
 - Folder `ParaView-v5.6.0` contains [ParaView](https://www.paraview.org/) version 5.6.0. The original source code can be downloaded from [here](https://www.paraview.org/download/).
 - Folder `ttk-0.9.7` contains the [Topology Toolkit](https://topology-tool-kit.github.io/index.html) version 0.9.7 with only the plugins used in our experiments. The original version of TTK can be downloaded from [here](https://topology-tool-kit.github.io/downloads.html).
 - Folder `Datasets` contains simple datasets that can be used to test TopoCluster.
-
+- Folder `Scripts` contains shell and Python scripts to reproduce some figures in the paper. 
 
 ## Installation
 
