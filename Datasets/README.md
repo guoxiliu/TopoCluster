@@ -2,7 +2,7 @@ The data sets used for the experiments in the paper can be downloaded through [D
 
 ## Acknowledgement
 
-The author would like to thank 
+The authors would like to thank 
 - VolVis distribution of SUNY Stony Brook, NY, USA for the Lobster data set, 
 - Philips Research, Hamburg, Germany, for the Foot dataset, 
 - General Electric for the Engine dataset, 

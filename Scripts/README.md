@@ -13,7 +13,7 @@ Before using the provided scripts to test TopoCluster, please make sure you foll
 #### Download the experimental data sets
 Please check out the information of the data sets [here](../Datasets/README.md), and download them from the provided link. 
 
-### Add execution rights to scripts (optional)
+#### Add execution rights to scripts (optional)
 Use command `chmod +x <script_name>` to add the execution permission to the script. After this, you can directly use `./ <script_name>` in the terminal to run the script. Otherwise you might need to use command `bash <bash_script>` or `python3 <python3_script>` to run the script.
 
 #### Get the text files of results
