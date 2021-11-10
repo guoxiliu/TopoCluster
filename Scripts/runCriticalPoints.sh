@@ -47,7 +47,6 @@ elif [ $1 == 2 ]; then
 elif [ $1 == 3 ]; then
   printf "Testing critical points plugin on TTK Triangulation...\n\n"
   RESULT_FILE="results_cp_ttk.txt"
-  DATASET_FOLDER="/home/guoxil/Downloads/"
 
   for dataName in Redsea Engine Cat Sphere Foot Shapes Hole Stent
   do
