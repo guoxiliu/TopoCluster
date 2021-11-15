@@ -2,122 +2,54 @@
 layout: default
 ---
 
-Text can be **bold**, _italic_, or ~~strikethrough~~.
+[Link to the paper](https://doi.org/10.1109/TVCG.2021.3121229)
 
-[Link to another page](./another-page.html).
+## Introduction
+Unstructured data are collections of points with irregular topology, often represented through simplicial meshes, such as triangle and tetrahedral meshes. Whenever possible such representations are avoided in visualization since they are computationally demanding if compared with regular grids. In this work, we aim at simplifying the encoding and processing of simplicial meshes. 
 
-There should be whitespace between paragraphs.
+In the paper, we proposes TopoCluster, a new localized data structure for tetrahedral meshes, which can provide efficient computation of the connectivity of the mesh elements with a low memory footprint. 
 
-There should be whitespace between paragraphs. We recommend including a README, or a file with information about your project.
+There are two instances of TopoCluster: 
+- Explicit TopoCluster prioritizes time efficiency and provides only a modest saving in memory
+- Implicit TopoCluster drastically reduces memory consumption up to an order of magnitude with respect to comparable data structures. 
 
-# Header 1
+## TopoCluster 
+TopoCluster inherits the localized approach for extracting relational operators from the Stellar decomposition, but aims at enumerating all the simplices of the simplicial complex through an _enumeration schema_. 
 
-This is a normal paragraph following a header. GitHub is a code hosting platform for version control and collaboration. It lets you and others work together on projects from anywhere.
+**Cluster-based enumeration.** 
 
-## Header 2
-
-> This is a blockquote following a header.
->
-> When something is important enough, you do it even if the odds are not in your favor.
-
-### Header 3
-
-```js
-// Javascript code with syntax highlighting.
-var fun = function lang(l) {
-  dateformat.i18n = require('./lang/' + l)
-  return true;
-}
-```
-
-```ruby
-# Ruby code with syntax highlighting
-GitHubPages::Dependencies.gems.each do |gem, version|
-  s.add_dependency(gem, "= #{version}")
-end
-```
-
-#### Header 4
-
-*   This is an unordered list following a header.
-*   This is an unordered list following a header.
-*   This is an unordered list following a header.
-
-##### Header 5
-
-1.  This is an ordered list following a header.
-2.  This is an ordered list following a header.
-3.  This is an ordered list following a header.
-
-###### Header 6
-
-| head1        | head two          | three |
-|:-------------|:------------------|:------|
-| ok           | good swedish fish | nice  |
-| out of stock | good and plenty   | nice  |
-| ok           | good `oreos`      | hmm   |
-| ok           | good `zoute` drop | yumm  |
-
-### There's a horizontal rule below this.
-
-* * *
-
-### Here is an unordered list:
-
-*   Item foo
-*   Item bar
-*   Item baz
-*   Item zip
-
-### And an ordered list:
-
-1.  Item one
-1.  Item two
-1.  Item three
-1.  Item four
-
-### And a nested list:
-
-- level 1 item
-  - level 2 item
-  - level 2 item
-    - level 3 item
-    - level 3 item
-- level 1 item
-  - level 2 item
-  - level 2 item
-  - level 2 item
-- level 1 item
-  - level 2 item
-  - level 2 item
-- level 1 item
-
-### Small image
-
-![Octocat](https://github.githubassets.com/images/icons/emoji/octocat.png)
-
-### Large image
-
-![Branching](https://guides.github.com/activities/hello-world/branching.png)
+<img src="./assets/figures/clusters.png" width=250> | <img src="./assets/figures/enumeration.png" width=250> 
+:-------------------------|:-------------------------
+*Tetrahedral mesh is formed by two clusters which are distinguished by red and blue separately. The vertices and edges are subdivided accordingly.*  |  *Enumeration of the edges of the tetrahedral mesh.*
 
 
-### Definition lists can be used with HTML syntax.
+The cluster-based enumeration is obtained by enforcing the following rules:
+- k-simplices internal to a cluster c are enumerated within a closed interval [l, u], where u - l + 1 is the number of k-simplices internal to c;
+- For any pair of clusters, the corresponding intervals do not overlap. As a consequence, for any pair of clusters c_i , c_j , with i < j, k-simplices in c_j have indices greater than those in c_i .
 
-<dl>
-<dt>Name</dt>
-<dd>Godzilla</dd>
-<dt>Born</dt>
-<dd>1952</dd>
-<dt>Birthplace</dt>
-<dd>Japan</dd>
-<dt>Color</dt>
-<dd>Green</dd>
-</dl>
+### Explicit TopoCluster
+The global layer of Explicit TopoCluster includes the input tetrahedral mesh, the input subdivision, the enumeration schema, and the list of simplices intersecting each cluster defined in the input subdivision.
 
-```
-Long, single-line code blocks should not wrap. They should horizontally scroll if they are too long. This line should be long enough to demonstrate this.
-```
 
-```
-The final element.
-```
+### Implicit TopoCluster
+
+
+## Results
+
+### Computing Relational Operators
+
+Memory Comparison             |  Timing Comparison
+:-------------------------:|:-------------------------:
+![](./assets/figures/testing_memory.png)  |  ![](assets/figures/testing_time.png)
+
+### Computing Scalar Field Critical Points
+
+Memory Comparison             |  Timing Comparison
+:-------------------------:|:-------------------------:
+![](./assets/figures/cmp_cp_memory.png)  |  ![](assets/figures/cmp_cp_time.png)
+
+### Computing Morse Smale Complex
+
+Memory Comparison             |  Timing Comparison
+:-------------------------:|:-------------------------:
+![](./assets/figures/cmp_ms_memory.png)  |  ![](assets/figures/cmp_ms_time.png)
