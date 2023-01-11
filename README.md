@@ -1,6 +1,6 @@
 # TopoCluster
 
-**Update**: TopoCluster is currently being integrated into the new version of TTK. Please check out the [new repository](https://github.com/guoxiliu/ttk) for development progress. 
+**TopoCluster has been officially integrated into Topology Toolkit!** Please check out [TTK repository](https://github.com/topology-tool-kit/ttk) for implementation and examples of *CompactTriangulation*. 
 
 This repository contains the implementation of TopoCluster, a new localized data structure for tetrahedral meshes, which provides efficient computation of the connectivity of the mesh elements with a low memory footprint. 
 
